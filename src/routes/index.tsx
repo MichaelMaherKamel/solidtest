@@ -17,8 +17,8 @@ const HomePage = () => {
             deleniti eaque aut repudiandae et a id nisi.
           </p>
 
-          <A href='/shopping'>
-            <button class='btn btn-primary'>Get Started </button>
+          <A href='/stores'>
+            <button class='btn btn-primary'>Get Started By Creating Store </button>
           </A>
         </div>
       </div>
