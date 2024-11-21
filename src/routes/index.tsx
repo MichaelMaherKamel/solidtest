@@ -16,9 +16,10 @@ const HomePage = () => {
             Provident cupiditate voluptatem et in. Quaerat fugiat ut assumenda excepturi exercitationem quasi. In
             deleniti eaque aut repudiandae et a id nisi.
           </p>
-          <button class='btn btn-primary'>
-            <A href='/shopping'>Get Started</A>
-          </button>
+
+          <A href='/shopping'>
+            <button class='btn btn-primary'>Get Started </button>
+          </A>
         </div>
       </div>
     </div>
