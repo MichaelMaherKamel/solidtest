@@ -107,8 +107,8 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
             maxLength={100}
             placeholder='Enter store name'
             disabled={submission.pending || isUploading()}
-            class='w-full px-3 py-2 border border-gray-300 rounded-md 
-                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+            class='w-full px-3 py-2 border border-gray-300 rounded-md
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500
                    disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
@@ -126,8 +126,8 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
             type='tel'
             placeholder='Enter store phone number'
             disabled={submission.pending || isUploading()}
-            class='w-full px-3 py-2 border border-gray-300 rounded-md 
-                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+            class='w-full px-3 py-2 border border-gray-300 rounded-md
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500
                    disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
@@ -145,8 +145,8 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
             rows={3}
             placeholder='Enter store address'
             disabled={submission.pending || isUploading()}
-            class='w-full px-3 py-2 border border-gray-300 rounded-md 
-                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+            class='w-full px-3 py-2 border border-gray-300 rounded-md
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500
                    disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
@@ -156,7 +156,7 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
           <button
             type='button'
             class='px-4 py-2 text-gray-700 border border-gray-300 rounded-md
-                   hover:bg-gray-50 focus:outline-none focus:ring-2 
+                   hover:bg-gray-50 focus:outline-none focus:ring-2
                    focus:ring-offset-2 focus:ring-indigo-500
                    disabled:opacity-50 disabled:cursor-not-allowed'
             onClick={props.onCancel}
@@ -167,7 +167,7 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
           <button
             type='submit'
             class='px-4 py-2 text-white bg-indigo-600 rounded-md
-                   hover:bg-indigo-700 focus:outline-none focus:ring-2 
+                   hover:bg-indigo-700 focus:outline-none focus:ring-2
                    focus:ring-offset-2 focus:ring-indigo-500
                    disabled:opacity-50 disabled:cursor-not-allowed'
             disabled={submission.pending || isUploading() || !uploadedImageUrl()}
@@ -175,7 +175,7 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
             {submission.pending ? (
               <div class='flex items-center space-x-2'>
                 <div
-                  class='w-4 h-4 border-2 border-white border-t-transparent 
+                  class='w-4 h-4 border-2 border-white border-t-transparent
                            rounded-full animate-spin'
                 />
                 <span>Creating Store...</span>
