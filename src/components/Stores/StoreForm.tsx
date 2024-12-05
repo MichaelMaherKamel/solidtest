@@ -1,133 +1,119 @@
-import { Component, createSignal, Show } from 'solid-js'
-import { useNavigate } from '@solidjs/router'
+import { Component, createSignal, Show, createEffect } from 'solid-js'
 import { useSubmission } from '@solidjs/router'
 import { createStoreAction } from '~/db/actions/stores'
-import { Alert, AlertDescription } from '~/components/ui/alerts'
-import { Spinner } from '~/components/ui/spinner'
+import { FileUpload } from '../FileUpload'
 
 type StoreFormProps = {
   onSuccess?: () => void
-  onCancel?: () => void // Added explicit cancel prop
+  onCancel?: () => void
 }
 
 export const StoreForm: Component<StoreFormProps> = (props) => {
-  const navigate = useNavigate()
   const submission = useSubmission(createStoreAction)
+  const [uploadedImageUrl, setUploadedImageUrl] = createSignal('')
+  const [isUploading, setIsUploading] = createSignal(false)
+  const [error, setError] = createSignal('')
+  const [formData, setFormData] = createSignal({
+    storeName: '',
+    storePhone: '',
+    storeAddress: '',
+  })
 
-  const [imagePreview, setImagePreview] = createSignal<string>('')
-  const [clientError, setClientError] = createSignal<string>('')
-
-  // Reset error when submission state changes
-  const resetError = () => setClientError('')
-
-  const handleImageChange = (e: Event) => {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-
-    if (file) {
-      // Reset preview and error
-      setImagePreview('')
-      resetError()
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setClientError('Please select a valid image file')
-        input.value = '' // Reset input
-        return
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setClientError('Image size should be less than 5MB')
-        input.value = '' // Reset input
-        return
-      }
-
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+  createEffect(() => {
+    if (submission.result?.success) {
+      props.onSuccess?.()
     }
+  })
+
+  const handleFileUploadSuccess = (url: string) => {
+    setUploadedImageUrl(url)
+    setError('')
   }
 
-  // Redirect after successful submission
-  const handleSubmissionComplete = () => {
-    if (submission.result?.success) {
-      setTimeout(() => {
-        props.onSuccess?.() // Call the callback if provided
-        navigate('/shopping')
-      }, 2000)
-    }
+  const handleFileUploadError = (error: string) => {
+    setError(error)
+    setUploadedImageUrl('')
+  }
+
+  const handleInputChange = (event: Event) => {
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement
+    setFormData((prev) => ({
+      ...prev,
+      [target.name]: target.value,
+    }))
   }
 
   return (
-    <div class='w-full max-w-2xl mx-auto p-6'>
-      <Show when={clientError() || (!submission.result?.success && submission.result?.error)}>
-        <Alert variant='destructive' class='mb-6'>
-          {/* <AlertDescription>{clientError() || submission.result?.error}</AlertDescription> */}
-        </Alert>
+    <div class='w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow'>
+      <Show when={error() || (!submission.result?.success && submission.error)}>
+        <div class='mb-6 p-4 bg-red-50 border border-red-200 rounded-md'>
+          <p class='text-red-600'>{error() || submission.error}</p>
+        </div>
       </Show>
 
-      <Show when={submission.result?.success}>
-        <Alert class='mb-6'>
-          <AlertDescription>Store created successfully! Redirecting...</AlertDescription>
-        </Alert>
-      </Show>
+      <form action={createStoreAction} method='post' class='space-y-6'>
+        <input type='hidden' name='storeImage' value={uploadedImageUrl()} />
 
-      <form
-        action={createStoreAction}
-        method='post'
-        class='space-y-6'
-        onSubmit={() => {
-          resetError()
-          handleSubmissionComplete()
-        }}
-      >
+        {/* Image Upload Section */}
+        <div class='space-y-4'>
+          <div class='space-y-2'>
+            <label class='block text-sm font-medium text-gray-700'>
+              Store Image {!uploadedImageUrl() && <span class='text-red-500'>*</span>}
+            </label>
+
+            <Show when={!uploadedImageUrl()}>
+              <FileUpload
+                accept='image/*'
+                maxSize={5 * 1024 * 1024}
+                onSuccess={handleFileUploadSuccess}
+                onError={handleFileUploadError}
+              />
+            </Show>
+
+            <Show when={uploadedImageUrl()}>
+              <div class='flex items-center space-x-4'>
+                <div class='w-32 h-32 relative rounded-lg overflow-hidden border border-gray-200'>
+                  <img src={uploadedImageUrl()} alt='Store' class='w-full h-full object-cover' />
+                </div>
+                <div class='flex flex-col space-y-2'>
+                  <p class='text-sm text-green-600'>✓ Image uploaded successfully</p>
+                  <button
+                    type='button'
+                    class='px-3 py-1 text-sm text-red-600 border border-red-200 rounded
+                           hover:bg-red-50 transition-colors duration-200'
+                    onClick={() => setUploadedImageUrl('')}
+                  >
+                    Remove Image
+                  </button>
+                </div>
+              </div>
+            </Show>
+          </div>
+        </div>
+
+        {/* Store Name Field */}
         <div class='space-y-2'>
           <label for='storeName' class='block text-sm font-medium text-gray-700'>
-            Store Name *
+            Store Name <span class='text-red-500'>*</span>
           </label>
           <input
             id='storeName'
             name='storeName'
+            value={formData().storeName}
+            onChange={handleInputChange}
             type='text'
             required
             minLength={2}
             maxLength={100}
-            class='w-full rounded-md border-gray-300 shadow-sm 
-                   focus:border-indigo-500 focus:ring-indigo-500'
-            disabled={submission.pending}
+            placeholder='Enter store name'
+            disabled={submission.pending || isUploading()}
+            class='w-full px-3 py-2 border border-gray-300 rounded-md 
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                   disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
 
-        <div class='space-y-2'>
-          <label for='storeImage' class='block text-sm font-medium text-gray-700'>
-            Store Image
-          </label>
-          <div class='space-y-4'>
-            <Show when={imagePreview()}>
-              <div class='w-32 h-32 relative rounded-lg overflow-hidden'>
-                <img src={imagePreview()} alt='Preview' class='w-full h-full object-cover' />
-              </div>
-            </Show>
-            <input
-              id='storeImage'
-              name='storeImage'
-              type='file'
-              accept='image/*'
-              class='block w-full text-sm text-gray-500 
-                     file:mr-4 file:py-2 file:px-4 file:rounded-md
-                     file:border-0 file:text-sm file:font-semibold
-                     file:bg-indigo-50 file:text-indigo-700
-                     hover:file:bg-indigo-100'
-              onChange={handleImageChange}
-              disabled={submission.pending}
-            />
-          </div>
-        </div>
-
+        {/* Phone Number Field */}
         <div class='space-y-2'>
           <label for='storePhone' class='block text-sm font-medium text-gray-700'>
             Phone Number
@@ -135,14 +121,18 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
           <input
             id='storePhone'
             name='storePhone'
+            value={formData().storePhone}
+            onChange={handleInputChange}
             type='tel'
-            pattern='[0-9+\-\s()]*'
-            class='w-full rounded-md border-gray-300 shadow-sm 
-                   focus:border-indigo-500 focus:ring-indigo-500'
-            disabled={submission.pending}
+            placeholder='Enter store phone number'
+            disabled={submission.pending || isUploading()}
+            class='w-full px-3 py-2 border border-gray-300 rounded-md 
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                   disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
 
+        {/* Address Field */}
         <div class='space-y-2'>
           <label for='storeAddress' class='block text-sm font-medium text-gray-700'>
             Store Address
@@ -150,39 +140,46 @@ export const StoreForm: Component<StoreFormProps> = (props) => {
           <textarea
             id='storeAddress'
             name='storeAddress'
+            value={formData().storeAddress}
+            onChange={handleInputChange}
             rows={3}
-            class='w-full rounded-md border-gray-300 shadow-sm 
-                   focus:border-indigo-500 focus:ring-indigo-500'
-            disabled={submission.pending}
+            placeholder='Enter store address'
+            disabled={submission.pending || isUploading()}
+            class='w-full px-3 py-2 border border-gray-300 rounded-md 
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                   disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
 
+        {/* Form Actions */}
         <div class='flex justify-end space-x-4 pt-4'>
           <button
             type='button'
-            class='px-4 py-2 border border-gray-300 rounded-md shadow-sm 
-                   text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 
-                   focus:outline-none focus:ring-2 focus:ring-offset-2 
-                   focus:ring-indigo-500 disabled:opacity-50'
-            onClick={() => props.onCancel?.() || props.onSuccess?.()} // Use onCancel if provided, fall back to onSuccess
-            disabled={submission.pending}
+            class='px-4 py-2 text-gray-700 border border-gray-300 rounded-md
+                   hover:bg-gray-50 focus:outline-none focus:ring-2 
+                   focus:ring-offset-2 focus:ring-indigo-500
+                   disabled:opacity-50 disabled:cursor-not-allowed'
+            onClick={props.onCancel}
+            disabled={submission.pending || isUploading()}
           >
             Cancel
           </button>
           <button
             type='submit'
-            class='flex items-center justify-center px-4 py-2 border 
-                   border-transparent rounded-md shadow-sm text-sm font-medium 
-                   text-white bg-indigo-600 hover:bg-indigo-700 
-                   focus:outline-none focus:ring-2 focus:ring-offset-2 
-                   focus:ring-indigo-500 disabled:opacity-50'
-            disabled={submission.pending}
+            class='px-4 py-2 text-white bg-indigo-600 rounded-md
+                   hover:bg-indigo-700 focus:outline-none focus:ring-2 
+                   focus:ring-offset-2 focus:ring-indigo-500
+                   disabled:opacity-50 disabled:cursor-not-allowed'
+            disabled={submission.pending || isUploading() || !uploadedImageUrl()}
           >
             {submission.pending ? (
-              <>
-                <Spinner class='w-4 h-4 mr-2' />
-                Creating Store...
-              </>
+              <div class='flex items-center space-x-2'>
+                <div
+                  class='w-4 h-4 border-2 border-white border-t-transparent 
+                           rounded-full animate-spin'
+                />
+                <span>Creating Store...</span>
+              </div>
             ) : (
               'Create Store'
             )}

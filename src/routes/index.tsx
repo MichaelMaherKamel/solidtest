@@ -1,4 +1,5 @@
 import { A } from '@solidjs/router'
+import { put } from '@vercel/blob'
 
 const HomePage = () => {
   return (
@@ -18,8 +19,15 @@ const HomePage = () => {
           </p>
 
           <A href='/stores'>
-            <button class='btn btn-primary'>Get Started By Creating Store </button>
+            <button class='btn btn-primary mb-4'>Get Started By Creating Store</button>
           </A>
+
+          <div>
+            <h2 class='text-xl font-semibold mb-2'>Explore Our Gallery</h2>
+            <A href='/images'>
+              <button class='btn btn-secondary'>View All Images</button>
+            </A>
+          </div>
         </div>
       </div>
     </div>
