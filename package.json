@@ -18,6 +18,8 @@
     "@aws-sdk/lib-storage": "^3.705.0",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.0.10",
+    "@supabase/auth-ui-solid": "^0.3.8",
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.0",
     "@vercel/blob": "^0.27.0",
     "class-variance-authority": "^0.7.0",

@@ -1,5 +1,5 @@
 import { action } from '@solidjs/router'
-import { supabase } from '~/lib/supabase'
+import { supabase } from '~/lib/supabase/supabase'
 
 export type SupabaseUploadResult = {
   success: boolean
@@ -9,7 +9,6 @@ export type SupabaseUploadResult = {
 
 export const supabaseUploadAction = action(async (formData: FormData): Promise<SupabaseUploadResult> => {
   'use server'
-
   try {
     const file = formData.get('file')
 

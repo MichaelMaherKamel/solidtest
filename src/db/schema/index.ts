@@ -63,3 +63,30 @@ export const products = pgTable('products', {
     .default([]),
   ...timestamps,
 })
+
+export const profiles = pgTable(
+  'profiles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: text('profileId').notNull().unique(),
+    profileName: text('profileName').notNull(),
+    profileEmail: text('profileEmail').notNull().unique(),
+    profileAvatarUrl: text('profileAvatarUrl'),
+    profileRole: text('profileRole', { enum: ['admin', 'user', 'seller'] })
+      .default('user')
+      .notNull(),
+  },
+  (table) => ({
+    profileIdIdx: index('profile_id_idx').on(table.profileId),
+    profileEmailIdx: index('profile_email_idx').on(table.profileEmail),
+  })
+)
+
+export type Profile = typeof profiles.$inferSelect
+export type NewProfile = typeof profiles.$inferInsert
+
+export type Store = typeof stores.$inferSelect
+export type NewStore = typeof stores.$inferInsert
+
+export type Product = typeof products.$inferSelect
+export type NewProduct = typeof products.$inferInsert

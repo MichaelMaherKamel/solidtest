@@ -1,5 +1,5 @@
 // src/db/fetchers/supabase-bucket.ts
-import { supabase } from '~/lib/supabase'
+import { supabase } from '~/lib/supabase/supabase'
 import { cache } from '@solidjs/router'
 
 export type BucketFile = {
