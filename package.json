@@ -16,6 +16,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.705.0",
     "@aws-sdk/lib-storage": "^3.705.0",
+    "@fontsource/inter": "^5.1.0",
+    "@kobalte/core": "^0.13.7",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.0.10",
     "@supabase/auth-ui-solid": "^0.3.8",
@@ -27,8 +29,8 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.3",
-    "flowbite": "^2.5.2",
     "postgres": "^3.4.5",
+    "solid-icons": "^1.1.0",
     "solid-js": "^1.9.2",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",

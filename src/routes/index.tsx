@@ -4,6 +4,8 @@ import { supabase } from '~/lib/supabase/supabase'
 import { AuthSession } from '@supabase/supabase-js'
 import Account from '../components/auth/account'
 import Auth from '~/components/auth/auth'
+import { Button } from '~/components/ui/button'
+import { FiActivity } from 'solid-icons/fi'
 
 const HomePage: Component = () => {
   const [session, setSession] = createSignal<AuthSession | null>(null)
@@ -34,6 +36,17 @@ const HomePage: Component = () => {
                 Sign in to get started with our amazing features and create your own store.
               </p>
               <Auth />
+              <Button>
+                <FiActivity size={24} color='red' />
+              </Button>
+              <div class='flex flex-col gap-4 mt-8'>
+                <A href='/stores'>
+                  <Button class='w-full'>Create Store</Button>
+                </A>
+                <A href='/images'>
+                  <Button class='w-full'>View Gallery</Button>
+                </A>
+              </div>
             </div>
           ) : (
             <div class='max-w-2xl mx-auto bg-white/10 p-8 rounded-lg backdrop-blur-sm'>
@@ -43,10 +56,12 @@ const HomePage: Component = () => {
               </div>
               <div class='flex flex-col gap-4 mt-8'>
                 <A href='/stores'>
-                  <button class='w-full btn btn-primary'>Create Store</button>
+                  <Button variant={'destructive'} class='w-full'>
+                    Create Store
+                  </Button>
                 </A>
                 <A href='/images'>
-                  <button class='w-full btn btn-secondary'>View Gallery</button>
+                  <Button class='w-full'>View Gallery</Button>
                 </A>
               </div>
             </div>
