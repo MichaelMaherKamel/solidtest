@@ -18,8 +18,8 @@ import {
 
 import { BiLogosChrome } from 'solid-icons/bi'
 import { TbDeviceAnalytics, TbUsers } from 'solid-icons/tb'
-import { BiSolidStore } from 'solid-icons/bi'
-import { FaSolidReceipt } from 'solid-icons/fa'
+import { RiBuildingsStore2Line } from 'solid-icons/ri'
+import { BsReceipt } from 'solid-icons/bs'
 
 const MENU_DATA = [
   {
@@ -38,12 +38,12 @@ const MENU_DATA = [
       {
         title: 'Stores',
         url: '/admin/stores',
-        icon: BiSolidStore,
+        icon: RiBuildingsStore2Line,
       },
       {
         title: 'Orders',
         url: '/admin/orders',
-        icon: FaSolidReceipt,
+        icon: BsReceipt,
       },
     ],
   },
