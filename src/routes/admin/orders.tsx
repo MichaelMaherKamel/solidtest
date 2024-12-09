@@ -2,7 +2,6 @@ import { DataTable } from '~/components/admin/dataTable'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 import { createSignal } from 'solid-js'
-
 import { FiSearch } from 'solid-icons/fi'
 
 interface Order {
@@ -88,6 +87,7 @@ const columns = [
     cell: (order: Order) => new Date(order.date).toLocaleString(),
   },
 ]
+
 export default function OrdersPage() {
   const [search, setSearch] = createSignal('')
 
@@ -100,24 +100,35 @@ export default function OrdersPage() {
     )
 
   return (
-    <div class='space-y-4'>
-      <div class='flex justify-between'>
-        <h1 class='text-2xl font-bold tracking-tight'>Orders</h1>
-      </div>
-
-      <div class='flex items-center justify-between'>
-        <div class='relative w-64'>
-          <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
-          <Input
-            placeholder='Search orders...'
-            class='pl-8'
-            value={search()}
-            onInput={(e) => setSearch(e.currentTarget.value)}
-          />
+    <>
+      {/* Fixed Header */}
+      <div class='sticky top-0 bg-background z-10 border-b'>
+        <div class='p-6'>
+          <h1 class='text-2xl font-bold tracking-tight'>Orders</h1>
+          <p class='text-muted-foreground'>Manage and track your orders</p>
         </div>
       </div>
 
-      <DataTable data={filteredOrders()} columns={columns} />
-    </div>
+      {/* Content */}
+      <div class='max-w-[1600px] w-full mx-auto'>
+        <div class='container mx-auto p-6'>
+          <div class='space-y-4'>
+            <div class='flex items-center justify-between'>
+              <div class='relative w-64'>
+                <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+                <Input
+                  placeholder='Search orders...'
+                  class='pl-8'
+                  value={search()}
+                  onInput={(e) => setSearch(e.currentTarget.value)}
+                />
+              </div>
+            </div>
+
+            <DataTable data={filteredOrders()} columns={columns} />
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

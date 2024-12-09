@@ -18,7 +18,7 @@ export default function AdminLayout(props: RouteSectionProps) {
   const isMobile = createMediaQuery('(max-width: 767px)')
 
   return (
-    <div class='flex h-screen overflow-hidden'>
+    <div class='flex h-screen w-full overflow-hidden'>
       <SidebarProvider>
         <AdminDashboardContent location={location} isMobile={isMobile} children={props.children} />
       </SidebarProvider>
@@ -33,7 +33,6 @@ function AdminDashboardContent(props: {
 }) {
   const { setOpen, setOpenMobile } = useSidebar()
 
-  // Close mobile sidebar on route change
   createEffect(() => {
     if (props.isMobile()) {
       setOpenMobile(false)
@@ -41,11 +40,11 @@ function AdminDashboardContent(props: {
   })
 
   return (
-    <>
+    <div class='flex h-screen w-full'>
       <AdminSidebar />
-      <SidebarInset>
-        <header class='flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12'>
-          <div class='flex items-center gap-2'>
+      <SidebarInset class='flex-1 flex flex-col min-h-screen overflow-hidden'>
+        <header class='flex h-16 shrink-0 items-center gap-2 border-b px-4 w-full transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12'>
+          <div class='flex items-center gap-2 w-full'>
             <SidebarTrigger class='-ml-1' />
             <Separator orientation='vertical' class='mr-2 h-4' />
             <Breadcrumb>
@@ -61,8 +60,8 @@ function AdminDashboardContent(props: {
             </Breadcrumb>
           </div>
         </header>
-        <main class='p-4'>{props.children}</main>
+        <div class='flex-1 overflow-y-auto relative'>{props.children}</div>
       </SidebarInset>
-    </>
+    </div>
   )
 }

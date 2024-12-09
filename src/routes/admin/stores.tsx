@@ -74,6 +74,7 @@ const columns = [
       }).format(store.revenue),
   },
 ]
+
 export default function StoresPage() {
   const [search, setSearch] = createSignal('')
 
@@ -85,28 +86,43 @@ export default function StoresPage() {
     )
 
   return (
-    <div class='space-y-4'>
-      <div class='flex justify-between'>
-        <h1 class='text-2xl font-bold tracking-tight'>Stores</h1>
-        <Button>
-          <AiOutlinePlusCircle class='mr-2 h-4 w-4' />
-          Add Store
-        </Button>
-      </div>
-
-      <div class='flex items-center justify-between'>
-        <div class='relative w-64'>
-          <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
-          <Input
-            placeholder='Search stores...'
-            class='pl-8'
-            value={search()}
-            onInput={(e) => setSearch(e.currentTarget.value)}
-          />
+    <>
+      {/* Fixed Header */}
+      <div class='sticky top-0 bg-background z-10 border-b'>
+        <div class='p-6'>
+          <div class='flex items-center justify-between'>
+            <div>
+              <h1 class='text-2xl font-bold tracking-tight'>Stores</h1>
+              <p class='text-muted-foreground'>Manage and monitor your marketplace stores</p>
+            </div>
+            <Button>
+              <AiOutlinePlusCircle class='mr-2 h-4 w-4' />
+              Add Store
+            </Button>
+          </div>
         </div>
       </div>
 
-      <DataTable data={filteredStores()} columns={columns} />
-    </div>
+      {/* Content */}
+      <div class='max-w-[1600px] w-full mx-auto'>
+        <div class='container mx-auto p-6'>
+          <div class='space-y-4'>
+            <div class='flex items-center justify-between'>
+              <div class='relative w-64'>
+                <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+                <Input
+                  placeholder='Search stores...'
+                  class='pl-8'
+                  value={search()}
+                  onInput={(e) => setSearch(e.currentTarget.value)}
+                />
+              </div>
+            </div>
+
+            <DataTable data={filteredStores()} columns={columns} />
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

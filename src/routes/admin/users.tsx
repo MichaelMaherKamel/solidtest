@@ -3,7 +3,6 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 import { createSignal } from 'solid-js'
-
 import { AiOutlinePlusCircle } from 'solid-icons/ai'
 import { FiSearch } from 'solid-icons/fi'
 
@@ -80,28 +79,43 @@ export default function UsersPage() {
     )
 
   return (
-    <div class='space-y-4'>
-      <div class='flex justify-between'>
-        <h1 class='text-2xl font-bold tracking-tight'>Users</h1>
-        <Button>
-          <AiOutlinePlusCircle class='mr-2 h-4 w-4' />
-          Add User
-        </Button>
-      </div>
-
-      <div class='flex items-center justify-between'>
-        <div class='relative w-64'>
-          <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
-          <Input
-            placeholder='Search users...'
-            class='pl-8'
-            value={search()}
-            onInput={(e) => setSearch(e.currentTarget.value)}
-          />
+    <>
+      {/* Fixed Header */}
+      <div class='sticky top-0 bg-background z-10 border-b'>
+        <div class='p-6'>
+          <div class='flex items-center justify-between'>
+            <div>
+              <h1 class='text-2xl font-bold tracking-tight'>Users</h1>
+              <p class='text-muted-foreground'>Manage system users and permissions</p>
+            </div>
+            <Button>
+              <AiOutlinePlusCircle class='mr-2 h-4 w-4' />
+              Add User
+            </Button>
+          </div>
         </div>
       </div>
 
-      <DataTable data={filteredUsers()} columns={columns} />
-    </div>
+      {/* Content */}
+      <div class='max-w-[1600px] w-full mx-auto'>
+        <div class='container mx-auto p-6'>
+          <div class='space-y-4'>
+            <div class='flex items-center justify-between'>
+              <div class='relative w-64'>
+                <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+                <Input
+                  placeholder='Search users...'
+                  class='pl-8'
+                  value={search()}
+                  onInput={(e) => setSearch(e.currentTarget.value)}
+                />
+              </div>
+            </div>
+
+            <DataTable data={filteredUsers()} columns={columns} />
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
