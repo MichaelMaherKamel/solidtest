@@ -33,6 +33,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.3",
+    "drizzle-zod": "^0.5.1",
     "motion": "^11.13.1",
     "postgres": "^3.4.5",
     "solid-icons": "^1.1.0",
@@ -40,7 +41,8 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.0.3",
-    "vinxi": "^0.4.3"
+    "vinxi": "^0.4.3",
+    "zod": "^3.23.8"
   },
   "engines": {
     "node": ">=18"

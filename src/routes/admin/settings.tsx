@@ -1,44 +1,21 @@
 import { Component } from 'solid-js'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
+import { siteConfig } from '~/config/site'
 
 const SettingsPage: Component = () => {
-  // Dummy data
-  const siteSettings = {
-    siteName: 'Souq El Rafay3',
-    description: 'Your one-stop shop for all your needs',
-    logo: '/images/logo.png',
-    socialLinks: {
-      facebook: 'https://facebook.com/souqelrafay3',
-      instagram: 'https://instagram.com/souqelrafay3',
-    },
-    categories: ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports', 'Beauty', 'Toys', 'Food'],
-    subscriptionPlans: [
-      {
-        name: 'Basic',
-        price: 9.99,
-        features: ['Feature 1', 'Feature 2', 'Feature 3'],
-      },
-      {
-        name: 'Pro',
-        price: 19.99,
-        features: ['Everything in Basic', 'Feature 4', 'Feature 5'],
-      },
-    ],
-  }
-
   return (
-    <div class='h-full flex flex-col'>
+    <main class='absolute inset-0 flex flex-col'>
       {/* Fixed Header */}
-      <div class='sticky top-0 bg-background z-10 border-b'>
+      <header class='flex-none border-b bg-background'>
         <div class='p-6'>
           <h1 class='text-2xl font-bold'>Settings</h1>
           <p class='text-muted-foreground'>Manage your site settings</p>
         </div>
-      </div>
+      </header>
 
       {/* Scrollable Content */}
-      <div class='flex-1'>
+      <div class='flex-1 overflow-y-auto'>
         <div class='container mx-auto p-6'>
           <div class='grid gap-6 pb-6'>
             {/* Basic Settings */}
@@ -49,11 +26,21 @@ const SettingsPage: Component = () => {
               <CardContent class='grid gap-4'>
                 <div>
                   <h3 class='font-medium mb-2'>Site Name</h3>
-                  <p class='text-muted-foreground'>{siteSettings.siteName}</p>
+                  <p class='text-muted-foreground'>{siteConfig.name}</p>
                 </div>
                 <div>
                   <h3 class='font-medium mb-2'>Description</h3>
-                  <p class='text-muted-foreground'>{siteSettings.description}</p>
+                  <p class='text-muted-foreground'>{siteConfig.description}</p>
+                </div>
+                <div>
+                  <h3 class='font-medium mb-2'>Developer Contact</h3>
+                  <p class='text-muted-foreground'>Name: {siteConfig.contact.developer.name}</p>
+                  <p class='text-muted-foreground'>Email: {siteConfig.contact.developer.email}</p>
+                  <p class='text-muted-foreground'>Phone: {siteConfig.contact.developer.phone}</p>
+                </div>
+                <div>
+                  <h3 class='font-medium mb-2'>Support Email</h3>
+                  <p class='text-muted-foreground'>{siteConfig.contact.support.email}</p>
                 </div>
               </CardContent>
             </Card>
@@ -66,11 +53,11 @@ const SettingsPage: Component = () => {
               <CardContent class='grid gap-4'>
                 <div>
                   <h3 class='font-medium mb-2'>Facebook</h3>
-                  <p class='text-muted-foreground'>{siteSettings.socialLinks.facebook}</p>
+                  <p class='text-muted-foreground'>{siteConfig.social.facebook}</p>
                 </div>
                 <div>
                   <h3 class='font-medium mb-2'>Instagram</h3>
-                  <p class='text-muted-foreground'>{siteSettings.socialLinks.instagram}</p>
+                  <p class='text-muted-foreground'>{siteConfig.social.instagram}</p>
                 </div>
               </CardContent>
             </Card>
@@ -82,8 +69,10 @@ const SettingsPage: Component = () => {
               </CardHeader>
               <CardContent>
                 <div class='flex flex-wrap gap-2'>
-                  {siteSettings.categories.map((category) => (
-                    <span class='px-3 py-1 bg-muted rounded-full text-sm'>{category}</span>
+                  {siteConfig.categories.map((category) => (
+                    <span class='px-3 py-1 bg-muted rounded-full text-sm'>
+                      {category.name} - {category.slug}
+                    </span>
                   ))}
                 </div>
               </CardContent>
@@ -95,8 +84,8 @@ const SettingsPage: Component = () => {
                 <CardTitle>Subscription Plans</CardTitle>
               </CardHeader>
               <CardContent>
-                <div class='grid gap-4 sm:grid-cols-2'>
-                  {siteSettings.subscriptionPlans.map((plan) => (
+                <div class='grid gap-4 sm:grid-cols-3'>
+                  {siteConfig.plans.map((plan) => (
                     <div class='p-4 border rounded-lg'>
                       <h3 class='font-medium mb-2'>{plan.name}</h3>
                       <p class='text-xl font-bold mb-4'>${plan.price}/month</p>
@@ -111,6 +100,38 @@ const SettingsPage: Component = () => {
               </CardContent>
             </Card>
 
+            {/* Localization */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Localization</CardTitle>
+              </CardHeader>
+              <CardContent class='grid gap-6'>
+                {/* Cities */}
+                <div>
+                  <h3 class='font-medium mb-2'>Cities</h3>
+                  <div class='flex flex-wrap gap-2'>
+                    {Object.entries(siteConfig.localization.cities).map(([en, ar]) => (
+                      <span class='px-3 py-1 bg-muted rounded-full text-sm'>
+                        {en} - {ar}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Countries */}
+                <div>
+                  <h3 class='font-medium mb-2'>Countries</h3>
+                  <div class='flex flex-wrap gap-2'>
+                    {Object.entries(siteConfig.localization.countries).map(([en, ar]) => (
+                      <span class='px-3 py-1 bg-muted rounded-full text-sm'>
+                        {en} - {ar}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Action Buttons */}
             <div class='flex justify-end gap-4'>
               <Button variant='outline'>Reset</Button>
@@ -119,7 +140,7 @@ const SettingsPage: Component = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

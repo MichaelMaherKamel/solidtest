@@ -62,6 +62,9 @@ dependencies:
   drizzle-orm:
     specifier: ^0.36.3
     version: 0.36.3(postgres@3.4.5)
+  drizzle-zod:
+    specifier: ^0.5.1
+    version: 0.5.1(drizzle-orm@0.36.3)(zod@3.23.8)
   motion:
     specifier: ^11.13.1
     version: 11.13.1
@@ -86,6 +89,9 @@ dependencies:
   vinxi:
     specifier: ^0.4.3
     version: 0.4.3(drizzle-orm@0.36.3)(typescript@5.6.3)
+  zod:
+    specifier: ^3.23.8
+    version: 3.23.8
 
 devDependencies:
   '@types/uuid':
@@ -4710,6 +4716,16 @@ packages:
         optional: true
     dependencies:
       postgres: 3.4.5
+    dev: false
+
+  /drizzle-zod@0.5.1(drizzle-orm@0.36.3)(zod@3.23.8):
+    resolution: {integrity: sha512-C/8bvzUH/zSnVfwdSibOgFjLhtDtbKYmkbPbUCq46QZyZCH6kODIMSOgZ8R7rVjoI+tCj3k06MRJMDqsIeoS4A==}
+    peerDependencies:
+      drizzle-orm: '>=0.23.13'
+      zod: '*'
+    dependencies:
+      drizzle-orm: 0.36.3(postgres@3.4.5)
+      zod: 3.23.8
     dev: false
 
   /duplexer@0.1.2:

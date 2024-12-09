@@ -1,4 +1,4 @@
-import { createSignal, For, createEffect } from 'solid-js'
+import { createSignal, For, createEffect, Show } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { createMediaQuery } from '@solid-primitives/media'
 import {
@@ -55,6 +55,7 @@ const MENU_DATA = [
 export function AdminSidebar() {
   const location = useLocation()
   const [session, setSession] = createSignal<AuthSession | null>(null)
+  const [isLoading, setIsLoading] = createSignal(true)
   const isMobile = createMediaQuery('(max-width: 767px)')
   const { state, setOpenMobile } = useSidebar()
 
@@ -64,10 +65,15 @@ export function AdminSidebar() {
     }
   }
 
-  createEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
+  createEffect(async () => {
+    try {
+      const {
+        data: { session: initialSession },
+      } = await supabase.auth.getSession()
+      setSession(initialSession)
+    } finally {
+      setIsLoading(false)
+    }
 
     const {
       data: { subscription },
@@ -101,6 +107,7 @@ export function AdminSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
         <For each={MENU_DATA}>
           {(section) => (
@@ -132,8 +139,9 @@ export function AdminSidebar() {
           )}
         </For>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
+
+      <SidebarFooter class='min-h-[88px]'>
+        <SidebarMenu class='flex flex-col gap-2'>
           <SidebarMenuItem>
             <SidebarMenuButton
               as={A}
@@ -148,11 +156,14 @@ export function AdminSidebar() {
               <span class='flex-1'>Settings</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <AdminUserButton session={session()} />
-          </SidebarMenuItem>
+          <Show when={!isLoading()}>
+            <SidebarMenuItem>
+              <AdminUserButton session={session()} />
+            </SidebarMenuItem>
+          </Show>
         </SidebarMenu>
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )

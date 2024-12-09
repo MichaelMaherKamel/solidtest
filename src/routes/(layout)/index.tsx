@@ -1,36 +1,33 @@
-import { Component, onMount } from 'solid-js'
+import { Component, onMount, createSignal } from 'solid-js'
 import { A } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { TextArea } from '~/components/ui/textarea'
 import { Card, CardContent } from '~/components/ui/card'
-import { TbToolsKitchen2 } from 'solid-icons/tb'
-import { BiRegularHomeAlt2, BiRegularBath } from 'solid-icons/bi'
-import { animate, scroll } from 'motion'
+import { siteConfig } from '~/config/site'
+import { animate } from 'motion'
+import type { JSX } from 'solid-js'
+import { SiteCategory } from '~/config/site'
 
 const HomePage: Component = () => {
+  const [isHydrated, setIsHydrated] = createSignal(false)
   let heroRef: HTMLDivElement | undefined
   let categoriesRef: HTMLElement | undefined
   let storesRef: HTMLElement | undefined
   let contactRef: HTMLElement | undefined
 
-  const categories = [
-    {
-      title: 'Kitchen Supplies',
-      icon: TbToolsKitchen2,
-      description: 'Everything you need for your dream kitchen',
-    },
-    {
-      title: 'Bathroom Essentials',
-      icon: BiRegularBath,
-      description: 'Beautiful bathroom accessories and necessities',
-    },
-    {
-      title: 'Home Supplies',
-      icon: BiRegularHomeAlt2,
-      description: 'Daily essentials for your home',
-    },
-  ]
+  // Properly typed style object
+  const hiddenBeforeHydration = (): JSX.CSSProperties => ({
+    visibility: isHydrated() ? 'visible' : 'hidden',
+    opacity: isHydrated() ? '1' : '0',
+    transition: 'opacity 0.3s ease-in',
+  })
+
+  const categories = siteConfig.categories.map((category: SiteCategory) => ({
+    title: category.name,
+    icon: category.icon,
+    description: category.description,
+  }))
 
   const featuredStores = [
     {
@@ -50,18 +47,15 @@ const HomePage: Component = () => {
     },
   ]
 
-  // Smooth scroll with animation
   const scrollToCategories = () => {
     if (categoriesRef) {
       const isMobile = window.innerWidth < 768
 
-      // First scroll to the section
       categoriesRef.scrollIntoView({
         behavior: isMobile ? 'auto' : 'smooth',
         block: 'start',
       })
 
-      // Then animate the section
       animate(
         categoriesRef,
         {
@@ -77,6 +71,9 @@ const HomePage: Component = () => {
   }
 
   onMount(() => {
+    // Set hydrated state immediately after mount
+    setIsHydrated(true)
+
     // Initial hero animations
     animate(
       '.hero-title',
@@ -133,7 +130,6 @@ const HomePage: Component = () => {
               }
             )
 
-            // Stop observing after animation
             observer.unobserve(entry.target)
           }
         })
@@ -144,52 +140,57 @@ const HomePage: Component = () => {
       }
     )
 
-    // Observe all elements that need scroll animations
     document.querySelectorAll('.animate-on-scroll').forEach((el) => {
       observer.observe(el)
     })
   })
 
   return (
-    <div class='relative'>
+    <div class='relative' dir='rtl'>
       {/* Hero Section */}
-      <div
-        ref={heroRef}
-        class='min-h-screen bg-cover bg-center relative'
-        style={{
-          'background-image': 'url(https://img.daisyui.com/images/stock/photo-1507358522600-9f71e620c44e.webp)',
-        }}
-      >
-        <div class='absolute inset-0 bg-black bg-opacity-60' />
-        <div class='relative z-10 h-screen flex items-center justify-center'>
-          <div class='text-center space-y-6 max-w-3xl mx-auto px-4'>
-            <h1 class='hero-title text-5xl md:text-6xl font-bold text-white opacity-0'>Welcome to Souq EL Rafay3</h1>
-            <p class='hero-description text-xl text-white/90 opacity-0'>
-              Discover unique home essentials from trusted local stores
-            </p>
-            <Button
-              size='lg'
-              variant='default'
-              onClick={scrollToCategories}
-              class='hero-button opacity-0 hover:scale-105 transition-transform'
-            >
-              Explore Categories
-            </Button>
-          </div>
+      <div ref={heroRef} class='min-h-screen relative flex items-center justify-center'>
+        <div class='absolute inset-0'>
+          {/* Mobile image (default, always loaded first) */}
+          <img
+            src='https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket/SouqElRafay3Resposive.jpeg'
+            alt='Hero Background Mobile'
+            class='w-full h-full object-cover object-center block md:hidden'
+          />
+
+          {/* Desktop image (hidden by default, shown on larger screens) */}
+          <img
+            src='https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket/SouqElRafay3'
+            alt='Hero Background Desktop'
+            class='w-full h-full object-cover object-center hidden md:block'
+            style={hiddenBeforeHydration()}
+          />
+          <div class='absolute inset-0 bg-black bg-opacity-60' />
+        </div>
+
+        <div class='relative z-10 text-center space-y-6 max-w-3xl mx-auto px-4'>
+          <h1 class='hero-title text-5xl md:text-6xl font-bold text-white opacity-0'>أهلاً بيكم في سوق الرفايع</h1>
+          <p class='hero-description text-xl text-white/90 opacity-0'>كل اللي بيتك محتاجه في مكان واحد</p>
+          <Button
+            size='lg'
+            variant='pay'
+            onClick={scrollToCategories}
+            class='hero-button opacity-0 hover:scale-105 transition-transform'
+          >
+            اتسوق دلوقتي
+          </Button>
         </div>
       </div>
 
       {/* Categories Section */}
       <section ref={categoriesRef} class='py-20 bg-background'>
         <div class='container mx-auto px-4'>
-          <h2 class='text-3xl font-bold text-center mb-12 animate-on-scroll'>Our Categories</h2>
+          <h2 class='text-3xl font-bold text-center mb-12 animate-on-scroll'>الأقسام</h2>
           <div class='grid grid-cols-1 md:grid-cols-3 gap-8'>
-            {categories.map((category) => (
+            {siteConfig.categories.map((category) => (
               <Card class='animate-on-scroll hover:shadow-lg transition-all duration-300 hover:-translate-y-2'>
                 <CardContent class='p-6 text-center'>
                   <category.icon class='w-12 h-12 mx-auto mb-4' />
-                  <h3 class='text-xl font-semibold mb-2'>{category.title}</h3>
-                  <p class='text-muted-foreground'>{category.description}</p>
+                  <h3 class='text-xl font-semibold mb-2'>{category.name}</h3>
                 </CardContent>
               </Card>
             ))}

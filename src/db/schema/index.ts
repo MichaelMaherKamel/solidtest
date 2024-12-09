@@ -1,5 +1,4 @@
-import { sql } from 'drizzle-orm'
-import { pgTable, uuid, text, real, integer, jsonb, index, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, real, jsonb, index, timestamp } from 'drizzle-orm/pg-core'
 
 const timestamps = {
   createdAt: timestamp('createdAt').defaultNow().notNull(),
@@ -81,7 +80,6 @@ export const profiles = pgTable(
     profileEmailIdx: index('profile_email_idx').on(table.profileEmail),
   })
 )
-
 export type Profile = typeof profiles.$inferSelect
 export type NewProfile = typeof profiles.$inferInsert
 
