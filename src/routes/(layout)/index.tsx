@@ -168,7 +168,7 @@ const HomePage: Component = () => {
         </div>
 
         <div class='relative z-10 text-center space-y-6 max-w-3xl mx-auto px-4'>
-          <h1 class='hero-title text-5xl md:text-6xl font-bold text-white opacity-0'>أهلاً بيكم في سوق الرفايع</h1>
+          <h1 class='hero-title text-5xl md:text-6xl font-bold text-white opacity-0'>أهلاً بيك في سوق الرفايع</h1>
           <p class='hero-description text-xl text-white/90 opacity-0'>كل اللي بيتك محتاجه في مكان واحد</p>
           <Button
             size='lg'

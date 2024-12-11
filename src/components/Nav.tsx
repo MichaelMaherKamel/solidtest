@@ -1,12 +1,15 @@
 import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense } from 'solid-js'
-import { A, useLocation } from '@solidjs/router'
+import { A, useLocation, createAsync } from '@solidjs/router'
 import { useAuth } from '@solid-mediakit/auth/client'
-import type { Session } from '@solid-mediakit/auth'
 import { Button } from './ui/button'
 import { Show } from 'solid-js'
 import { AiOutlineClose } from 'solid-icons/ai'
 import { IoMenu } from 'solid-icons/io'
 import UserButton from './auth/UserBtn'
+import { query } from '@solidjs/router'
+import { getSession } from '@solid-mediakit/auth'
+import { getRequestEvent } from 'solid-js/web'
+import { authOptions } from '~/lib/auth/authOptions'
 
 const MENU_ITEMS = [
   { path: '/', label: 'Home' },
@@ -22,7 +25,6 @@ const isBrowser = () => typeof window !== 'undefined'
 const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
-  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
   const location = useLocation()
   const auth = useAuth()
 
@@ -55,13 +57,6 @@ const Nav: Component = () => {
   }
 
   const isHomePage = createMemo(() => location.pathname === '/')
-
-  createEffect(() => {
-    const session = auth.session()
-    if (session !== currentSession()) {
-      setCurrentSession(session || null)
-    }
-  })
 
   // Close mobile menu on route change
   createEffect(() => {
@@ -148,7 +143,7 @@ const Nav: Component = () => {
             ))}
             <div class='w-10'>
               <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                <UserButton session={currentSession()} />
+                <UserButton />
               </Suspense>
             </div>
           </div>
@@ -188,7 +183,7 @@ const Nav: Component = () => {
               ))}
               <div class='pt-2'>
                 <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                  <UserButton session={currentSession()} />
+                  <UserButton />
                 </Suspense>
               </div>
             </div>
