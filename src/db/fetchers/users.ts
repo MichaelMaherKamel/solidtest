@@ -7,6 +7,7 @@ export const getUsers = query(async () => {
   'use server'
   try {
     const result = await db.select().from(users).orderBy(desc(users.emailVerified))
+    // await new Promise((resolve) => setTimeout(resolve, 5000)) // 2 second delay to test loading state
     return result
   } catch (error) {
     console.error('Error fetching users:', error)

@@ -1,16 +1,123 @@
-import { createAsync, useAction, useSubmission } from '@solidjs/router'
-import { Component, createSignal, Suspense } from 'solid-js'
-import { DataTable } from '~/components/admin/dataTable'
-import TableSkeleton from '~/components/admin/tableSkelton'
-import { Button } from '~/components/ui/button'
+import { Component, createSignal, createResource, Suspense, Show } from 'solid-js'
+import { useAction, useSubmission } from '@solidjs/router'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
-import { BiRegularDotsVerticalRounded } from 'solid-icons/bi'
-import { FiSearch } from 'solid-icons/fi'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu'
+import { FiSearch, FiUsers } from 'solid-icons/fi'
 import type { User } from '~/db/schema'
 import { getUsers } from '~/db/fetchers/users'
 import { updateUserRoleAction, deleteUserAction } from '~/db/actions/users'
+import { CustomDropdown } from '~/components/admin/customDropDown'
+import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
+import { DataTable } from '~/components/admin/dataTable'
+import TableSkeleton from '~/components/admin/tableSkelton'
+import { Card, CardContent } from '~/components/ui/card'
+import { Skeleton } from '~/components/ui/skeleton'
+
+const UserActions: Component<{ user: User; onActionComplete: () => void }> = (props) => {
+  const [activeAction, setActiveAction] = createSignal<string | null>(null)
+  const updateRole = useAction(updateUserRoleAction)
+  const deleteUser = useAction(deleteUserAction)
+
+  const updateSubmission = useSubmission(updateUserRoleAction)
+  const deleteSubmission = useSubmission(deleteUserAction)
+
+  const handleRoleUpdate = async (role: 'admin' | 'user' | 'seller') => {
+    const formData = new FormData()
+    formData.append('userId', props.user.id)
+    formData.append('role', role)
+
+    try {
+      setActiveAction('update')
+      await updateRole(formData)
+      if (updateSubmission.result?.error) {
+        throw new Error(updateSubmission.result.error)
+      }
+      props.onActionComplete()
+    } catch (error) {
+      console.error('Action failed:', error)
+      alert('Failed to update user role. Please try again.')
+    } finally {
+      setActiveAction(null)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('userId', props.user.id)
+
+    try {
+      setActiveAction('delete')
+      await deleteUser(formData)
+      if (deleteSubmission.result?.error) {
+        throw new Error(deleteSubmission.result.error)
+      }
+      props.onActionComplete()
+    } catch (error) {
+      console.error('Action failed:', error)
+      alert('Failed to delete user. Please try again.')
+    } finally {
+      setActiveAction(null)
+    }
+  }
+
+  const isLoading = () => {
+    const action = activeAction()
+    return Boolean(
+      (action === 'update' && updateSubmission.pending) || (action === 'delete' && deleteSubmission.pending)
+    )
+  }
+
+  const actions = [
+    {
+      label: 'Make Admin',
+      onClick: () => handleRoleUpdate('admin'),
+      disabled: props.user.role === 'admin',
+    },
+    {
+      label: 'Make Seller',
+      onClick: () => handleRoleUpdate('seller'),
+      disabled: props.user.role === 'seller',
+    },
+    {
+      label: 'Reset to User',
+      onClick: () => handleRoleUpdate('user'),
+      disabled: props.user.role === 'user',
+    },
+    {
+      label: 'Delete User',
+      onClick: handleDelete,
+      className: 'text-red-600 hover:text-red-700',
+    },
+  ]
+
+  return (
+    <CustomDropdown actions={actions} isLoading={isLoading()} position='left' buttonVariant='ghost' buttonSize='icon' />
+  )
+}
+
+const StatsCardSkeleton: Component = () => (
+  <Card class='h-10 w-36 bg-primary/10'>
+    <CardContent class='p-2 flex items-center justify-center gap-2'>
+      <Skeleton class='w-4 h-4 rounded-full bg-primary/20' />
+      <Skeleton class='h-4 w-14 bg-primary/20' />
+    </CardContent>
+  </Card>
+)
+
+const StatsCard = ({ count }: { count: number }) => (
+  <Card class='h-10 bg-primary/10'>
+    <CardContent class='p-2 flex items-center justify-center gap-2'>
+      <FiUsers class='w-4 h-4 text-blue-600' />
+      <span class='text-sm font-medium text-primary'>
+        {count} user{count !== 1 ? 's' : ''}
+      </span>
+    </CardContent>
+  </Card>
+)
 
 export const route = {
   preload: () => getUsers(),
@@ -18,137 +125,71 @@ export const route = {
 
 const UsersPage: Component = () => {
   const [search, setSearch] = createSignal('')
-  const users = createAsync(() => getUsers())
+  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
+  const [users] = createResource(refetchTrigger, () => getUsers())
 
-  const UserActions: Component<{ user: User }> = (props) => {
-    const [isOpen, setIsOpen] = createSignal(false)
-    const [activeAction, setActiveAction] = createSignal<string | null>(null)
+  const triggerRefetch = () => setRefetchTrigger((prev) => prev + 1)
 
-    const updateRole = useAction(updateUserRoleAction)
-    const deleteUser = useAction(deleteUserAction)
-
-    const updateSubmission = useSubmission(updateUserRoleAction)
-    const deleteSubmission = useSubmission(deleteUserAction)
-
-    const handleRoleUpdate = async (role: 'admin' | 'user' | 'seller') => {
-      const formData = new FormData()
-      formData.append('userId', props.user.id)
-      formData.append('role', role)
-
-      try {
-        setActiveAction('update')
-        setIsOpen(false)
-        await updateRole(formData)
-
-        if (updateSubmission.result?.error) {
-          throw new Error(updateSubmission.result.error)
-        }
-      } catch (error) {
-        console.error('Action failed:', error)
-        alert('Failed to update user role. Please try again.')
-      } finally {
-        setActiveAction(null)
-      }
-    }
-
-    const handleDelete = async () => {
-      const formData = new FormData()
-      formData.append('userId', props.user.id)
-
-      try {
-        setActiveAction('delete')
-        setIsOpen(false)
-        await deleteUser(formData)
-
-        if (deleteSubmission.result?.error) {
-          throw new Error(deleteSubmission.result.error)
-        }
-      } catch (error) {
-        console.error('Action failed:', error)
-        alert('Failed to delete user. Please try again.')
-      } finally {
-        setActiveAction(null)
-      }
-    }
-
-    const isLoading = () => {
-      const action = activeAction()
-      return (action === 'update' && updateSubmission.pending) || (action === 'delete' && deleteSubmission.pending)
-    }
-
-    return (
-      <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger>
-          <Button variant='ghost' size='icon' disabled={isLoading()}>
-            {isLoading() ? <BiRegularDotsVerticalRounded class='animate-spin' /> : <BiRegularDotsVerticalRounded />}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem disabled={isLoading()} onSelect={() => handleRoleUpdate('admin')}>
-            Make Admin
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled={isLoading()} onSelect={() => handleRoleUpdate('seller')}>
-            Make Seller
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled={isLoading()} onSelect={() => handleRoleUpdate('user')}>
-            Reset to User
-          </DropdownMenuItem>
-          <DropdownMenuItem class='text-red-600' disabled={isLoading()} onSelect={handleDelete}>
-            Delete User
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    )
-  }
-
-  const columns = [
+  const columns: {
+    header: string
+    accessorKey: keyof User
+    cell?: (item: User) => any
+  }[] = [
     {
       header: 'Name',
-      accessorKey: 'name' as const,
-    },
-    {
-      header: 'Email',
-      accessorKey: 'email' as const,
+      accessorKey: 'name',
+      cell: (item: User) => (
+        <div class='flex items-center gap-2'>
+          <Avatar>
+            <AvatarImage src={item.image || ''} alt={item.name || 'User avatar'} />
+            <AvatarFallback class='bg-gray-200'>{item.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div class='font-medium'>{item.name || 'Unknown'}</div>
+            <div class='text-sm text-muted-foreground'>{item.email}</div>
+          </div>
+        </div>
+      ),
     },
     {
       header: 'Role',
-      accessorKey: 'role' as const,
-      cell: (user: User) => (
-        <Badge variant={user.role === 'admin' ? 'error' : user.role === 'seller' ? 'warning' : 'secondary'}>
-          {user.role}
+      accessorKey: 'role',
+      cell: (item: User) => (
+        <Badge variant={item.role === 'admin' ? 'error' : item.role === 'seller' ? 'warning' : 'secondary'}>
+          {item.role}
         </Badge>
       ),
     },
     {
       header: 'Status',
-      accessorKey: 'emailVerified' as const,
-      cell: (user: User) => (
-        <Badge variant={user.emailVerified ? 'success' : 'secondary'}>
-          {user.emailVerified ? 'Verified' : 'Unverified'}
+      accessorKey: 'emailVerified',
+      cell: (item: User) => (
+        <Badge variant={item.emailVerified ? 'success' : 'secondary'}>
+          {item.emailVerified ? 'Verified' : 'Unverified'}
         </Badge>
       ),
     },
     {
       header: 'Actions',
-      accessorKey: 'id' as const,
-      cell: (user: User) => <UserActions user={user} />,
+      accessorKey: 'id',
+      cell: (item: User) => <UserActions user={item} onActionComplete={triggerRefetch} />,
     },
   ]
-
   const filteredUsers = () => {
     const userData = users()
     if (!userData) return []
 
+    const searchTerm = search().toLowerCase()
     return userData.filter(
       (user: User) =>
-        user.name?.toLowerCase().includes(search().toLowerCase()) ||
-        user.email.toLowerCase().includes(search().toLowerCase())
+        user.name?.toLowerCase().includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchTerm) ||
+        user.role.toLowerCase().includes(searchTerm)
     )
   }
 
   return (
     <>
-      {/* Fixed Header */}
       <div class='sticky top-0 bg-background z-10 border-b'>
         <div class='p-6'>
           <div class='flex items-center justify-between'>
@@ -160,12 +201,11 @@ const UsersPage: Component = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div class='max-w-[1600px] w-full mx-auto'>
         <div class='container mx-auto p-6'>
-          <div class='space-y-4'>
-            <div class='flex items-center justify-between'>
-              <div class='relative w-64'>
+          <div class='space-y-6'>
+            <div class='flex items-center justify-between gap-4 mb-6'>
+              <div class='relative flex-1 max-w-sm'>
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   placeholder='Search users...'
@@ -174,10 +214,19 @@ const UsersPage: Component = () => {
                   onInput={(e) => setSearch(e.currentTarget.value)}
                 />
               </div>
+              <Suspense fallback={<StatsCardSkeleton />}>
+                <Show when={users()}>
+                  <StatsCard count={filteredUsers().length} />
+                </Show>
+              </Suspense>
             </div>
 
             <Suspense fallback={<TableSkeleton />}>
-              <DataTable data={filteredUsers()} columns={columns} />
+              <Show when={users()}>
+                <div class='rounded-md border'>
+                  <DataTable data={filteredUsers()} columns={columns} />
+                </div>
+              </Show>
             </Suspense>
           </div>
         </div>
