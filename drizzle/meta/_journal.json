@@ -15,6 +15,20 @@
       "when": 1733437327886,
       "tag": "0001_cheerful_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1733826499655,
+      "tag": "0002_yummy_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1733868338280,
+      "tag": "0003_deep_jane_foster",
+      "breakpoints": true
     }
   ]
 }

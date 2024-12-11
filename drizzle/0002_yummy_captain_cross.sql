@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "profile_role_idx" ON "profiles" USING btree ("profileRole");

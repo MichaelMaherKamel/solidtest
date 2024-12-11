@@ -6,7 +6,7 @@
     "build": "vinxi build",
     "start": "vinxi start",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/lib/db/migrate.ts",
+    "db:migrate": "drizzle-kit migrate",
     "db:drop": "drizzle-kit drop",
     "db:pull": "drizzle-kit introspect",
     "db:push": "drizzle-kit push",
@@ -14,11 +14,14 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
+    "@auth/core": "^0.37.4",
+    "@auth/drizzle-adapter": "^1.7.4",
     "@aws-sdk/client-s3": "^3.705.0",
     "@aws-sdk/lib-storage": "^3.705.0",
     "@fontsource/inter": "^5.1.0",
     "@kobalte/core": "^0.13.7",
     "@motionone/solid": "^10.16.4",
+    "@solid-mediakit/auth": "^3.1.2",
     "@solid-primitives/media": "^2.2.9",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.0",

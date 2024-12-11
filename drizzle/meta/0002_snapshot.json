@@ -1,0 +1,282 @@
+{
+  "id": "f3e470f0-f713-468f-9048-b3e241ddba6c",
+  "prevId": "646784b7-24d1-453a-94b7-f116ccb677ee",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.products": {
+      "name": "products",
+      "schema": "",
+      "columns": {
+        "productId": {
+          "name": "productId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "productName": {
+          "name": "productName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "productDescription": {
+          "name": "productDescription",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'kitchensupplies'"
+        },
+        "price": {
+          "name": "price",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storeId": {
+          "name": "storeId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "colorVariants": {
+          "name": "colorVariants",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "products_storeId_stores_storeId_fk": {
+          "name": "products_storeId_stores_storeId_fk",
+          "tableFrom": "products",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "storeId"
+          ],
+          "columnsTo": [
+            "storeId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profileId": {
+          "name": "profileId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profileName": {
+          "name": "profileName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profileEmail": {
+          "name": "profileEmail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profileAvatarUrl": {
+          "name": "profileAvatarUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profileRole": {
+          "name": "profileRole",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        }
+      },
+      "indexes": {
+        "profile_id_idx": {
+          "name": "profile_id_idx",
+          "columns": [
+            {
+              "expression": "profileId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "profile_role_idx": {
+          "name": "profile_role_idx",
+          "columns": [
+            {
+              "expression": "profileRole",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "profile_email_idx": {
+          "name": "profile_email_idx",
+          "columns": [
+            {
+              "expression": "profileEmail",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profiles_profileId_unique": {
+          "name": "profiles_profileId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profileId"
+          ]
+        },
+        "profiles_profileEmail_unique": {
+          "name": "profiles_profileEmail_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profileEmail"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.stores": {
+      "name": "stores",
+      "schema": "",
+      "columns": {
+        "storeId": {
+          "name": "storeId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "storeName": {
+          "name": "storeName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storeImage": {
+          "name": "storeImage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storePhone": {
+          "name": "storePhone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storeAddress": {
+          "name": "storeAddress",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "featured": {
+          "name": "featured",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'no'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

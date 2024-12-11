@@ -3,6 +3,7 @@ import { FileRoutes } from '@solidjs/start/router'
 import { Suspense } from 'solid-js'
 import Nav from '~/components/Nav'
 import '@fontsource/inter'
+import { SessionProvider } from '@solid-mediakit/auth/client'
 import { MetaProvider } from '@solidjs/meta'
 import './app.css'
 
@@ -11,8 +12,9 @@ export default function App() {
     <Router
       root={(props) => (
         <MetaProvider>
-          {/* <Nav /> */}
-          <Suspense>{props.children}</Suspense>
+          <SessionProvider>
+            <Suspense>{props.children}</Suspense>
+          </SessionProvider>
         </MetaProvider>
       )}
     >

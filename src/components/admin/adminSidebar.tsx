@@ -1,6 +1,8 @@
 import { createSignal, For, createEffect, Show } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { createMediaQuery } from '@solid-primitives/media'
+import { useAuth } from '@solid-mediakit/auth/client'
+import type { Session } from '@solid-mediakit/auth'
 import {
   Sidebar,
   SidebarContent,
@@ -15,8 +17,6 @@ import {
   SidebarRail,
   useSidebar,
 } from '~/components/ui/sidebar'
-import { supabase } from '~/lib/supabase/supabase'
-import { AuthSession } from '@supabase/supabase-js'
 import { BiLogosChrome } from 'solid-icons/bi'
 import { TbDeviceAnalytics, TbUsers } from 'solid-icons/tb'
 import { RiBuildingsStore2Line } from 'solid-icons/ri'
@@ -54,7 +54,8 @@ const MENU_DATA = [
 
 export function AdminSidebar() {
   const location = useLocation()
-  const [session, setSession] = createSignal<AuthSession | null>(null)
+  const auth = useAuth()
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
   const isMobile = createMediaQuery('(max-width: 767px)')
   const { state, setOpenMobile } = useSidebar()
@@ -65,23 +66,12 @@ export function AdminSidebar() {
     }
   }
 
-  createEffect(async () => {
-    try {
-      const {
-        data: { session: initialSession },
-      } = await supabase.auth.getSession()
-      setSession(initialSession)
-    } finally {
-      setIsLoading(false)
-    }
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
-    return () => subscription.unsubscribe()
+  // Effect to handle session changes
+  createEffect(() => {
+    const session = auth.session()
+    // Handle the possibly undefined session value
+    setCurrentSession(session ?? null)
+    setIsLoading(false)
   })
 
   return (
@@ -158,7 +148,7 @@ export function AdminSidebar() {
           </SidebarMenuItem>
           <Show when={!isLoading()}>
             <SidebarMenuItem>
-              <AdminUserButton session={session()} />
+              <AdminUserButton session={currentSession()} />
             </SidebarMenuItem>
           </Show>
         </SidebarMenu>

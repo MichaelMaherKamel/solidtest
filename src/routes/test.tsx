@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardTitle } from '~/components/ui/card'
 import { SupabaseImageUpload } from '~/components/SupabaseImageUpload'
 import { getBucketFiles } from '~/db/fetchers/supabaseimages'
 import { formatDistanceToNow } from 'date-fns'
+import AuthShowcase from '~/components/GoogleSigninButton'
 
 const UploadTestPage: Component = () => {
   const [uploadedImages, setUploadedImages] = createSignal<string[]>([])
@@ -24,6 +25,7 @@ const UploadTestPage: Component = () => {
 
   return (
     <div class='min-h-screen bg-gray-50 py-8'>
+      <AuthShowcase />
       <div class='max-w-7xl mx-auto px-4'>
         <Card>
           <CardHeader>
