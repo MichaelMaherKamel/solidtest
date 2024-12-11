@@ -3,17 +3,18 @@ import { useAuth } from '@solid-mediakit/auth/client'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '~/components/ui/dialog'
 import { AiOutlineGoogle } from 'solid-icons/ai'
+import { FaRegularUser } from 'solid-icons/fa'
 
 interface AuthModalProps {
   onSuccess?: () => void
+  buttonColorClass?: string
 }
 
-const AuthModal: Component<AuthModalProps> = (props) => {
+export const AuthModal: Component<AuthModalProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [loading, setLoading] = createSignal(false)
   const auth = useAuth()
 
-  // Cleanup effect when modal closes
   createEffect(() => {
     if (!isOpen()) {
       setLoading(false)
@@ -21,22 +22,16 @@ const AuthModal: Component<AuthModalProps> = (props) => {
   })
 
   const handleGoogleSignIn = async () => {
-    if (loading()) return // Prevent multiple clicks
+    if (loading()) return
 
     try {
       setLoading(true)
-      await auth.signIn('google', {
-        redirect: false,
-        redirectTo: window.location.pathname,
-      })
+      await auth.signIn('google', { redirect: false })
       setIsOpen(false)
       props.onSuccess?.()
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Sign in error:', error)
-        // Use a more user-friendly error handling
-        alert('Unable to sign in at the moment. Please try again.')
-      }
+      console.error('Sign in error:', error)
+      alert('Unable to sign in at the moment. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -46,10 +41,12 @@ const AuthModal: Component<AuthModalProps> = (props) => {
     <>
       <Button
         variant='ghost'
-        class='text-white hover:bg-sky-700/30 transition-colors duration-200'
+        size='icon'
+        class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
+        aria-label='SignIn'
         onClick={() => setIsOpen(true)}
       >
-        Sign in
+        <FaRegularUser class='h-5 w-5' />
       </Button>
 
       <Dialog
@@ -58,12 +55,10 @@ const AuthModal: Component<AuthModalProps> = (props) => {
           if (!loading()) setIsOpen(open)
         }}
       >
-        <DialogContent class='sm:max-w-[400px]'>
+        <DialogContent class='max-w-xs lg:max-w-md rounded-lg'>
           <DialogHeader>
-            <DialogTitle class='text-xl text-center'>Welcome to Souq EL Rafay3</DialogTitle>
-            <DialogDescription class='text-center text-muted-foreground'>
-              Your destination for unique products and amazing deals
-            </DialogDescription>
+            <DialogTitle class='text-xl text-center'>Login</DialogTitle>
+            <DialogDescription class='text-center text-muted-foreground'>Welcome to Souq EL Rafay3</DialogDescription>
           </DialogHeader>
 
           <div class='space-y-4 mt-4'>
@@ -80,13 +75,13 @@ const AuthModal: Component<AuthModalProps> = (props) => {
                   <span class='flex items-center justify-center'>
                     <svg class='animate-spin h-5 w-5 mr-3' viewBox='0 0 24 24' aria-label='Loading'>
                       <circle
-                        class='opacity-25'
                         cx='12'
                         cy='12'
                         r='10'
                         stroke='currentColor'
                         stroke-width='4'
                         fill='none'
+                        class='opacity-25'
                       />
                       <path
                         class='opacity-75'
