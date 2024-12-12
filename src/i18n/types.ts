@@ -1,4 +1,3 @@
-// src/i18n/types.ts
 export type Locale = 'en' | 'ar'
 
 // Define nested dictionary types
@@ -20,12 +19,4 @@ export interface Dictionary {
     about: string
     [key: string]: string
   }
-  auth: {
-    login: string
-    signup: string
-    logout: string
-    [key: string]: string
-  }
 }
-
-

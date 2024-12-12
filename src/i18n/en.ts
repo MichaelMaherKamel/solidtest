@@ -1,5 +1,4 @@
-// src/i18n/en.ts
-export const dict = {
+export const enDict = {
   common: {
     loading: 'Loading...',
     error: 'An error occurred',
@@ -12,6 +11,7 @@ export const dict = {
     stores: 'Stores',
     gallery: 'Gallery',
     admin: 'Admin',
+    products: 'Products', // Add this key
   },
   hero: {
     title: 'Welcome to Souq El Rafay3',

@@ -1,5 +1,4 @@
-// src/i18n/ar.ts
-export const dict = {
+export const arDict = {
   common: {
     loading: 'جاري التحميل...',
     error: 'حدث خطأ',
@@ -12,6 +11,7 @@ export const dict = {
     stores: 'المتاجر',
     gallery: 'المعرض',
     admin: 'الإدارة',
+    products: 'المنتجات', // Add this key
   },
   hero: {
     title: 'أهلاً بيك في سوق الرفايع',
