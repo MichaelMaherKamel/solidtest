@@ -75,7 +75,7 @@ export function AdminSidebar() {
   })
 
   return (
-    <Sidebar collapsible='icon' side='left'>
+    <Sidebar collapsible='icon' side='left' dir='ltr'>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
