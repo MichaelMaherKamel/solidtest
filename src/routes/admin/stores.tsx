@@ -14,12 +14,16 @@ import FileUpload from '~/components/FileUpload'
 import { createStoreAction } from '~/db/actions/stores'
 import { getStores } from '~/db/fetchers/stores'
 import { getSellers } from '~/db/fetchers/users'
-import type { Store, User } from '~/db/schema'
+import type { Store } from '~/db/schema'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
 import { showToast } from '~/components/ui/toast'
 
-// Form data type definition
+type SellerData = {
+  id: string
+  name: string | null
+}
+
 type FormData = {
   userId: string
   storeOwner: string
@@ -33,8 +37,8 @@ type FormData = {
 // Store Form Component
 const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (props) => {
   const submission = useSubmission(createStoreAction)
-  const [stores] = createResource(() => getStores())
-  const [sellers] = createResource(() => getSellers())
+  const [stores] = createResource<Store[]>(async () => await getStores())
+  const [sellers] = createResource<SellerData[]>(async () => await getSellers())
   const [formData, setFormData] = createSignal<FormData>({
     userId: '',
     storeOwner: '',
@@ -68,22 +72,26 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
   }
 
   // Watch submission result
-  createEffect((prev) => {
-    if (submission.result && submission.result !== prev) {
+  createEffect(() => {
+    if (submission.result && !submission.pending) {
       if (submission.result.success) {
+        showToast({
+          title: 'Success',
+          description: 'Store has been created successfully.',
+          variant: 'success',
+        })
         props.onSuccess()
         props.onClose()
         resetForm()
       } else {
         showToast({
           title: 'Error',
-          description: submission.result.error,
+          description: submission.result.error || 'Failed to create store',
           variant: 'destructive',
         })
       }
     }
-    return submission.result
-  }, undefined)
+  })
 
   // Seller selection helpers
   const sellerMap = () => {
@@ -126,7 +134,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
   return (
     <form action={createStoreAction} method='post' class='space-y-6'>
       <div class='space-y-4'>
-        {/* Seller Select */}
+        {/* Seller Select - Moved to top */}
         <div class='space-y-2'>
           <label class='text-sm font-medium'>
             Select Seller {sellers.loading && <span class='ml-2 text-muted-foreground'>(Loading...)</span>}
@@ -225,7 +233,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
         </Button>
         <Button
           type='submit'
-          variant={'general'}
+          variant='general'
           disabled={
             submission.pending ||
             !formData().userId ||
@@ -242,6 +250,15 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
 }
 
 // Stats Card Components
+const StatsCardSkeleton: Component = () => (
+  <Card class='h-10 w-36 bg-primary/10'>
+    <CardContent class='p-2 flex items-center justify-center gap-2'>
+      <Skeleton class='w-4 h-4 rounded-full bg-primary/20' />
+      <Skeleton class='h-4 w-14 bg-primary/20' />
+    </CardContent>
+  </Card>
+)
+
 const StatsCard = ({ count }: { count: number }) => (
   <Card class='h-10 bg-primary/10'>
     <CardContent class='p-2 flex items-center justify-center gap-2'>
@@ -253,28 +270,18 @@ const StatsCard = ({ count }: { count: number }) => (
   </Card>
 )
 
-const StatsCardSkeleton: Component = () => (
-  <Card class='h-10 w-36 bg-primary/10'>
-    <CardContent class='p-2 flex items-center justify-center gap-2'>
-      <Skeleton class='w-4 h-4 rounded-full bg-primary/20' />
-      <Skeleton class='h-4 w-14 bg-primary/20' />
-    </CardContent>
-  </Card>
-)
-
 // Main Stores Page Component
 const StoresPage: Component = () => {
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
-  const [submissionHandled, setSubmissionHandled] = createSignal(false)
-  const [stores, { refetch }] = createResource(async () => {
-    const result = await getStores()
-    return result
-  })
-  const [sellers] = createResource(() => getSellers())
+  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
 
-  // Check for available sellers
-  const getAvailableSellers = () => {
+  const [stores] = createResource(refetchTrigger, async () => await getStores())
+  const [sellers] = createResource(refetchTrigger, async () => await getSellers())
+
+  const triggerRefetch = () => setRefetchTrigger((prev) => prev + 1)
+
+  const availableSellers = () => {
     const allSellers = sellers() || []
     const existingStores = stores() || []
     const sellersWithStores = new Set(existingStores.map((store) => store.userId))
@@ -282,8 +289,8 @@ const StoresPage: Component = () => {
   }
 
   const isAddStoreDisabled = () => {
-    const availableSellers = getAvailableSellers()
-    return availableSellers.length === 0
+    const available = availableSellers()
+    return available.length === 0
   }
 
   // Table columns configuration
@@ -364,23 +371,12 @@ const StoresPage: Component = () => {
   }
 
   const handleStoreCreated = () => {
-    if (!submissionHandled()) {
-      refetch()
-      showToast({
-        title: 'Success',
-        description: 'Store has been created successfully.',
-        variant: 'success',
-      })
-      setSubmissionHandled(true)
-    }
+    triggerRefetch()
   }
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
-      setSubmissionHandled(false)
-      setTimeout(() => {
-        setIsOpen(false)
-      }, 0)
+      setIsOpen(false)
     } else {
       setIsOpen(true)
     }
@@ -395,15 +391,18 @@ const StoresPage: Component = () => {
               <h1 class='text-2xl font-bold tracking-tight'>Stores</h1>
               <p class='text-muted-foreground'>Manage marketplace stores</p>
             </div>
-            <Button
-              variant={'general'}
-              onClick={handleAddStoreClick}
-              disabled={isAddStoreDisabled()}
-              title={isAddStoreDisabled() ? 'No available sellers' : 'Add Store'}
-            >
-              <FiPlus class='mr-2 h-4 w-4' />
-              Add Store
-            </Button>
+            <Suspense fallback={<Button size={'lg'} disabled />}>
+              <Button
+                variant='general'
+                onClick={handleAddStoreClick}
+                disabled={isAddStoreDisabled()}
+                class={isAddStoreDisabled() ? 'opacity-50 cursor-not-allowed' : ''}
+                title={isAddStoreDisabled() ? 'No available sellers' : 'Add Store'}
+              >
+                <FiPlus class='mr-2 h-4 w-4' />
+                Add Store
+              </Button>
+            </Suspense>
           </div>
         </div>
       </div>
@@ -443,7 +442,7 @@ const StoresPage: Component = () => {
 
       {/* Create Store Dialog */}
       <Dialog open={isOpen()} onOpenChange={handleDialogChange}>
-        <DialogContent class='rounded-xl'>
+        <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[550px] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Create New Store</DialogTitle>
           </DialogHeader>

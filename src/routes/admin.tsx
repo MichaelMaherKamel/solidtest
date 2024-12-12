@@ -18,7 +18,7 @@ export default function AdminLayout(props: RouteSectionProps) {
   const isMobile = createMediaQuery('(max-width: 767px)')
 
   return (
-    <div class='flex h-screen w-full overflow-hidden'>
+    <div class='flex h-screen w-full overflow-hidden' dir='ltr'>
       <SidebarProvider>
         <AdminDashboardContent location={location} isMobile={isMobile} children={props.children} />
       </SidebarProvider>
@@ -40,7 +40,7 @@ function AdminDashboardContent(props: {
   })
 
   return (
-    <div class='flex h-screen w-full' dir='ltr'>
+    <div class='flex h-screen w-full'>
       <AdminSidebar />
       <SidebarInset class='flex-1 flex flex-col min-h-screen overflow-hidden'>
         <header class='flex h-16 shrink-0 items-center gap-2 border-b px-4 w-full transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12'>

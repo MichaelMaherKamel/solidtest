@@ -7,8 +7,10 @@ import { query } from '@solidjs/router'
 export const getStores = query(async () => {
   'use server'
   try {
+    // Add artificial delay of 5 seconds
+    // await new Promise((resolve) => setTimeout(resolve, 5000))
     const result = await db.select().from(stores).orderBy(stores.createdAt)
-    return result as Store[]
+    return result
   } catch (error) {
     console.error('Error fetching stores:', error)
     throw new Error('Failed to fetch stores')
