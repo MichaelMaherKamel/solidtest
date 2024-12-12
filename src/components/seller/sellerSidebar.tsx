@@ -21,7 +21,7 @@ import { TbDeviceAnalytics } from 'solid-icons/tb'
 import { BsBoxes } from 'solid-icons/bs'
 import { BsReceipt } from 'solid-icons/bs'
 import { FiSettings } from 'solid-icons/fi'
-import SellerUserButton from './sellerUserbtn'
+import SellerUserButton from './SellerUserButton'
 import { useI18n } from '~/contexts/i18n'
 
 export function SellerSidebar() {
