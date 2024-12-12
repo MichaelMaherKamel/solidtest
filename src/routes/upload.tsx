@@ -1,5 +1,5 @@
 import { Component } from 'solid-js'
-import { FileUpload } from '~/components/FileUpload'
+import FileUpload from '~/components/FileUpload'
 
 const UploadPage: Component = () => {
   const handleUploadSuccess = (url: string) => {
