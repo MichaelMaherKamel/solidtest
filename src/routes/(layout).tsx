@@ -1,6 +1,7 @@
 import { RouteSectionProps } from '@solidjs/router'
 import Nav from '~/components/Nav'
 import { useLocation } from '@solidjs/router'
+import Header from '~/components/Header'
 
 export default function RootLayout(props: RouteSectionProps) {
   const location = useLocation()
@@ -8,6 +9,7 @@ export default function RootLayout(props: RouteSectionProps) {
   return (
     <>
       <Nav />
+      {/* <Header /> */}
       <main class={isHomePage() ? '' : 'pt-16'}>{props.children}</main>
     </>
   )

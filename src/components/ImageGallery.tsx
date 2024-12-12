@@ -22,7 +22,7 @@ export const ImageGallery: Component = () => {
             <For each={data()?.files}>
               {(image) => (
                 <div class='relative aspect-square rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity'>
-                  <img src={image.url} alt={image.name} class='w-full h-full object-cover' />
+                  <img loading='lazy' src={image.url} alt={image.name} class='w-full h-full object-cover' />
                   <div class='absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm truncate'>
                     {image.name}
                   </div>

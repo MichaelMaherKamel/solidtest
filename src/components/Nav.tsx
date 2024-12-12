@@ -6,14 +6,8 @@ import { Show } from 'solid-js'
 import { IoMenu } from 'solid-icons/io'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
 import UserButton from './auth/UserBtn'
-
-const MENU_ITEMS = [
-  { path: '/', label: 'Home' },
-  { path: '/about', label: 'About' },
-  { path: '/stores', label: 'Stores' },
-  { path: '/gallery', label: 'Gallery' },
-  { path: '/admin', label: 'Admin' },
-] as const
+import { useI18n } from '~/contexts/i18n'
+import { LocalizationButton, LocalizationButtonProps } from './LocalizationButton'
 
 const isBrowser = () => typeof window !== 'undefined'
 
@@ -23,6 +17,15 @@ const Nav: Component = () => {
   const [isClient, setIsClient] = createSignal(false)
   const location = useLocation()
   const auth = useAuth()
+  const { t } = useI18n()
+
+  const MENU_ITEMS = [
+    { path: '/', key: 'nav.home' },
+    { path: '/about', key: 'nav.about' },
+    { path: '/stores', key: 'nav.stores' },
+    { path: '/gallery', key: 'nav.gallery' },
+    { path: '/admin', key: 'nav.admin' },
+  ] as const
 
   // Media query for md breakpoint
   const mdBreakpoint = '(min-width: 768px)'
@@ -164,9 +167,10 @@ const Nav: Component = () => {
                       : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
                   } ${textColor()}`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Button>
               ))}
+              <LocalizationButton />
               <div class='w-10'>
                 <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
                   <UserButton buttonColorClass={textColor()} />
@@ -198,9 +202,10 @@ const Nav: Component = () => {
                             : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
                         }`}
                       >
-                        {item.label}
+                        {t(item.key)}
                       </Button>
                     ))}
+                    <LocalizationButton onLocaleChange={() => setIsOpen(false)} />
                   </div>
                 </SheetContent>
               </Sheet>

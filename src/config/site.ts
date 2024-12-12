@@ -5,8 +5,11 @@ export const siteConfig = {
   // Branding
   name: 'SouqElRafay3',
   description: 'Your one-stop shop for kitchen, bathroom and home supplies',
-  images:
-    'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket/SouqElRafay3Hero.webp?t=2024-12-09T10%3A40%3A03.999Z',
+  images: {
+    siteImage: 'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket/SouqElRafay3.webp',
+    siteResponsiveImage:
+      'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket/SouqElRafay3Responsive.webp',
+  },
 
   // Business & Contact
   contact: {
@@ -57,7 +60,7 @@ export const siteConfig = {
       features: ['List up to 10 products', 'Basic analytics', 'Standard support', 'Single store'],
     },
     {
-      name: 'Standard',
+      name: 'Business',
       price: 29.99,
       features: [
         'List up to 50 products',

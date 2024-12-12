@@ -15,7 +15,7 @@ export type CreateStoreResult =
 export const createStoreAction = action(async (formData: FormData): Promise<CreateStoreResult> => {
   'use server'
   try {
-    console.log('Form data received:', Object.fromEntries(formData))
+    // console.log('Form data received:', Object.fromEntries(formData)) //For Debugging
     const userId = formData.get('userId')
     const storeOwner = formData.get('storeOwner')
     const storeName = formData.get('storeName')
@@ -29,16 +29,16 @@ export const createStoreAction = action(async (formData: FormData): Promise<Crea
       return { success: false, error: 'Required fields are missing' }
     }
 
-    console.log('Attempting to insert store with values:', {
-      userId: userId.toString(),
-      storeOwner: storeOwner ? storeOwner.toString().trim() : '',
-      storeName: storeName.toString().trim(),
-      storeImage: storeImage.toString(),
-      storePhone: storePhone ? storePhone.toString().trim() : null,
-      storeAddress: storeAddress ? storeAddress.toString().trim() : null,
-      subscription: subscription,
-      featured: 'no',
-    })
+    // console.log('Attempting to insert store with values:', {
+    //   userId: userId.toString(),
+    //   storeOwner: storeOwner ? storeOwner.toString().trim() : '',
+    //   storeName: storeName.toString().trim(),
+    //   storeImage: storeImage.toString(),
+    //   storePhone: storePhone ? storePhone.toString().trim() : null,
+    //   storeAddress: storeAddress ? storeAddress.toString().trim() : null,
+    //   subscription: subscription,
+    //   featured: 'no',
+    // }) ////For Debugging
 
     const [store] = await db
       .insert(stores)

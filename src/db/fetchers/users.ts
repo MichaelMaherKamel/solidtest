@@ -24,7 +24,7 @@ export const getSellers = query(async () => {
       })
       .from(users)
       .where(eq(users.role, 'seller'))
-    console.log(result)
+    // console.log(result) // For Debugging
     return result
   } catch (error) {
     console.error('Error fetching sellers:', error)

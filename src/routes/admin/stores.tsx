@@ -1,4 +1,4 @@
-import { Component, createSignal, createResource, Suspense, Show } from 'solid-js'
+import { Component, createSignal, createResource, Suspense, Show, createEffect } from 'solid-js'
 import { useSubmission } from '@solidjs/router'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
@@ -17,7 +17,9 @@ import { getSellers } from '~/db/fetchers/users'
 import type { Store, User } from '~/db/schema'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
+import { showToast } from '~/components/ui/toast'
 
+// Form data type definition
 type FormData = {
   userId: string
   storeOwner: string
@@ -28,8 +30,10 @@ type FormData = {
   storeImage: string
 }
 
+// Store Form Component
 const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (props) => {
   const submission = useSubmission(createStoreAction)
+  const [stores] = createResource(() => getStores())
   const [sellers] = createResource(() => getSellers())
   const [formData, setFormData] = createSignal<FormData>({
     userId: '',
@@ -40,21 +44,57 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
     subscription: 'basic',
     storeImage: '',
   })
-  const [error, setError] = createSignal('')
 
-  // Store the mapping of display names to IDs
+  // Filter sellers who don't have stores
+  const availableSellers = () => {
+    const allSellers = sellers() || []
+    const existingStores = stores() || []
+    const sellersWithStores = new Set(existingStores.map((store) => store.userId))
+    return allSellers.filter((seller) => !sellersWithStores.has(seller.id))
+  }
+
+  // Form reset function
+  const resetForm = () => {
+    setFormData({
+      userId: '',
+      storeOwner: '',
+      storeName: '',
+      storePhone: '',
+      storeAddress: '',
+      subscription: 'basic',
+      storeImage: '',
+    })
+    submission.clear?.()
+  }
+
+  // Watch submission result
+  createEffect((prev) => {
+    if (submission.result && submission.result !== prev) {
+      if (submission.result.success) {
+        props.onSuccess()
+        props.onClose()
+        resetForm()
+      } else {
+        showToast({
+          title: 'Error',
+          description: submission.result.error,
+          variant: 'destructive',
+        })
+      }
+    }
+    return submission.result
+  }, undefined)
+
+  // Seller selection helpers
   const sellerMap = () => {
-    const list = sellers() || []
-    return new Map(list.map((s) => [s.name || 'Unnamed Seller', s.id]))
+    const available = availableSellers()
+    return new Map(available.map((s) => [s.name || 'Unnamed Seller', s.id]))
   }
 
-  // Get just the display names for the select
   const sellerNames = () => {
-    const list = sellers() || []
-    return list.map((s) => s.name || 'Unnamed Seller')
+    return availableSellers().map((s) => s.name || 'Unnamed Seller')
   }
 
-  // Convert display name back to ID when selected
   const handleSellerChange = (displayName: string | null) => {
     if (displayName) {
       const id = sellerMap().get(displayName)
@@ -64,19 +104,27 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
     }
   }
 
-  // Get display name from ID for current value
   const getCurrentSellerName = () => {
-    const list = sellers() || []
-    const seller = list.find((s) => s.id === formData().userId)
+    const available = availableSellers()
+    const seller = available.find((s) => s.id === formData().userId)
     return seller ? seller.name || 'Unnamed Seller' : ''
+  }
+
+  // File upload handlers
+  const handleFileUploadSuccess = (url: string) => {
+    setFormData((prev) => ({ ...prev, storeImage: url }))
+  }
+
+  const handleFileUploadError = (error: string) => {
+    showToast({
+      title: 'Upload Error',
+      description: error,
+      variant: 'destructive',
+    })
   }
 
   return (
     <form action={createStoreAction} method='post' class='space-y-6'>
-      <Show when={error() || submission.error}>
-        <div class='bg-red-50 text-red-600 p-3 rounded'>{error() || submission.error}</div>
-      </Show>
-
       <div class='space-y-4'>
         {/* Seller Select */}
         <div class='space-y-2'>
@@ -99,9 +147,6 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             <input type='hidden' name='userId' value={formData().userId} />
             <input type='hidden' name='storeOwner' value={formData().storeOwner} />
           </Suspense>
-          <Show when={!sellers.loading && sellerNames().length === 0}>
-            <p class='text-sm text-red-500'>No sellers available. Please add sellers first.</p>
-          </Show>
         </div>
 
         {/* Store Name */}
@@ -141,8 +186,8 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
         {/* Subscription Plan */}
         <div class='space-y-2'>
           <label class='text-sm font-medium'>Subscription Plan</label>
+          <input type='hidden' name='subscription' value={formData().subscription} />
           <Select
-            name='subscription'
             value={formData().subscription}
             onChange={(value: 'basic' | 'business' | 'premium' | null) => {
               if (value !== null) {
@@ -165,8 +210,8 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
           <label class='text-sm font-medium'>Store Image</label>
           <input type='hidden' name='storeImage' value={formData().storeImage} />
           <FileUpload
-            onSuccess={(url) => setFormData((prev) => ({ ...prev, storeImage: url }))}
-            onError={(err) => setError(err)}
+            onSuccess={handleFileUploadSuccess}
+            onError={handleFileUploadError}
             accept='image/*'
             maxSize={5 * 1024 * 1024}
           />
@@ -180,6 +225,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
         </Button>
         <Button
           type='submit'
+          variant={'general'}
           disabled={
             submission.pending ||
             !formData().userId ||
@@ -195,6 +241,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
   )
 }
 
+// Stats Card Components
 const StatsCard = ({ count }: { count: number }) => (
   <Card class='h-10 bg-primary/10'>
     <CardContent class='p-2 flex items-center justify-center gap-2'>
@@ -215,20 +262,39 @@ const StatsCardSkeleton: Component = () => (
   </Card>
 )
 
+// Main Stores Page Component
 const StoresPage: Component = () => {
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
-  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
-  const [stores] = createResource(() => getStores())
+  const [submissionHandled, setSubmissionHandled] = createSignal(false)
+  const [stores, { refetch }] = createResource(async () => {
+    const result = await getStores()
+    return result
+  })
+  const [sellers] = createResource(() => getSellers())
 
+  // Check for available sellers
+  const getAvailableSellers = () => {
+    const allSellers = sellers() || []
+    const existingStores = stores() || []
+    const sellersWithStores = new Set(existingStores.map((store) => store.userId))
+    return allSellers.filter((seller) => !sellersWithStores.has(seller.id))
+  }
+
+  const isAddStoreDisabled = () => {
+    const availableSellers = getAvailableSellers()
+    return availableSellers.length === 0
+  }
+
+  // Table columns configuration
   const columns = [
     {
       header: 'Store',
-      accessorKey: 'storeName' as const,
+      accessorKey: 'storeName' as keyof Store,
       cell: (store: Store) => (
         <div class='flex items-center space-x-4'>
           <Avatar>
-            <AvatarImage src={store.storeImage as string} alt={store.storeName} />
+            <AvatarImage src={store.storeImage || ''} alt={store.storeName} />
             <AvatarFallback>{store.storeName.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <span>{store.storeName}</span>
@@ -237,23 +303,23 @@ const StoresPage: Component = () => {
     },
     {
       header: 'Store Owner',
-      accessorKey: 'storeOwner' as const,
+      accessorKey: 'storeOwner' as keyof Store,
     },
     {
       header: 'Phone',
-      accessorKey: 'storePhone' as const,
+      accessorKey: 'storePhone' as keyof Store,
     },
     {
       header: 'Address',
-      accessorKey: 'storeAddress' as const,
+      accessorKey: 'storeAddress' as keyof Store,
     },
     {
       header: 'Subscription',
-      accessorKey: 'subscription' as const,
+      accessorKey: 'subscription' as keyof Store,
       cell: (store: Store) => (
         <Badge
           variant={
-            store.subscription === 'premium' ? 'default' : store.subscription === 'business' ? 'warning' : 'secondary'
+            store.subscription === 'premium' ? 'premium' : store.subscription === 'business' ? 'warning' : 'basic'
           }
         >
           {store.subscription}
@@ -262,20 +328,21 @@ const StoresPage: Component = () => {
     },
     {
       header: 'Featured',
-      accessorKey: 'featured' as const,
+      accessorKey: 'featured' as keyof Store,
       cell: (store: Store) => (
         <Badge variant={store.featured === 'yes' ? 'success' : 'secondary'}>{store.featured}</Badge>
       ),
     },
   ]
 
+  // Filtered stores for search
   const filteredStores = () => {
     const storeData = stores()
     if (!storeData) return []
 
     const searchTerm = search().toLowerCase()
     return storeData.filter(
-      (store) =>
+      (store: Store) =>
         store.storeName.toLowerCase().includes(searchTerm) ||
         store.storeOwner.toLowerCase().includes(searchTerm) ||
         (store.storePhone?.toLowerCase() || '').includes(searchTerm) ||
@@ -283,8 +350,40 @@ const StoresPage: Component = () => {
     )
   }
 
+  // Event handlers
+  const handleAddStoreClick = () => {
+    if (!isAddStoreDisabled()) {
+      setIsOpen(true)
+    } else {
+      showToast({
+        title: 'Cannot Create Store',
+        description: 'No available sellers found or all sellers already have stores.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const handleStoreCreated = () => {
-    setRefetchTrigger((prev) => prev + 1)
+    if (!submissionHandled()) {
+      refetch()
+      showToast({
+        title: 'Success',
+        description: 'Store has been created successfully.',
+        variant: 'success',
+      })
+      setSubmissionHandled(true)
+    }
+  }
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setSubmissionHandled(false)
+      setTimeout(() => {
+        setIsOpen(false)
+      }, 0)
+    } else {
+      setIsOpen(true)
+    }
   }
 
   return (
@@ -296,7 +395,12 @@ const StoresPage: Component = () => {
               <h1 class='text-2xl font-bold tracking-tight'>Stores</h1>
               <p class='text-muted-foreground'>Manage marketplace stores</p>
             </div>
-            <Button onClick={() => setIsOpen(true)}>
+            <Button
+              variant={'general'}
+              onClick={handleAddStoreClick}
+              disabled={isAddStoreDisabled()}
+              title={isAddStoreDisabled() ? 'No available sellers' : 'Add Store'}
+            >
               <FiPlus class='mr-2 h-4 w-4' />
               Add Store
             </Button>
@@ -307,6 +411,7 @@ const StoresPage: Component = () => {
       <div class='max-w-[1600px] w-full mx-auto'>
         <div class='container mx-auto p-6'>
           <div class='space-y-6'>
+            {/* Search and Stats Section */}
             <div class='flex items-center justify-between gap-4 mb-6'>
               <div class='relative flex-1 max-w-sm'>
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
@@ -324,6 +429,7 @@ const StoresPage: Component = () => {
               </Suspense>
             </div>
 
+            {/* Data Table Section */}
             <Suspense fallback={<TableSkeleton />}>
               <Show when={stores()}>
                 <div class='rounded-md border'>
@@ -335,12 +441,13 @@ const StoresPage: Component = () => {
         </div>
       </div>
 
-      <Dialog open={isOpen()} onOpenChange={setIsOpen}>
+      {/* Create Store Dialog */}
+      <Dialog open={isOpen()} onOpenChange={handleDialogChange}>
         <DialogContent class='rounded-xl'>
           <DialogHeader>
             <DialogTitle>Create New Store</DialogTitle>
           </DialogHeader>
-          <StoreForm onSuccess={handleStoreCreated} onClose={() => setIsOpen(false)} />
+          <StoreForm onSuccess={handleStoreCreated} onClose={() => handleDialogChange(false)} />
         </DialogContent>
       </Dialog>
     </>

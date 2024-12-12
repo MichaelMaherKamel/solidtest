@@ -1,6 +1,5 @@
 import { Component } from 'solid-js'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
 import { siteConfig } from '~/config/site'
 
 const SettingsPage: Component = () => {
@@ -10,7 +9,7 @@ const SettingsPage: Component = () => {
       <header class='flex-none border-b bg-background'>
         <div class='p-6'>
           <h1 class='text-2xl font-bold'>Settings</h1>
-          <p class='text-muted-foreground'>Manage your site settings</p>
+          <p class='text-muted-foreground'>View your site settings</p>
         </div>
       </header>
 
@@ -41,6 +40,39 @@ const SettingsPage: Component = () => {
                 <div>
                   <h3 class='font-medium mb-2'>Support Email</h3>
                   <p class='text-muted-foreground'>{siteConfig.contact.support.email}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Site Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Site Images</CardTitle>
+              </CardHeader>
+              <CardContent class='grid gap-6'>
+                <div class='grid md:grid-cols-2 gap-6'>
+                  <div class='space-y-3'>
+                    <h3 class='font-medium'>Main Site Image</h3>
+                    <div class='aspect-video rounded-lg overflow-hidden border bg-muted'>
+                      <img
+                        loading='lazy'
+                        src={siteConfig.images.siteImage}
+                        alt='Main site image'
+                        class='w-full h-full object-cover'
+                      />
+                    </div>
+                  </div>
+                  <div class='space-y-3'>
+                    <h3 class='font-medium'>Responsive Site Image</h3>
+                    <div class='aspect-video rounded-lg overflow-hidden border bg-muted'>
+                      <img
+                        src={siteConfig.images.siteResponsiveImage}
+                        loading='lazy'
+                        alt='Responsive site image'
+                        class='w-full h-full object-cover'
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -131,12 +163,6 @@ const SettingsPage: Component = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Action Buttons */}
-            <div class='flex justify-end gap-4'>
-              <Button variant='outline'>Reset</Button>
-              <Button>Save Changes</Button>
-            </div>
           </div>
         </div>
       </div>
