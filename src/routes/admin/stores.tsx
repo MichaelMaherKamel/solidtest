@@ -391,7 +391,7 @@ const StoresPage: Component = () => {
               <h1 class='text-2xl font-bold tracking-tight'>Stores</h1>
               <p class='text-muted-foreground'>Manage marketplace stores</p>
             </div>
-            <Suspense fallback={<Button size={'lg'} disabled />}>
+            <Suspense fallback={<Button variant={'general'} class='w-28' disabled />}>
               <Button
                 variant='general'
                 onClick={handleAddStoreClick}

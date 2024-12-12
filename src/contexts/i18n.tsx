@@ -1,6 +1,6 @@
 // src/contexts/i18n.tsx
-import { ParentComponent, createContext, useContext, createSignal, createResource, createEffect } from 'solid-js'
-import type { Resource } from 'solid-js'
+import { ParentComponent, createContext, useContext, createSignal, createResource, createEffect, Show } from 'solid-js'
+import type { Resource, ResourceReturn } from 'solid-js'
 import * as i18n from '@solid-primitives/i18n'
 import type { Locale, Dictionary } from '~/i18n/types'
 import { fetchDictionary } from '~/i18n'
@@ -11,13 +11,15 @@ interface I18nContextType {
   setLocale: (locale: Locale) => void
   t: (key: string, params?: Record<string, any>) => string
   dict: Resource<i18n.BaseRecordDict>
+  isLoading: () => boolean
 }
 
 const I18nContext = createContext<I18nContextType>()
 
 export const I18nProvider: ParentComponent = (props) => {
-  // Default to 'en' during SSR
+  // Default to system locale or fallback to 'en' during SSR
   const [locale, setLocale] = createSignal<Locale>('en')
+  const [isInitialized, setIsInitialized] = createSignal(false)
 
   // Initialize locale from localStorage only on client-side
   createEffect(() => {
@@ -26,10 +28,13 @@ export const I18nProvider: ParentComponent = (props) => {
       if (savedLocale) {
         setLocale(savedLocale)
       }
+      setIsInitialized(true)
     }
   })
 
   const [dict] = createResource(locale, fetchDictionary)
+
+  const isLoading = () => !isInitialized() || dict.loading
 
   const translate = (key: string, params?: Record<string, any>): string => {
     const currentDict = dict()
@@ -60,9 +65,16 @@ export const I18nProvider: ParentComponent = (props) => {
     setLocale: handleLocaleChange,
     t: translate,
     dict,
+    isLoading,
   }
 
-  return <I18nContext.Provider value={value}>{props.children}</I18nContext.Provider>
+  return (
+    <I18nContext.Provider value={value}>
+      <Show when={!isLoading()} fallback={<div class='min-h-screen' />}>
+        {props.children}
+      </Show>
+    </I18nContext.Provider>
+  )
 }
 
 export const useI18n = () => {

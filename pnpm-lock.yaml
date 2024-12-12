@@ -32,6 +32,9 @@ dependencies:
   '@solid-primitives/media':
     specifier: ^2.2.9
     version: 2.2.9(solid-js@1.9.3)
+  '@solid-primitives/refs':
+    specifier: ^1.0.8
+    version: 1.0.8(solid-js@1.9.3)
   '@solidjs/meta':
     specifier: ^0.29.4
     version: 0.29.4(solid-js@1.9.3)
@@ -56,6 +59,9 @@ dependencies:
   '@vercel/blob':
     specifier: ^0.27.0
     version: 0.27.0
+  chart.js:
+    specifier: ^4.4.7
+    version: 4.4.7
   class-variance-authority:
     specifier: ^0.7.0
     version: 0.7.0
@@ -2451,6 +2457,10 @@ packages:
       solid-js: 1.9.3
     dev: false
 
+  /@kurkle/color@0.3.4:
+    resolution: {integrity: sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==}
+    dev: false
+
   /@mapbox/node-pre-gyp@1.0.11:
     resolution: {integrity: sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==}
     hasBin: true
@@ -4309,6 +4319,13 @@ packages:
 
   /change-case@5.4.4:
     resolution: {integrity: sha512-HRQyTk2/YPEkt9TnUPbOpr64Uw3KOicFWPVBb+xiHvd6eBx/qPr9xqfBFDT8P2vWsvvz4jbEkfDe71W3VyNu2w==}
+    dev: false
+
+  /chart.js@4.4.7:
+    resolution: {integrity: sha512-pwkcKfdzTMAU/+jNosKhNL2bHtJc/sSmYgVbuGTEDhzkrhmyihmP7vUc/5ZK9WopidMDHNe3Wm7jOd/WhuHWuw==}
+    engines: {pnpm: '>=8'}
+    dependencies:
+      '@kurkle/color': 0.3.4
     dev: false
 
   /chokidar@3.6.0:

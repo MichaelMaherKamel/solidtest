@@ -7,9 +7,15 @@ import { IoMenu } from 'solid-icons/io'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
 import UserButton from './auth/UserBtn'
 import { useI18n } from '~/contexts/i18n'
-import { LocalizationButton, LocalizationButtonProps } from './LocalizationButton'
+import { LocalizationButton } from './LocalizationButton'
 
 const isBrowser = () => typeof window !== 'undefined'
+
+interface NavItem {
+  path: string
+  key: string
+  roles?: string[]
+}
 
 const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
@@ -17,17 +23,30 @@ const Nav: Component = () => {
   const [isClient, setIsClient] = createSignal(false)
   const location = useLocation()
   const auth = useAuth()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
-  const MENU_ITEMS = [
+  const isRTL = createMemo(() => locale() === 'ar')
+  const userRole = createMemo(() => auth.session()?.user?.role || 'guest')
+
+  const MENU_ITEMS: NavItem[] = [
     { path: '/', key: 'nav.home' },
     { path: '/about', key: 'nav.about' },
     { path: '/stores', key: 'nav.stores' },
     { path: '/gallery', key: 'nav.gallery' },
+    // { path: '/admin', key: 'nav.admin', roles: ['admin'] },
+    // { path: '/seller', key: 'nav.seller', roles: ['seller'] },
     { path: '/admin', key: 'nav.admin' },
-  ] as const
+    { path: '/seller', key: 'nav.seller' },
+  ]
 
-  // Media query for md breakpoint
+  const filteredMenuItems = createMemo(() => {
+    return MENU_ITEMS.filter((item) => {
+      if (!item.roles) return true
+      return item.roles.includes(userRole())
+    })
+  })
+
+  // Media query handling
   const mdBreakpoint = '(min-width: 768px)'
   let initialScrollPosition = 0
 
@@ -37,6 +56,7 @@ const Nav: Component = () => {
     document.body.style.position = 'fixed'
     document.body.style.top = `-${initialScrollPosition}px`
     document.body.style.width = '100%'
+    document.body.style.overflow = 'hidden'
   }
 
   const unlockScroll = () => {
@@ -44,6 +64,7 @@ const Nav: Component = () => {
     document.body.style.position = ''
     document.body.style.top = ''
     document.body.style.width = ''
+    document.body.style.overflow = ''
     window.scrollTo(0, initialScrollPosition)
   }
 
@@ -93,6 +114,7 @@ const Nav: Component = () => {
     })
   })
 
+  // Reset mobile menu on auth state change
   createEffect(() => {
     const session = auth.session()
     if (session === null || session === undefined) {
@@ -101,21 +123,14 @@ const Nav: Component = () => {
     }
   })
 
-  createEffect(() => {
-    if (isClient()) {
-      setIsOpen(false)
-      unlockScroll()
-    }
-  })
-
-  const isHomePage = createMemo(() => location.pathname === '/')
-
+  // Reset mobile menu on route change
   createEffect(() => {
     location.pathname
     setIsOpen(false)
     unlockScroll()
   })
 
+  const isHomePage = createMemo(() => location.pathname === '/')
   const active = (path: string) => location.pathname === path
 
   const textColor = createMemo(() => {
@@ -132,71 +147,82 @@ const Nav: Component = () => {
     return 'text-gray-900 hover:text-gray-800'
   })
 
-  const navStyles = createMemo(() => {
-    const baseStyles = 'fixed w-full transition-all duration-300 z-50'
-    if (isHomePage()) {
-      if (isScrolled()) {
-        return `${baseStyles} supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md`
-      }
-      return `${baseStyles} bg-transparent`
-    }
-    return `${baseStyles} supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md`
-  })
-
   return (
     <Show when={isClient()}>
-      <nav class={navStyles()}>
-        {/* Rest of the navigation component remains the same */}
+      <nav
+        class={`fixed w-full transition-all duration-300 z-50 ${
+          isHomePage() && !isScrolled()
+            ? 'bg-transparent'
+            : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md'
+        }`}
+        dir={isRTL() ? 'rtl' : 'ltr'}
+      >
         <div class='container mx-auto px-4'>
-          <div class='flex items-center justify-between h-16'>
-            <div class='flex-shrink-0'>
-              <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
-                Souq El Rafay3
-              </A>
-            </div>
+          {/* Desktop Navigation */}
+          <div class='hidden md:flex h-16 items-center justify-between'>
+            <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
+              Souq El Rafay3
+            </A>
 
-            <div class='hidden md:flex items-center gap-2'>
-              {MENU_ITEMS.map((item) => (
-                <Button
-                  as={A}
-                  href={item.path}
-                  variant='ghost'
-                  class={`border-b-2 transition-all duration-200 ${
-                    active(item.path)
-                      ? 'bg-sky-700/50 border-sky-400'
-                      : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
-                  } ${textColor()}`}
-                >
-                  {t(item.key)}
-                </Button>
-              ))}
-              <LocalizationButton />
-              <div class='w-10'>
-                <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                  <UserButton buttonColorClass={textColor()} />
-                </Suspense>
+            <div class='flex items-center gap-4'>
+              <div class='flex items-center gap-2'>
+                {filteredMenuItems().map((item) => (
+                  <Button
+                    as={A}
+                    href={item.path}
+                    variant='ghost'
+                    class={`border-b-2 transition-all duration-200 ${
+                      active(item.path)
+                        ? 'bg-sky-700/50 border-sky-400'
+                        : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
+                    } ${textColor()}`}
+                  >
+                    {t(item.key)}
+                  </Button>
+                ))}
+              </div>
+
+              <div class='flex items-center gap-2'>
+                <LocalizationButton />
+                <div class='w-10'>
+                  <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
+                    <UserButton buttonColorClass={textColor()} />
+                  </Suspense>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class='md:hidden flex items-center gap-2'>
+          {/* Mobile Navigation */}
+          <div class='md:hidden flex h-16 items-center justify-between'>
+            <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
+              Souq El Rafay3
+            </A>
+
+            <div class='flex items-center gap-2'>
               <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
                 <UserButton buttonColorClass={textColor()} />
               </Suspense>
 
               <Sheet open={isOpen()} onOpenChange={setIsOpen}>
                 <SheetTrigger>
-                  <Button variant='ghost' size='icon' class={`hover:bg-white/10 ${textColor()}`} aria-label='Menu'>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    class={`hover:bg-white/10 ${textColor()}`}
+                    aria-label={t('nav.menuLabel')}
+                  >
                     <IoMenu class='h-5 w-5' />
                   </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent position={isRTL() ? 'right' : 'left'}>
                   <div class='flex flex-col space-y-4 pt-6'>
-                    {MENU_ITEMS.map((item) => (
+                    {filteredMenuItems().map((item) => (
                       <Button
                         as={A}
                         href={item.path}
                         variant='ghost'
-                        class={`justify-start ${
+                        class={`justify-start w-full text-start ${
                           active(item.path)
                             ? 'bg-sky-700/50 border-sky-400'
                             : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
