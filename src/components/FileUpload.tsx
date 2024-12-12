@@ -1,142 +1,37 @@
-// import { Component, createSignal, Show } from 'solid-js'
-// import { useSubmission, useAction } from '@solidjs/router'
-// import { uploadFileAction } from '~/db/actions/upload'
-// import { Alert, AlertDescription } from './ui/alerts'
-// import { Spinner } from '~/components/ui/spinner'
-
-// type FileUploadProps = {
-//   onSuccess?: (url: string) => void
-//   onError?: (error: string) => void
-//   accept?: string
-//   maxSize?: number
-// }
-
-// export const FileUpload: Component<FileUploadProps> = (props) => {
-//   const submission = useSubmission(uploadFileAction)
-//   const upload = useAction(uploadFileAction)
-//   const [clientError, setClientError] = createSignal<string>('')
-//   const [isUploading, setIsUploading] = createSignal(false)
-
-//   const resetError = () => setClientError('')
-
-//   const handleFileChange = async (e: Event) => {
-//     const input = e.target as HTMLInputElement
-//     const file = input.files?.[0]
-
-//     if (file) {
-//       resetError()
-//       setIsUploading(true)
-
-//       try {
-//         // Validate file type
-//         if (props.accept && !file.type.match(props.accept)) {
-//           setClientError('Please select a valid file type')
-//           input.value = ''
-//           return
-//         }
-
-//         // Validate file size
-//         const maxSize = props.maxSize || 5 * 1024 * 1024 // Default 5MB
-//         if (file.size > maxSize) {
-//           setClientError(`File size should be less than ${Math.floor(maxSize / 1024 / 1024)}MB`)
-//           input.value = ''
-//           return
-//         }
-
-//         // Create FormData and upload
-//         const formData = new FormData()
-//         formData.append('file', file)
-
-//         const result = await upload(formData)
-
-//         if (result.success && result.data) {
-//           props.onSuccess?.(result.data.url)
-//         } else {
-//           const error = result.error || 'Failed to upload file'
-//           setClientError(error)
-//           props.onError?.(error)
-//         }
-//       } catch (error) {
-//         console.error('Upload error:', error)
-//         setClientError('Failed to upload file')
-//         props.onError?.('Failed to upload file')
-//       } finally {
-//         setIsUploading(false)
-//         input.value = '' // Reset input after upload
-//       }
-//     }
-//   }
-
-//   return (
-//     <div class='space-y-4'>
-//       <Show when={clientError()}>
-//         <Alert variant='destructive'>
-//           <AlertDescription>{clientError()}</AlertDescription>
-//         </Alert>
-//       </Show>
-
-//       <div class='space-y-4'>
-//         <div class='flex items-center justify-center w-full'>
-//           <label
-//             class='flex flex-col items-center justify-center w-full h-32
-//                        border-2 border-gray-300 border-dashed rounded-lg
-//                        cursor-pointer bg-gray-50 hover:bg-gray-100
-//                        transition-colors duration-200'
-//           >
-//             <div class='flex flex-col items-center justify-center pt-5 pb-6'>
-//               <span class='text-2xl text-gray-500 mb-3'>📁</span>
-//               <p class='mb-2 text-sm text-gray-500'>
-//                 <span class='font-semibold'>Click to upload</span> or drag and drop
-//               </p>
-//               <p class='text-xs text-gray-500'>
-//                 PNG, JPG, GIF up to {props.maxSize ? Math.floor(props.maxSize / 1024 / 1024) : 5}MB
-//               </p>
-//             </div>
-//             <input
-//               type='file'
-//               accept={props.accept}
-//               onChange={handleFileChange}
-//               class='hidden'
-//               disabled={isUploading()}
-//             />
-//           </label>
-//         </div>
-//         <Show when={isUploading()}>
-//           <div class='flex items-center justify-center space-x-2'>
-//             <Spinner class='w-4 h-4' />
-//             <span class='text-sm text-gray-500'>Uploading...</span>
-//           </div>
-//         </Show>
-//       </div>
-//     </div>
-//   )
-// }
-
-import { Component, createSignal, Show } from 'solid-js'
+import { Component, createSignal, createEffect, onCleanup, Show } from 'solid-js'
 import { useSubmission, useAction } from '@solidjs/router'
 import { supabaseUploadAction } from '~/db/actions/supabaseupload'
 import { Alert, AlertDescription } from './ui/alerts'
 import { Spinner } from '~/components/ui/spinner'
+import { AiOutlineClose } from 'solid-icons/ai'
 
-type FileUploadProps = {
+interface FileUploadProps {
   onSuccess?: (url: string) => void
   onError?: (error: string) => void
   accept?: string
   maxSize?: number
 }
 
-export const FileUpload: Component<FileUploadProps> = (props) => {
-  const submission = useSubmission(supabaseUploadAction)
-  const upload = useAction(supabaseUploadAction)
+const FileUpload: Component<FileUploadProps> = (props) => {
+  const [preview, setPreview] = createSignal<string | null>(null)
+  const [isDragActive, setIsDragActive] = createSignal(false)
   const [clientError, setClientError] = createSignal<string>('')
   const [isUploading, setIsUploading] = createSignal(false)
+  const submission = useSubmission(supabaseUploadAction)
+  const upload = useAction(supabaseUploadAction)
+  let inputRef: HTMLInputElement | undefined
+
+  createEffect(() => {
+    return () => {
+      if (preview()) {
+        URL.revokeObjectURL(preview()!)
+      }
+    }
+  })
 
   const resetError = () => setClientError('')
 
-  const handleFileChange = async (e: Event) => {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-
+  const handleFile = async (file: File) => {
     if (file) {
       resetError()
       setIsUploading(true)
@@ -145,7 +40,6 @@ export const FileUpload: Component<FileUploadProps> = (props) => {
         // Validate file type
         if (props.accept && !file.type.match(props.accept)) {
           setClientError('Please select a valid file type')
-          input.value = ''
           return
         }
 
@@ -153,7 +47,6 @@ export const FileUpload: Component<FileUploadProps> = (props) => {
         const maxSize = props.maxSize || 5 * 1024 * 1024 // Default 5MB
         if (file.size > maxSize) {
           setClientError(`File size should be less than ${Math.floor(maxSize / 1024 / 1024)}MB`)
-          input.value = ''
           return
         }
 
@@ -164,6 +57,7 @@ export const FileUpload: Component<FileUploadProps> = (props) => {
         const result = await upload(formData)
 
         if (result.success && result.url) {
+          setPreview(URL.createObjectURL(file))
           props.onSuccess?.(result.url)
         } else {
           const error = result.error || 'Failed to upload file'
@@ -176,9 +70,46 @@ export const FileUpload: Component<FileUploadProps> = (props) => {
         props.onError?.('Failed to upload file')
       } finally {
         setIsUploading(false)
-        input.value = '' // Reset input after upload
       }
     }
+  }
+
+  const onDrop = async (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0])
+    }
+  }
+
+  const removeImage = () => {
+    if (preview()) {
+      URL.revokeObjectURL(preview()!)
+    }
+    setPreview(null)
+    if (inputRef) inputRef.value = ''
+  }
+
+  const handleDragEnter = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(true)
+  }
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+  }
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleClick = () => {
+    inputRef?.click()
   }
 
   return (
@@ -189,39 +120,75 @@ export const FileUpload: Component<FileUploadProps> = (props) => {
         </Alert>
       </Show>
 
-      <div class='space-y-4'>
-        <div class='flex items-center justify-center w-full'>
-          <label
-            class='flex flex-col items-center justify-center w-full h-32 
-                       border-2 border-gray-300 border-dashed rounded-lg 
-                       cursor-pointer bg-gray-50 hover:bg-gray-100 
-                       transition-colors duration-200'
+      <div class='relative w-[200px] h-[200px]'>
+        {preview() ? (
+          <div class='relative w-full h-full border-2 border-gray-300 rounded-lg overflow-hidden'>
+            <img src={preview()!} alt='Uploaded' class='w-full h-full object-cover' />
+            <button
+              onClick={removeImage}
+              class='absolute top-2 right-2 bg-white rounded-full p-1 shadow-md'
+              type='button'
+              aria-label='Remove image'
+            >
+              <AiOutlineClose class='w-4 h-4 text-gray-600' />
+            </button>
+          </div>
+        ) : (
+          <div
+            class={`w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer ${
+              isDragActive() ? 'border-primary' : 'border-gray-300'
+            }`}
+            onClick={handleClick}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={onDrop}
           >
-            <div class='flex flex-col items-center justify-center pt-5 pb-6'>
-              <span class='text-2xl text-gray-500 mb-3'>📁</span>
-              <p class='mb-2 text-sm text-gray-500'>
-                <span class='font-semibold'>Click to upload</span> or drag and drop
+            <input
+              ref={inputRef}
+              type='file'
+              accept={props.accept}
+              onChange={(e) => {
+                const files = e.target.files
+                if (files && files.length > 0) handleFile(files[0])
+              }}
+              class='hidden'
+              disabled={isUploading()}
+            />
+            <div class='text-center'>
+              <svg
+                class='mx-auto h-12 w-12 text-gray-400'
+                stroke='currentColor'
+                fill='none'
+                viewBox='0 0 48 48'
+                aria-hidden='true'
+              >
+                <path
+                  d='M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02'
+                  stroke-width={2}
+                  stroke-linecap='round'
+                  stroke-linejoin='round'
+                />
+              </svg>
+              <p class='mt-1 text-sm text-gray-600'>
+                {isDragActive() ? 'Drop the image here' : 'Drag & drop or click to upload'}
               </p>
               <p class='text-xs text-gray-500'>
                 PNG, JPG, GIF up to {props.maxSize ? Math.floor(props.maxSize / 1024 / 1024) : 5}MB
               </p>
             </div>
-            <input
-              type='file'
-              accept={props.accept}
-              onChange={handleFileChange}
-              class='hidden'
-              disabled={isUploading()}
-            />
-          </label>
-        </div>
-        <Show when={isUploading()}>
-          <div class='flex items-center justify-center space-x-2'>
-            <Spinner class='w-4 h-4' />
-            <span class='text-sm text-gray-500'>Uploading...</span>
           </div>
-        </Show>
+        )}
       </div>
+
+      <Show when={isUploading()}>
+        <div class='flex items-center justify-center space-x-2'>
+          <Spinner class='w-4 h-4' />
+          <span class='text-sm text-gray-500'>Uploading...</span>
+        </div>
+      </Show>
     </div>
   )
 }
+
+export default FileUpload

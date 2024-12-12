@@ -6,17 +6,35 @@ const timestamps = {
   updatedAt: timestamp('updatedAt').defaultNow().notNull(),
 }
 
-export const stores = pgTable('stores', {
-  storeId: uuid('storeId').defaultRandom().primaryKey(),
-  storeName: text('storeName').notNull(),
-  storeImage: text('storeImage'),
-  storePhone: text('storePhone'),
-  storeAddress: text('storeAddress'),
-  featured: text('featured', { enum: ['yes', 'no'] })
-    .default('no')
-    .notNull(),
-  ...timestamps,
-})
+export const stores = pgTable(
+  'stores',
+  {
+    storeId: uuid('storeId').defaultRandom().primaryKey(),
+    // Make userId optional for existing records
+    userId: text('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    storeOwner: text('storeOwner').notNull(),
+    storeName: text('storeName').notNull(),
+    storeImage: text('storeImage'),
+    storePhone: text('storePhone'),
+    storeAddress: text('storeAddress'),
+    featured: text('featured', { enum: ['yes', 'no'] })
+      .default('no')
+      .notNull(),
+    subscription: text('subscription', { enum: ['basic', 'business', 'premium'] })
+      .default('basic')
+      .notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    userIdIdx: index('store_user_id_idx').on(table.userId),
+    featuredStoreIdx: index('store_featured_created_idx').on(table.featured, table.createdAt),
+    storeNameIdx: index('store_name_idx').on(table.storeName),
+    storeImageIdx: index('store_image_idx').on(table.storeImage),
+    subscriptionIdx: index('store_subscription_idx').on(table.subscription),
+  })
+)
 
 export const products = pgTable('products', {
   productId: uuid('productId').defaultRandom().primaryKey(),

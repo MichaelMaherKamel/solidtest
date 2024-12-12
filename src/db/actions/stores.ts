@@ -15,22 +15,42 @@ export type CreateStoreResult =
 export const createStoreAction = action(async (formData: FormData): Promise<CreateStoreResult> => {
   'use server'
   try {
-    const storeName = formData.get('storeName') as string
-    const storePhone = formData.get('storePhone') as string
-    const storeAddress = formData.get('storeAddress') as string
-    const storeImage = formData.get('storeImage') as string
+    console.log('Form data received:', Object.fromEntries(formData))
+    const userId = formData.get('userId')
+    const storeOwner = formData.get('storeOwner')
+    const storeName = formData.get('storeName')
+    const storePhone = formData.get('storePhone')
+    const storeAddress = formData.get('storeAddress')
+    const storeImage = formData.get('storeImage')
+    const subscription = formData.get('subscription') as 'basic' | 'business' | 'premium'
 
-    if (!storeName?.trim()) {
-      return { success: false, error: 'Store name is required' }
+    if (!userId || !storeName || !storeImage || !subscription) {
+      console.error('Missing required fields:', { userId, storeName, storeImage, subscription })
+      return { success: false, error: 'Required fields are missing' }
     }
+
+    console.log('Attempting to insert store with values:', {
+      userId: userId.toString(),
+      storeOwner: storeOwner ? storeOwner.toString().trim() : '',
+      storeName: storeName.toString().trim(),
+      storeImage: storeImage.toString(),
+      storePhone: storePhone ? storePhone.toString().trim() : null,
+      storeAddress: storeAddress ? storeAddress.toString().trim() : null,
+      subscription: subscription,
+      featured: 'no',
+    })
 
     const [store] = await db
       .insert(stores)
       .values({
-        storeName: storeName.trim(),
-        storeImage: storeImage || null,
-        storePhone: storePhone?.trim() || null,
-        storeAddress: storeAddress?.trim() || null,
+        userId: userId.toString(),
+        storeOwner: storeOwner ? storeOwner.toString().trim() : '',
+        storeName: storeName.toString().trim(),
+        storeImage: storeImage.toString(),
+        storePhone: storePhone ? storePhone.toString().trim() : null,
+        storeAddress: storeAddress ? storeAddress.toString().trim() : null,
+        subscription: subscription,
+        featured: 'no',
       })
       .returning()
 
