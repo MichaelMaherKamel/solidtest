@@ -1,8 +1,7 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense } from 'solid-js'
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
-import { Show } from 'solid-js'
 import { IoMenu } from 'solid-icons/io'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
 import UserButton from './auth/UserBtn'
@@ -21,20 +20,36 @@ const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
+  const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
   const location = useLocation()
   const auth = useAuth()
   const { t, locale } = useI18n()
 
   const isRTL = createMemo(() => locale() === 'ar')
-  const userRole = createMemo(() => auth.session()?.user?.role || 'guest')
+
+  // Initialize and track session state
+  createEffect(() => {
+    const session = auth.session()
+    const status = auth.status()
+
+    if (status !== 'loading' && session !== undefined) {
+      setIsSessionLoaded(true)
+      console.log('Nav session loaded:', { status, session })
+    }
+  })
+
+  const userRole = createMemo(() => {
+    const session = auth.session()
+    return session?.user?.role || 'guest'
+  })
 
   const MENU_ITEMS: NavItem[] = [
     { path: '/', key: 'nav.home' },
     { path: '/about', key: 'nav.about' },
     { path: '/stores', key: 'nav.stores' },
     { path: '/gallery', key: 'nav.gallery' },
-    { path: '/admin', key: 'nav.admin' },
-    { path: '/seller', key: 'nav.seller' },
+    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
+    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
   ]
 
   const filteredMenuItems = createMemo(() => {
@@ -46,8 +61,6 @@ const Nav: Component = () => {
 
   // Media query handling
   const mdBreakpoint = '(min-width: 768px)'
-
-  // Scroll management
   let scrollPosition = 0
 
   const lockScroll = () => {
@@ -68,7 +81,6 @@ const Nav: Component = () => {
     window.scrollTo(0, scrollPosition)
   }
 
-  // Sheet open/close handler
   const handleSheetChange = (open: boolean) => {
     setIsOpen(open)
     if (open) {
@@ -120,7 +132,9 @@ const Nav: Component = () => {
   // Reset mobile menu on auth state change
   createEffect(() => {
     const session = auth.session()
-    if (session === null || session === undefined) {
+    const status = auth.status()
+
+    if (status === 'unauthenticated' || session === null) {
       handleSheetChange(false)
     }
   })
@@ -147,6 +161,14 @@ const Nav: Component = () => {
     }
     return 'text-gray-900 hover:text-gray-800'
   })
+
+  const renderUserButton = () => (
+    <Show when={isSessionLoaded()} fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
+      <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
+        <UserButton buttonColorClass={textColor()} />
+      </Suspense>
+    </Show>
+  )
 
   return (
     <Show when={isClient()}>
@@ -185,11 +207,7 @@ const Nav: Component = () => {
 
               <div class='flex items-center gap-2'>
                 <LocalizationButton />
-                <div class='w-10'>
-                  <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                    <UserButton buttonColorClass={textColor()} />
-                  </Suspense>
-                </div>
+                <div class='w-10'>{renderUserButton()}</div>
               </div>
             </div>
           </div>
@@ -201,9 +219,7 @@ const Nav: Component = () => {
             </A>
 
             <div class='flex items-center gap-2'>
-              <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                <UserButton buttonColorClass={textColor()} />
-              </Suspense>
+              {renderUserButton()}
 
               <Sheet open={isOpen()} onOpenChange={handleSheetChange}>
                 <SheetTrigger>
