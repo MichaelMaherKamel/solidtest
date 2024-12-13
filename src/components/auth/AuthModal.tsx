@@ -26,7 +26,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
 
     try {
       setLoading(true)
-      await auth.signIn('google', { redirect: false })
+      await auth.signIn('google')
       setIsOpen(false)
       props.onSuccess?.()
     } catch (error) {

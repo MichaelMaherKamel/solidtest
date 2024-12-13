@@ -1,5 +1,6 @@
 import { Component, Show, createSignal, createEffect } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
+import { useLocation } from '@solidjs/router'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ interface UserButtonProps {
 export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
   const auth = useAuth()
+  const location = useLocation()
 
   createEffect(() => {
     const session = auth.session()
@@ -30,7 +32,9 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const handleSignOut = async () => {
     try {
       setIsOpen(false)
-      await auth.signOut({ redirect: false })
+      await auth.signOut()
+      // Redirect to the current page after sign out
+      window.location.href = location.pathname
     } catch (error) {
       console.error('Error signing out:', error)
       alert('Unable to sign out. Please try again.')
@@ -52,9 +56,10 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const userImage = () => user()?.image || ''
   const userRole = () => user()?.role
 
+  // The original Show condition worked better
   return (
     <Show
-      when={user()}
+      when={auth.session()?.user}
       fallback={<AuthModal onSuccess={props.onAuthChange} buttonColorClass={props.buttonColorClass} />}
     >
       <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
