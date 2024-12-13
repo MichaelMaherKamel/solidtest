@@ -1,5 +1,6 @@
 import { Component, createSignal, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
+import UserButton from '~/components/auth/UserBtn'
 
 const LoginPage: Component = () => {
   const [loading, setLoading] = createSignal(false)
@@ -36,9 +37,15 @@ const LoginPage: Component = () => {
   return (
     <div class='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
       <div class='max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md'>
+        {/* Test UserButton */}
+        <div class='flex justify-end'>
+          <UserButton />
+        </div>
+
         <div class='text-center'>
           <h2 class='text-3xl font-extrabold text-gray-900'>Welcome to Souq EL Rafay3</h2>
           <p class='mt-2 text-sm text-gray-600'>Testing Authentication</p>
+          <p class='mt-2 text-sm font-medium text-blue-600'>Session Status: {session() ? 'Active' : 'Not Active'}</p>
         </div>
 
         {error() && <div class='bg-red-50 text-red-800 p-4 rounded-md text-sm'>{error()}</div>}
