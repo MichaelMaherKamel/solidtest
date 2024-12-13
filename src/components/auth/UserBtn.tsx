@@ -23,8 +23,13 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const auth = useAuth()
   const location = useLocation()
 
+  // Check both status and session to ensure we have complete auth state
+  const isLoading = () => auth.status() === 'loading'
+  const isAuthenticated = () => auth.status() === 'authenticated' && auth.session()?.user
+
   createEffect(() => {
     const session = auth.session()
+    console.log('Auth Status:', auth.status(), 'Session:', session) // Debug log
     setIsOpen(false)
     props.onAuthChange?.()
   })
@@ -33,7 +38,8 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     try {
       setIsOpen(false)
       await auth.signOut()
-      // Redirect to the current page after sign out
+      // Ensure we refetch the session after sign out
+      await auth.refetch(true)
       window.location.href = location.pathname
     } catch (error) {
       console.error('Error signing out:', error)
@@ -56,10 +62,14 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const userImage = () => user()?.image || ''
   const userRole = () => user()?.role
 
-  // The original Show condition worked better
+  // Show loading state if auth is still initializing
+  if (isLoading()) {
+    return <Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />
+  }
+
   return (
     <Show
-      when={auth.session()?.user}
+      when={isAuthenticated()}
       fallback={<AuthModal onSuccess={props.onAuthChange} buttonColorClass={props.buttonColorClass} />}
     >
       <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
