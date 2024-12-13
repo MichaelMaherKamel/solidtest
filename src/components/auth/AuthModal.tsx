@@ -26,12 +26,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
 
     try {
       setLoading(true)
-      // Use popup-based authentication instead of redirect
-      await auth.signIn('google', {
-        redirect: true, // Changed to true to use full-page redirect
-        callbackUrl: window.location.origin, // Specify callback URL explicitly
-        prompt: 'select_account', // Force account selection
-      })
+      await auth.signIn('google', { redirect: false })
       setIsOpen(false)
       props.onSuccess?.()
     } catch (error) {
