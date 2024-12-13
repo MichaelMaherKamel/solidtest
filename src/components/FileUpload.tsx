@@ -1,6 +1,6 @@
-import { Component, createSignal, createEffect, onCleanup, Show } from 'solid-js'
+import { Component, createSignal, createEffect, Show } from 'solid-js'
 import { useSubmission, useAction } from '@solidjs/router'
-import { supabaseUploadAction } from '~/db/actions/supabaseupload'
+import { supabaseUploadAction } from '~/db/actions/supabaseImageupload'
 import { Alert, AlertDescription } from './ui/alerts'
 import { Spinner } from '~/components/ui/spinner'
 import { AiOutlineClose } from 'solid-icons/ai'
@@ -10,10 +10,12 @@ interface FileUploadProps {
   onError?: (error: string) => void
   accept?: string
   maxSize?: number
+  defaultValue?: string
+  currentImage?: string
 }
 
 const FileUpload: Component<FileUploadProps> = (props) => {
-  const [preview, setPreview] = createSignal<string | null>(null)
+  const [preview, setPreview] = createSignal<string | null>(props.defaultValue || props.currentImage || null)
   const [isDragActive, setIsDragActive] = createSignal(false)
   const [clientError, setClientError] = createSignal<string>('')
   const [isUploading, setIsUploading] = createSignal(false)
@@ -21,9 +23,10 @@ const FileUpload: Component<FileUploadProps> = (props) => {
   const upload = useAction(supabaseUploadAction)
   let inputRef: HTMLInputElement | undefined
 
+  // Effect to handle URL cleanup
   createEffect(() => {
     return () => {
-      if (preview()) {
+      if (preview() && preview() !== props.defaultValue && preview() !== props.currentImage) {
         URL.revokeObjectURL(preview()!)
       }
     }
@@ -54,9 +57,18 @@ const FileUpload: Component<FileUploadProps> = (props) => {
         const formData = new FormData()
         formData.append('file', file)
 
+        // Pass the current image URL if we're replacing
+        if (props.currentImage) {
+          formData.append('currentImage', props.currentImage)
+        }
+
         const result = await upload(formData)
 
         if (result.success && result.url) {
+          // If there was a previous blob URL, revoke it
+          if (preview() && preview() !== props.defaultValue && preview() !== props.currentImage) {
+            URL.revokeObjectURL(preview()!)
+          }
           setPreview(URL.createObjectURL(file))
           props.onSuccess?.(result.url)
         } else {
@@ -74,21 +86,13 @@ const FileUpload: Component<FileUploadProps> = (props) => {
     }
   }
 
-  const onDrop = async (e: DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragActive(false)
-    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0])
-    }
-  }
-
   const removeImage = () => {
-    if (preview()) {
+    if (preview() && preview() !== props.defaultValue && preview() !== props.currentImage) {
       URL.revokeObjectURL(preview()!)
     }
     setPreview(null)
     if (inputRef) inputRef.value = ''
+    props.onSuccess?.('') // Notify parent that image was removed
   }
 
   const handleDragEnter = (e: DragEvent) => {
@@ -106,6 +110,15 @@ const FileUpload: Component<FileUploadProps> = (props) => {
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+  }
+
+  const onDrop = async (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0])
+    }
   }
 
   const handleClick = () => {
@@ -126,7 +139,7 @@ const FileUpload: Component<FileUploadProps> = (props) => {
             <img src={preview()!} alt='Uploaded' class='w-full h-full object-cover' />
             <button
               onClick={removeImage}
-              class='absolute top-2 right-2 bg-white rounded-full p-1 shadow-md'
+              class='absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100'
               type='button'
               aria-label='Remove image'
             >
@@ -135,9 +148,9 @@ const FileUpload: Component<FileUploadProps> = (props) => {
           </div>
         ) : (
           <div
-            class={`w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer ${
-              isDragActive() ? 'border-primary' : 'border-gray-300'
-            }`}
+            class={`w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer 
+              ${isDragActive() ? 'border-primary bg-primary/5' : 'border-gray-300'} 
+              hover:border-primary hover:bg-primary/5 transition-colors`}
             onClick={handleClick}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
@@ -176,6 +189,9 @@ const FileUpload: Component<FileUploadProps> = (props) => {
               <p class='text-xs text-gray-500'>
                 PNG, JPG, GIF up to {props.maxSize ? Math.floor(props.maxSize / 1024 / 1024) : 5}MB
               </p>
+              {props.currentImage && (
+                <p class='text-xs text-blue-500 mt-1'>Uploading a new image will replace the current one</p>
+              )}
             </div>
           </div>
         )}
@@ -184,7 +200,7 @@ const FileUpload: Component<FileUploadProps> = (props) => {
       <Show when={isUploading()}>
         <div class='flex items-center justify-center space-x-2'>
           <Spinner class='w-4 h-4' />
-          <span class='text-sm text-gray-500'>Uploading...</span>
+          <span class='text-sm text-gray-500'>{props.currentImage ? 'Replacing image...' : 'Uploading...'}</span>
         </div>
       </Show>
     </div>

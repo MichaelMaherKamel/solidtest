@@ -1,7 +1,7 @@
 // src/components/SupabaseImageUpload.tsx
 import { Component, createSignal, Show } from 'solid-js'
 import { useSubmission } from '@solidjs/router'
-import { supabaseUploadAction } from '~/db/actions/supabaseupload'
+import { supabaseUploadAction } from '~/db/actions/supabaseImageupload'
 import { Alert, AlertDescription } from './ui/alerts'
 
 type SupabaseImageUploadProps = {

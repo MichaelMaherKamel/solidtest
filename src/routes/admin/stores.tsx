@@ -3,7 +3,7 @@ import { useSubmission } from '@solidjs/router'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { FiSearch, FiPlus } from 'solid-icons/fi'
+import { FiSearch, FiPlus, FiEdit2 } from 'solid-icons/fi'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 import { Card, CardContent } from '~/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
@@ -11,10 +11,10 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { DataTable } from '~/components/admin/dataTable'
 import TableSkeleton from '~/components/admin/tableSkelton'
 import FileUpload from '~/components/FileUpload'
-import { createStoreAction } from '~/db/actions/stores'
+import { createStoreAction, updateStoreAction } from '~/db/actions/stores'
 import { getStores } from '~/db/fetchers/stores'
 import { getSellers } from '~/db/fetchers/users'
-import type { Store } from '~/db/schema'
+import type { Store, NewStore } from '~/db/schema'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
 import { showToast } from '~/components/ui/toast'
@@ -34,7 +34,13 @@ type FormData = {
   storeImage: string
 }
 
-// Store Form Component
+type DataTableColumn = {
+  header: string
+  accessorKey: keyof Store
+  cell?: (item: Store) => any
+}
+
+// Store Form Component for Creating New Store
 const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (props) => {
   const submission = useSubmission(createStoreAction)
   const [stores] = createResource<Store[]>(async () => await getStores())
@@ -118,9 +124,15 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
     return seller ? seller.name || 'Unnamed Seller' : ''
   }
 
-  // File upload handlers
   const handleFileUploadSuccess = (url: string) => {
-    setFormData((prev) => ({ ...prev, storeImage: url }))
+    if (url) {
+      setFormData((prev) => ({ ...prev, storeImage: url }))
+      showToast({
+        title: 'Image Updated',
+        description: 'Store image has been updated successfully.',
+        variant: 'success',
+      })
+    }
   }
 
   const handleFileUploadError = (error: string) => {
@@ -134,7 +146,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
   return (
     <form action={createStoreAction} method='post' class='space-y-6'>
       <div class='space-y-4'>
-        {/* Seller Select - Moved to top */}
+        {/* Seller Select */}
         <div class='space-y-2'>
           <label class='text-sm font-medium'>
             Select Seller {sellers.loading && <span class='ml-2 text-muted-foreground'>(Loading...)</span>}
@@ -222,6 +234,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             onError={handleFileUploadError}
             accept='image/*'
             maxSize={5 * 1024 * 1024}
+            defaultValue={formData().storeImage} // Add this
           />
         </div>
       </div>
@@ -243,6 +256,163 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
           }
         >
           {submission.pending ? 'Creating...' : 'Create Store'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+// Edit Store Form Component
+const EditStoreForm: Component<{
+  store: Store
+  onSuccess: () => void
+  onClose: () => void
+}> = (props) => {
+  const submission = useSubmission(updateStoreAction)
+  const [formData, setFormData] = createSignal<Omit<Store, 'userId' | 'storeOwner' | 'createdAt' | 'updatedAt'>>({
+    storeId: props.store.storeId,
+    storeName: props.store.storeName,
+    storePhone: props.store.storePhone ?? '',
+    storeAddress: props.store.storeAddress ?? '',
+    subscription: props.store.subscription,
+    storeImage: props.store.storeImage ?? '',
+    featured: props.store.featured,
+  })
+
+  // Reset form function
+  const resetForm = () => {
+    submission.clear?.()
+  }
+
+  // Watch submission result
+  createEffect(() => {
+    if (submission.result && !submission.pending) {
+      if (submission.result.success) {
+        showToast({
+          title: 'Success',
+          description: 'Store has been updated successfully.',
+          variant: 'success',
+        })
+        props.onSuccess()
+        props.onClose()
+        resetForm() // Clear the submission state
+      } else {
+        showToast({
+          title: 'Error',
+          description: submission.result.error || 'Failed to update store',
+          variant: 'destructive',
+        })
+      }
+    }
+  })
+
+  // File upload handlers
+  const handleFileUploadSuccess = (url: string) => {
+    if (url) {
+      setFormData((prev) => ({ ...prev, storeImage: url }))
+      showToast({
+        title: 'Image Updated',
+        description: 'Store image has been updated successfully.',
+        variant: 'success',
+      })
+    }
+  }
+
+  const handleFileUploadError = (error: string) => {
+    showToast({
+      title: 'Upload Error',
+      description: error,
+      variant: 'destructive',
+    })
+  }
+
+  return (
+    <form action={updateStoreAction} method='post' class='space-y-6'>
+      <input type='hidden' name='storeId' value={formData().storeId} />
+
+      <div class='space-y-4'>
+        {/* Store Name */}
+        <div class='space-y-2'>
+          <label class='text-sm font-medium'>Store Name</label>
+          <Input
+            name='storeName'
+            value={formData().storeName}
+            onInput={(e) => setFormData((prev) => ({ ...prev, storeName: e.currentTarget.value }))}
+            placeholder='Enter store name'
+            required
+          />
+        </div>
+
+        {/* Store Phone */}
+        <div class='space-y-2'>
+          <label class='text-sm font-medium'>Store Phone</label>
+          <Input
+            name='storePhone'
+            value={formData().storePhone || ''}
+            onInput={(e) => setFormData((prev) => ({ ...prev, storePhone: e.currentTarget.value }))}
+            placeholder='Enter store phone number'
+          />
+        </div>
+
+        {/* Store Address */}
+        <div class='space-y-2'>
+          <label class='text-sm font-medium'>Store Address</label>
+          <Input
+            name='storeAddress'
+            value={formData().storeAddress || ''} // Convert null to empty string
+            onInput={(e) => setFormData((prev) => ({ ...prev, storeAddress: e.currentTarget.value }))}
+            placeholder='Enter store address'
+          />
+        </div>
+
+        {/* Subscription Plan */}
+        <div class='space-y-2'>
+          <label class='text-sm font-medium'>Subscription Plan</label>
+          <input type='hidden' name='subscription' value={formData().subscription} />
+          <Select
+            value={formData().subscription}
+            onChange={(value: 'basic' | 'business' | 'premium' | null) => {
+              if (value !== null) {
+                setFormData((prev) => ({ ...prev, subscription: value }))
+              }
+            }}
+            options={['basic', 'business', 'premium']}
+            placeholder='Select a plan...'
+            itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
+          >
+            <SelectTrigger aria-label='Subscription' class='w-full'>
+              <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+            </SelectTrigger>
+            <SelectContent />
+          </Select>
+        </div>
+
+        {/* Store Image */}
+        <div class='space-y-2'>
+          <label class='text-sm font-medium'>Store Image</label>
+          <input type='hidden' name='storeImage' value={formData().storeImage || ''} />
+          <FileUpload
+            onSuccess={handleFileUploadSuccess}
+            onError={handleFileUploadError}
+            accept='image/*'
+            maxSize={5 * 1024 * 1024}
+            defaultValue={formData().storeImage || undefined}
+            currentImage={props.store.storeImage || undefined}
+          />
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div class='flex justify-end gap-3'>
+        <Button type='button' variant='outline' onClick={props.onClose}>
+          Cancel
+        </Button>
+        <Button
+          type='submit'
+          variant='general'
+          disabled={submission.pending || !formData().storeName || !formData().storeImage}
+        >
+          {submission.pending ? 'Updating...' : 'Update Store'}
         </Button>
       </div>
     </form>
@@ -274,6 +444,8 @@ const StatsCard = ({ count }: { count: number }) => (
 const StoresPage: Component = () => {
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
+  const [isEditOpen, setIsEditOpen] = createSignal(false)
+  const [editStore, setEditStore] = createSignal<Store | null>(null)
   const [refetchTrigger, setRefetchTrigger] = createSignal(0)
 
   const [stores] = createResource(refetchTrigger, async () => await getStores())
@@ -294,10 +466,10 @@ const StoresPage: Component = () => {
   }
 
   // Table columns configuration
-  const columns = [
+  const columns: DataTableColumn[] = [
     {
       header: 'Store',
-      accessorKey: 'storeName' as keyof Store,
+      accessorKey: 'storeName',
       cell: (store: Store) => (
         <div class='flex items-center space-x-4'>
           <Avatar>
@@ -310,19 +482,19 @@ const StoresPage: Component = () => {
     },
     {
       header: 'Store Owner',
-      accessorKey: 'storeOwner' as keyof Store,
+      accessorKey: 'storeOwner',
     },
     {
       header: 'Phone',
-      accessorKey: 'storePhone' as keyof Store,
+      accessorKey: 'storePhone',
     },
     {
       header: 'Address',
-      accessorKey: 'storeAddress' as keyof Store,
+      accessorKey: 'storeAddress',
     },
     {
       header: 'Subscription',
-      accessorKey: 'subscription' as keyof Store,
+      accessorKey: 'subscription',
       cell: (store: Store) => (
         <Badge
           variant={
@@ -335,13 +507,28 @@ const StoresPage: Component = () => {
     },
     {
       header: 'Featured',
-      accessorKey: 'featured' as keyof Store,
+      accessorKey: 'featured',
       cell: (store: Store) => (
         <Badge variant={store.featured === 'yes' ? 'success' : 'secondary'}>{store.featured}</Badge>
       ),
     },
+    {
+      header: 'Actions',
+      accessorKey: 'storeId', // Use storeId as the accessor for actions column
+      cell: (store: Store) => (
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() => {
+            setEditStore(store)
+            setIsEditOpen(true)
+          }}
+        >
+          <FiEdit2 class='h-4 w-4' />
+        </Button>
+      ),
+    },
   ]
-
   // Filtered stores for search
   const filteredStores = () => {
     const storeData = stores()
@@ -377,8 +564,13 @@ const StoresPage: Component = () => {
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       setIsOpen(false)
-    } else {
-      setIsOpen(true)
+    }
+  }
+
+  const handleEditDialogChange = (open: boolean) => {
+    if (!open) {
+      setIsEditOpen(false)
+      setEditStore(null)
     }
   }
 
@@ -432,7 +624,7 @@ const StoresPage: Component = () => {
             <Suspense fallback={<TableSkeleton />}>
               <Show when={stores()}>
                 <div class='rounded-md border'>
-                  <DataTable data={filteredStores()} columns={columns} />
+                  <DataTable<Store> data={filteredStores()} columns={columns} />
                 </div>
               </Show>
             </Suspense>
@@ -447,6 +639,24 @@ const StoresPage: Component = () => {
             <DialogTitle>Create New Store</DialogTitle>
           </DialogHeader>
           <StoreForm onSuccess={handleStoreCreated} onClose={() => handleDialogChange(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Store Dialog */}
+      <Dialog open={isEditOpen()} onOpenChange={handleEditDialogChange}>
+        <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[550px] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto'>
+          <DialogHeader>
+            <DialogTitle>Edit Store</DialogTitle>
+          </DialogHeader>
+          <Show when={editStore()}>
+            {(store) => (
+              <EditStoreForm
+                store={store()}
+                onSuccess={handleStoreCreated}
+                onClose={() => handleEditDialogChange(false)}
+              />
+            )}
+          </Show>
         </DialogContent>
       </Dialog>
     </>

@@ -11,20 +11,29 @@ export const supabaseUploadAction = action(async (formData: FormData): Promise<S
   'use server'
   try {
     const file = formData.get('file')
+    const currentImageUrl = formData.get('currentImage')?.toString()
 
     if (!file || !(file instanceof File)) {
       return { success: false, error: 'No file provided' }
     }
 
-    // Generate unique filename
-    const uniquePrefix = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-    const fileName = `${uniquePrefix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`
+    // If there's an existing image, delete it first
+    if (currentImageUrl) {
+      const oldFileName = currentImageUrl.split('/').pop()
+      if (oldFileName) {
+        await supabase.storage.from('SouqElRafay3Bucket').remove([oldFileName])
+      }
+    }
 
-    // Upload file to Supabase Storage
+    // Always create a new unique filename
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '')
+    const uniquePrefix = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+    const fileName = `${uniquePrefix}-${sanitizedFileName}`
+
+    // Upload new file
     const { data, error } = await supabase.storage.from('SouqElRafay3Bucket').upload(fileName, file, {
       contentType: file.type,
       cacheControl: '3600',
-      upsert: false,
     })
 
     if (error) {
@@ -48,4 +57,4 @@ export const supabaseUploadAction = action(async (formData: FormData): Promise<S
       error: 'Failed to upload file',
     }
   }
-}, 'supabase-upload') // Add a unique name for the action
+}, 'supabase-upload')

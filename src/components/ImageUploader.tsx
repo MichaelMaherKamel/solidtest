@@ -1,7 +1,7 @@
 import { Component, createSignal, onCleanup, Show } from 'solid-js'
 import { AiOutlineClose } from 'solid-icons/ai'
 import { useSubmission, useAction } from '@solidjs/router'
-import { supabaseUploadAction } from '~/db/actions/supabaseupload'
+import { supabaseUploadAction } from '~/db/actions/supabaseImageupload'
 import { Alert, AlertDescription } from '~/components/ui/alerts'
 
 type ImageUploaderProps = {

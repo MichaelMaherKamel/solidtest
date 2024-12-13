@@ -33,8 +33,6 @@ const Nav: Component = () => {
     { path: '/about', key: 'nav.about' },
     { path: '/stores', key: 'nav.stores' },
     { path: '/gallery', key: 'nav.gallery' },
-    // { path: '/admin', key: 'nav.admin', roles: ['admin'] },
-    // { path: '/seller', key: 'nav.seller', roles: ['seller'] },
     { path: '/admin', key: 'nav.admin' },
     { path: '/seller', key: 'nav.seller' },
   ]
@@ -48,40 +46,43 @@ const Nav: Component = () => {
 
   // Media query handling
   const mdBreakpoint = '(min-width: 768px)'
-  let initialScrollPosition = 0
+
+  // Scroll management
+  let scrollPosition = 0
 
   const lockScroll = () => {
     if (!isBrowser()) return
-    initialScrollPosition = window.scrollY
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${initialScrollPosition}px`
-    document.body.style.width = '100%'
+    scrollPosition = window.pageYOffset
     document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollPosition}px`
+    document.body.style.width = '100%'
   }
 
   const unlockScroll = () => {
     if (!isBrowser()) return
-    document.body.style.position = ''
-    document.body.style.top = ''
-    document.body.style.width = ''
-    document.body.style.overflow = ''
-    window.scrollTo(0, initialScrollPosition)
+    document.body.style.removeProperty('overflow')
+    document.body.style.removeProperty('position')
+    document.body.style.removeProperty('top')
+    document.body.style.removeProperty('width')
+    window.scrollTo(0, scrollPosition)
   }
 
-  const handleMediaChange = (e: MediaQueryListEvent | MediaQueryList) => {
-    if (e.matches) {
-      setIsOpen(false)
-      unlockScroll()
-    }
-  }
-
-  createEffect(() => {
-    if (isOpen()) {
+  // Sheet open/close handler
+  const handleSheetChange = (open: boolean) => {
+    setIsOpen(open)
+    if (open) {
       lockScroll()
     } else {
       unlockScroll()
     }
-  })
+  }
+
+  const handleMediaChange = (e: MediaQueryListEvent | MediaQueryList) => {
+    if (e.matches && isOpen()) {
+      handleSheetChange(false)
+    }
+  }
 
   onMount(() => {
     setIsClient(true)
@@ -110,7 +111,9 @@ const Nav: Component = () => {
       if (scrollRAF) {
         cancelAnimationFrame(scrollRAF)
       }
-      unlockScroll()
+      if (isOpen()) {
+        unlockScroll()
+      }
     })
   })
 
@@ -118,16 +121,14 @@ const Nav: Component = () => {
   createEffect(() => {
     const session = auth.session()
     if (session === null || session === undefined) {
-      setIsOpen(false)
-      unlockScroll()
+      handleSheetChange(false)
     }
   })
 
   // Reset mobile menu on route change
   createEffect(() => {
     location.pathname
-    setIsOpen(false)
-    unlockScroll()
+    handleSheetChange(false)
   })
 
   const isHomePage = createMemo(() => location.pathname === '/')
@@ -204,7 +205,7 @@ const Nav: Component = () => {
                 <UserButton buttonColorClass={textColor()} />
               </Suspense>
 
-              <Sheet open={isOpen()} onOpenChange={setIsOpen}>
+              <Sheet open={isOpen()} onOpenChange={handleSheetChange}>
                 <SheetTrigger>
                   <Button
                     variant='ghost'
@@ -231,7 +232,7 @@ const Nav: Component = () => {
                         {t(item.key)}
                       </Button>
                     ))}
-                    <LocalizationButton onLocaleChange={() => setIsOpen(false)} />
+                    <LocalizationButton onLocaleChange={() => handleSheetChange(false)} />
                   </div>
                 </SheetContent>
               </Sheet>
