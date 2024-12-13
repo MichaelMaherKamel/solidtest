@@ -1,13 +1,12 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense } from 'solid-js'
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
-import { A, useLocation } from '@solidjs/router'
-import { Button } from './ui/button'
-import { Show } from 'solid-js'
+import { A, useLocation, useNavigate } from '@solidjs/router'
+import { Button } from '~/components/ui/button'
 import { IoMenu } from 'solid-icons/io'
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
+import { Sheet, SheetContent, SheetTrigger } from '~/components/ui/sheet'
 import UserButton from './auth/UserBtn'
 import { useI18n } from '~/contexts/i18n'
-import { LocalizationButton } from './LocalizationButton'
+import { LocalizationButton } from '~/components/LocalizationButton'
 
 const isBrowser = () => typeof window !== 'undefined'
 
@@ -18,25 +17,32 @@ interface NavItem {
 }
 
 const Nav: Component = () => {
+  // State management
   const [isOpen, setIsOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
+
+  // Hooks
   const location = useLocation()
+  const navigate = useNavigate()
   const auth = useAuth()
   const { t, locale } = useI18n()
 
+  // Memoized values
   const isRTL = createMemo(() => locale() === 'ar')
   const userRole = createMemo(() => auth.session()?.user?.role || 'guest')
 
+  // Navigation items configuration
   const MENU_ITEMS: NavItem[] = [
     { path: '/', key: 'nav.home' },
     { path: '/about', key: 'nav.about' },
     { path: '/stores', key: 'nav.stores' },
     { path: '/gallery', key: 'nav.gallery' },
-    { path: '/admin', key: 'nav.admin' },
-    { path: '/seller', key: 'nav.seller' },
+    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
+    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
   ]
 
+  // Filter menu items based on user role
   const filteredMenuItems = createMemo(() => {
     return MENU_ITEMS.filter((item) => {
       if (!item.roles) return true
@@ -47,7 +53,7 @@ const Nav: Component = () => {
   // Media query handling
   const mdBreakpoint = '(min-width: 768px)'
 
-  // Scroll management
+  // Scroll position management for mobile menu
   let scrollPosition = 0
 
   const lockScroll = () => {
@@ -68,7 +74,7 @@ const Nav: Component = () => {
     window.scrollTo(0, scrollPosition)
   }
 
-  // Sheet open/close handler
+  // Sheet handlers
   const handleSheetChange = (open: boolean) => {
     setIsOpen(open)
     if (open) {
@@ -84,14 +90,31 @@ const Nav: Component = () => {
     }
   }
 
+  // Authentication error handling
+  createEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const authError = params.get('error')
+    const authSuccess = params.get('success')
+
+    if (authError) {
+      console.error('Authentication error:', authError)
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (authSuccess) {
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  })
+
+  // Lifecycle hooks
   onMount(() => {
     setIsClient(true)
     if (!isBrowser()) return
 
+    // Media query listener
     const mediaQuery = window.matchMedia(mdBreakpoint)
     handleMediaChange(mediaQuery)
     mediaQuery.addEventListener('change', handleMediaChange)
 
+    // Scroll handler
     let scrollRAF: number
     const handleScroll = () => {
       if (scrollRAF) {
@@ -105,6 +128,7 @@ const Nav: Component = () => {
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
 
+    // Cleanup
     onCleanup(() => {
       mediaQuery.removeEventListener('change', handleMediaChange)
       window.removeEventListener('scroll', handleScroll)
@@ -131,6 +155,7 @@ const Nav: Component = () => {
     handleSheetChange(false)
   })
 
+  // Route and style computations
   const isHomePage = createMemo(() => location.pathname === '/')
   const active = (path: string) => location.pathname === path
 
