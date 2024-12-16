@@ -4,27 +4,36 @@ export const arDict = {
     error: 'حدث خطأ',
     save: 'حفظ',
     cancel: 'إلغاء',
+    search: 'بحث...',
+    product: 'منتج',
+    products: 'منتجات',
+    total: 'الإجمالي',
+    success: 'نجاح',
   },
+
   nav: {
     home: 'الرئيسية',
     about: 'عن المتجر',
     stores: 'المتاجر',
     gallery: 'المعرض',
     admin: 'الإدارة',
-    products: 'المنتجات', // Add this key
+    products: 'المنتجات',
     seller: 'البائع',
   },
+
   hero: {
     title: 'أهلاً بيك في سوق الرفايع',
     subtitle: 'كل اللي بيتك محتاجه في مكان واحد',
     cta: 'اتسوق دلوقتي',
     imageAlt: 'صورة الصفحة الرئيسية',
   },
+
   sections: {
     categories: 'الأقسام',
     featuredStores: 'المتاجر المميزة',
     contact: 'اتصل بنا',
   },
+
   stores: {
     kitchen: 'جنة المطبخ',
     kitchenDesc: 'معدات وإكسسوارات مطبخ فاخرة',
@@ -33,6 +42,7 @@ export const arDict = {
     home: 'راحة المنزل',
     homeDesc: 'كل ما تحتاجه لحياة مريحة',
   },
+
   form: {
     name: 'الاسم',
     email: 'البريد الإلكتروني',
@@ -42,6 +52,7 @@ export const arDict = {
     messagePlaceholder: 'كيف يمكننا مساعدتك؟',
     submit: 'إرسال الرسالة',
   },
+
   footer: {
     tagline: 'وجهتك للحصول على مستلزمات منزلية عالية الجودة',
     quickLinks: 'روابط سريعة',
@@ -49,6 +60,7 @@ export const arDict = {
     phone: 'الهاتف',
     copyright: '© {{year}} سوق الرفايع. جميع الحقوق محفوظة.',
   },
+
   seller: {
     layout: {
       storeOverview: 'نظرة عامة على متجرك',
@@ -56,7 +68,10 @@ export const arDict = {
       products: 'المنتجات',
       orders: 'الطلبات',
       settings: 'الإعدادات',
+      unauthorized: 'يجب أن تكون بائعاً للوصول إلى هذه الصفحة',
+      noProducts: 'لا توجد منتجات',
     },
+
     sidebar: {
       storeName: 'سوق الرفايع',
       storeNameEn: 'Souq El Rafay3',
@@ -66,7 +81,9 @@ export const arDict = {
       products: 'المنتجات',
       orders: 'الطلبات',
       settings: 'الإعدادات',
+      logout: 'تسجيل الخروج',
     },
+
     dashboard: {
       title: 'لوحة التحكم',
       subtitle: 'نظرة عامة على متجرك',
@@ -75,6 +92,7 @@ export const arDict = {
         totalOrders: 'إجمالي الطلبات',
         totalProducts: 'إجمالي المنتجات',
         totalRevenue: 'إجمالي الإيرادات',
+        noData: 'لا توجد بيانات متاحة',
       },
       charts: {
         salesOverTime: 'المبيعات عبر الزمن',
@@ -84,10 +102,13 @@ export const arDict = {
         orderStatus: 'حالة الطلبات',
       },
     },
+
     products: {
       title: 'المنتجات',
       subtitle: 'إدارة منتجات متجرك',
       addProduct: 'إضافة منتج',
+      confirmDelete: 'هل أنت متأكد من حذف هذا المنتج؟',
+
       table: {
         name: 'اسم المنتج',
         description: 'الوصف',
@@ -95,8 +116,74 @@ export const arDict = {
         price: 'السعر',
         inventory: 'المخزون',
         actions: 'الإجراءات',
+        color: {
+          inventory: '{color}: {count}',
+          inStock: 'متوفر',
+          outOfStock: 'غير متوفر',
+        },
+      },
+
+      colorVariants: {
+        title: 'ألوان المنتج',
+        add: 'إضافة لون جديد',
+        edit: 'تعديل اللون',
+        color: 'اللون',
+        images: 'الصور (حتى 5)',
+        setDefault: 'تعيين كلون اساسى',
+        dropImages: 'اسحب الصور هنا',
+        clickOrDrag: 'انقر أو اسحب الصور',
+        imagesUploaded: 'صور تم رفعها',
+        fileTypes: 'PNG, JPG, GIF حتى {{size}} ميجابايت',
+        uploading: 'جاري رفع الصورة...',
+        remove: 'حذف الصورة',
+        preview: 'معاينة الصورة',
+        noImages: 'لم يتم رفع أي صور',
+        uploadText: 'انقر أو اسحب الصور',
+        uploadStatus: '{current} / {max} صور تم رفعها',
+        maxSize: 'حتى {size} ميجابايت',
+      },
+
+      form: {
+        errors: {
+          required: 'الحقول المطلوبة مفقودة',
+          invalidFormat: 'تنسيق ألوان غير صالح',
+          createFailed: 'فشل في إنشاء المنتج',
+          updateFailed: 'فشل في تحديث المنتج',
+          deleteFailed: 'فشل في حذف المنتج',
+          imageRequired: 'مطلوب صورة واحدة على الأقل',
+          invalidPrice: 'يجب أن يكون السعر أكبر من 0',
+        },
+        success: {
+          created: 'تم إنشاء المنتج بنجاح',
+          updated: 'تم تحديث المنتج بنجاح',
+          deleted: 'تم حذف المنتج بنجاح',
+        },
+        placeholders: {
+          name: 'أدخل اسم المنتج',
+          description: 'أدخل وصف المنتج',
+          price: 'أدخل السعر',
+          selectCategory: 'اختر الفئة',
+        },
+        buttons: {
+          creating: 'جاري الإنشاء...',
+          updating: 'جاري التحديث...',
+          create: 'إنشاء منتج',
+          update: 'تحديث المنتج',
+          edit: 'تعديل المنتج',
+          delete: 'حذف المنتج',
+          cancel: 'إلغاء',
+        },
+        labels: {
+          productName: 'اسم المنتج',
+          productDescription: 'وصف المنتج',
+          category: 'الفئة',
+          price: 'السعر',
+          colors: 'الألوان',
+          inventory: 'المخزون',
+        },
       },
     },
+
     orders: {
       title: 'الطلبات',
       subtitle: 'إدارة طلبات متجرك',
@@ -116,6 +203,7 @@ export const arDict = {
         cancelled: 'ملغي',
       },
     },
+
     settings: {
       title: 'إعدادات المتجر',
       subtitle: 'إدارة معلومات متجرك',

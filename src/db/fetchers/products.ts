@@ -1,50 +1,155 @@
-import { sql } from 'drizzle-orm'
+import { sql, eq } from 'drizzle-orm'
 import { db } from '~/db'
-import { products } from '~/db/schema'
-import { Product, ColorVariant } from '~/db/schema/types'
+import { products, stores } from '~/db/schema'
 import { query } from '@solidjs/router'
+import type { Product, ColorVariant } from '~/db/schema'
 
-export type ProductWithFirstColor = Omit<Product, 'colorVariants'> & {
-  firstColor?: {
-    color: ColorVariant['color']
-    inventory: number
-    imageUrl: string
-  }
-}
-
+// Fetch all products
 export const getProducts = query(async () => {
   'use server'
   try {
-    const result = await db.select().from(products).orderBy(products.createdAt)
-
-    return result.map((product) => ({
-      ...product,
-      firstColor: product.colorVariants[0]
-        ? {
-            color: product.colorVariants[0].color,
-            inventory: product.colorVariants[0].inventory,
-            imageUrl: product.colorVariants[0].colorImageUrls[0],
-          }
-        : undefined,
-      colorVariants: undefined,
-    })) as ProductWithFirstColor[]
+    const result = await db
+      .select({
+        productId: products.productId,
+        productName: products.productName,
+        productDescription: products.productDescription,
+        category: products.category,
+        price: products.price,
+        storeId: products.storeId,
+        totalInventory: products.totalInventory,
+        colorVariants: products.colorVariants,
+        createdAt: products.createdAt,
+        updatedAt: products.updatedAt,
+        searchVector: products.searchVector,
+        storeSubscription: stores.subscription,
+      })
+      .from(products)
+      .leftJoin(stores, eq(products.storeId, stores.storeId))
+      .orderBy(
+        sql`CASE 
+          WHEN ${stores.subscription} = 'premium' THEN 1
+          WHEN ${stores.subscription} = 'business' THEN 2
+          WHEN ${stores.subscription} = 'basic' THEN 3
+          ELSE 4
+        END`,
+        products.createdAt
+      )
+    // Add artificial delay of 5 seconds
+    //await new Promise((resolve) => setTimeout(resolve, 5000))
+    return result
   } catch (error) {
     console.error('Error fetching products:', error)
     throw new Error('Failed to fetch products')
   }
 }, 'products')
 
-export const getProductsByStore = query(async (storeId: string) => {
+// Fetch products by category with store subscription ordering
+export const getCategoryProducts = query(async (category: 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies') => {
   'use server'
   try {
     const result = await db
-      .select()
+      .select({
+        productId: products.productId,
+        productName: products.productName,
+        productDescription: products.productDescription,
+        category: products.category,
+        price: products.price,
+        storeId: products.storeId,
+        totalInventory: products.totalInventory,
+        colorVariants: products.colorVariants,
+        createdAt: products.createdAt,
+        updatedAt: products.updatedAt,
+        searchVector: products.searchVector,
+        storeSubscription: stores.subscription,
+      })
       .from(products)
-      .where(sql`${products.storeId} = ${storeId}`)
-      .orderBy(products.createdAt)
-    return result as Product[]
+      .leftJoin(stores, eq(products.storeId, stores.storeId))
+      .where(eq(products.category, category))
+      .orderBy(
+        sql`CASE 
+          WHEN ${stores.subscription} = 'premium' THEN 1
+          WHEN ${stores.subscription} = 'business' THEN 2
+          WHEN ${stores.subscription} = 'basic' THEN 3
+          ELSE 4
+        END`,
+        products.createdAt
+      )
+    return result
   } catch (error) {
-    console.error('Error fetching store products:', error)
-    throw new Error('Failed to fetch store products')
+    console.error('Error fetching category products:', error)
+    throw new Error('Failed to fetch category products')
   }
-}, 'storeProducts')
+}, 'categoryProducts')
+
+// Fetch color variants for a specific product
+export const getProductColors = query(async (productId: string) => {
+  'use server'
+  try {
+    const [result] = await db
+      .select({
+        colorVariants: products.colorVariants,
+      })
+      .from(products)
+      .where(eq(products.productId, productId))
+
+    return (result?.colorVariants as ColorVariant[]) || []
+  } catch (error) {
+    console.error('Error fetching product colors:', error)
+    throw new Error('Failed to fetch product colors')
+  }
+}, 'productColors')
+
+// Fetch color variants for a store's products
+export const getStoreProductColors = query(async (storeId: string) => {
+  'use server'
+  try {
+    const result = await db
+      .select({
+        productId: products.productId,
+        productName: products.productName,
+        colorVariants: products.colorVariants,
+      })
+      .from(products)
+      .where(eq(products.storeId, storeId))
+      .orderBy(products.createdAt)
+
+    return result.map((product) => ({
+      productId: product.productId,
+      productName: product.productName,
+      colors: product.colorVariants as ColorVariant[],
+    }))
+  } catch (error) {
+    console.error('Error fetching store product colors:', error)
+    throw new Error('Failed to fetch store product colors')
+  }
+}, 'storeProductColors')
+
+// Get single product by ID with colors
+export const getProductById = query(async (productId: string) => {
+  'use server'
+  try {
+    const [result] = await db
+      .select({
+        productId: products.productId,
+        productName: products.productName,
+        productDescription: products.productDescription,
+        category: products.category,
+        price: products.price,
+        storeId: products.storeId,
+        totalInventory: products.totalInventory,
+        colorVariants: products.colorVariants,
+        createdAt: products.createdAt,
+        updatedAt: products.updatedAt,
+        searchVector: products.searchVector,
+        storeSubscription: stores.subscription,
+      })
+      .from(products)
+      .leftJoin(stores, eq(products.storeId, stores.storeId))
+      .where(eq(products.productId, productId))
+
+    return result
+  } catch (error) {
+    console.error('Error fetching product:', error)
+    throw new Error('Failed to fetch product')
+  }
+}, 'product')

@@ -8,6 +8,7 @@ import { siteConfig } from '~/config/site'
 import type { JSX } from 'solid-js'
 import { SiteCategory } from '~/config/site'
 import { useI18n } from '~/contexts/i18n'
+import UserButton from '~/components/auth/UserBtn'
 
 // Localized Categories Component
 const LocalizedCategories: Component = () => {

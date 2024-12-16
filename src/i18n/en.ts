@@ -4,27 +4,36 @@ export const enDict = {
     error: 'An error occurred',
     save: 'Save',
     cancel: 'Cancel',
+    search: 'Search...',
+    product: 'product',
+    products: 'products',
+    total: 'total',
+    success: 'Success',
   },
+
   nav: {
     home: 'Home',
     about: 'About',
     stores: 'Stores',
     gallery: 'Gallery',
     admin: 'Admin',
-    products: 'Products', // Add this key
+    products: 'Products',
     seller: 'Seller',
   },
+
   hero: {
     title: 'Welcome to Souq El Rafay3',
     subtitle: 'Everything your home needs in one place',
     cta: 'Shop Now',
     imageAlt: 'Hero Background Image',
   },
+
   sections: {
     categories: 'Categories',
     featuredStores: 'Featured Stores',
     contact: 'Contact Us',
   },
+
   stores: {
     kitchen: 'Kitchen Paradise',
     kitchenDesc: 'Premium kitchen equipment and accessories',
@@ -33,6 +42,7 @@ export const enDict = {
     home: 'Home Comfort',
     homeDesc: 'Everything for your comfortable living',
   },
+
   form: {
     name: 'Name',
     email: 'Email',
@@ -42,6 +52,7 @@ export const enDict = {
     messagePlaceholder: 'How can we help?',
     submit: 'Send Message',
   },
+
   footer: {
     tagline: 'Your destination for quality home essentials',
     quickLinks: 'Quick Links',
@@ -49,6 +60,7 @@ export const enDict = {
     phone: 'Phone',
     copyright: '© {{year}} Souq EL Rafay3. All rights reserved.',
   },
+
   seller: {
     layout: {
       storeOverview: 'Store Overview',
@@ -56,7 +68,10 @@ export const enDict = {
       products: 'Products',
       orders: 'Orders',
       settings: 'Settings',
+      unauthorized: 'You must be a seller to access this page',
+      noProducts: 'No products found',
     },
+
     sidebar: {
       storeName: 'Souq El Rafay3',
       storeNameEn: 'Souq El Rafay3',
@@ -66,7 +81,9 @@ export const enDict = {
       products: 'Products',
       orders: 'Orders',
       settings: 'Settings',
+      logout: 'Logout',
     },
+
     dashboard: {
       title: 'Dashboard',
       subtitle: 'Overview of your store',
@@ -75,6 +92,7 @@ export const enDict = {
         totalOrders: 'Total Orders',
         totalProducts: 'Total Products',
         totalRevenue: 'Total Revenue',
+        noData: 'No data available',
       },
       charts: {
         salesOverTime: 'Sales Over Time',
@@ -84,10 +102,13 @@ export const enDict = {
         orderStatus: 'Order Status',
       },
     },
+
     products: {
       title: 'Products',
       subtitle: 'Manage your store products',
       addProduct: 'Add Product',
+      confirmDelete: 'Are you sure you want to delete this product?',
+
       table: {
         name: 'Product Name',
         description: 'Description',
@@ -95,8 +116,74 @@ export const enDict = {
         price: 'Price',
         inventory: 'Inventory',
         actions: 'Actions',
+        color: {
+          inventory: '{color}: {count}',
+          inStock: 'in stock',
+          outOfStock: 'out of stock',
+        },
+      },
+
+      colorVariants: {
+        title: 'Color Variants',
+        add: 'Add Color Variant',
+        edit: 'Edit Color Variant',
+        color: 'Color',
+        images: 'Images (Up to 5)',
+        setDefault: 'Set as default color',
+        dropImages: 'Drop images here',
+        clickOrDrag: 'Click or drag images',
+        imagesUploaded: 'images uploaded',
+        fileTypes: 'PNG, JPG, GIF up to {{size}}MB',
+        uploading: 'Uploading image...',
+        remove: 'Remove image',
+        preview: 'Image Preview',
+        noImages: 'No images uploaded',
+        uploadText: 'Click or drag images',
+        uploadStatus: '{current} / {max} images uploaded',
+        maxSize: 'Up to {size}MB',
+      },
+
+      form: {
+        errors: {
+          required: 'Required fields are missing',
+          invalidFormat: 'Invalid color variants format',
+          createFailed: 'Failed to create product',
+          updateFailed: 'Failed to update product',
+          deleteFailed: 'Failed to delete product',
+          imageRequired: 'At least one image is required',
+          invalidPrice: 'Price must be greater than 0',
+        },
+        success: {
+          created: 'Product has been created successfully',
+          updated: 'Product has been updated successfully',
+          deleted: 'Product has been deleted successfully',
+        },
+        placeholders: {
+          name: 'Enter product name',
+          description: 'Enter product description',
+          price: 'Enter price',
+          selectCategory: 'Select category',
+        },
+        buttons: {
+          creating: 'Creating...',
+          updating: 'Updating...',
+          create: 'Create Product',
+          update: 'Update Product',
+          edit: 'Edit Product',
+          delete: 'Delete Product',
+          cancel: 'Cancel',
+        },
+        labels: {
+          productName: 'Product Name',
+          productDescription: 'Product Description',
+          category: 'Category',
+          price: 'Price',
+          colors: 'Colors',
+          inventory: 'Inventory',
+        },
       },
     },
+
     orders: {
       title: 'Orders',
       subtitle: 'Manage your store orders',
@@ -116,6 +203,7 @@ export const enDict = {
         cancelled: 'Cancelled',
       },
     },
+
     settings: {
       title: 'Store Settings',
       subtitle: 'Manage your store information',

@@ -30,3 +30,17 @@ export const getStoreById = query(async (storeId: string) => {
     throw new Error('Failed to fetch store')
   }
 }, 'store')
+
+export const getStoreByUserId = query(async (userId: string) => {
+  'use server'
+  try {
+    const [result] = await db
+      .select()
+      .from(stores)
+      .where(sql`${stores.userId} = ${userId}`)
+    return result as Store
+  } catch (error) {
+    console.error('Error fetching store by user ID:', error)
+    throw new Error('Failed to fetch store')
+  }
+}, 'store-by-user')
