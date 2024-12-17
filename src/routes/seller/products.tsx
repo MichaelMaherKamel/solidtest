@@ -1,5 +1,5 @@
 import { Component, createSignal, createResource, Suspense, Show, createEffect } from 'solid-js'
-import { useSubmission } from '@solidjs/router'
+import { createAsync, useSubmission } from '@solidjs/router'
 import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -21,6 +21,7 @@ import { getStoreByUserId } from '~/db/fetchers/stores'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { Alert, AlertDescription } from '~/components/ui/alerts'
 import { FaSolidBoxesStacked } from 'solid-icons/fa'
+import { useSellerContext } from '~/contexts/seller'
 
 const ColorEditDialog: Component<{
   variant: ColorVariant
@@ -542,39 +543,15 @@ const StatsCard: Component<{ count: number }> = (props) => {
 
 const ProductsPage: Component = () => {
   const { t } = useI18n()
-  const auth = useAuth()
+  const { store, products } = useSellerContext()
 
+  // Local state
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
   const [isEditOpen, setIsEditOpen] = createSignal(false)
   const [editProduct, setEditProduct] = createSignal<Product | null>(null)
-  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
 
-  const user = () => auth.session()?.user
-
-  const [store] = createResource(
-    () => ({ userId: user()?.id, trigger: refetchTrigger() }),
-    async ({ userId }) => {
-      if (!userId) return null
-      return await getStoreByUserId(userId)
-    }
-  )
-
-  const [products] = createResource(
-    () => ({ storeId: store()?.storeId, trigger: refetchTrigger() }),
-    async ({ storeId }) => {
-      if (!storeId) return []
-      return await getProducts(storeId)
-    }
-  )
-
-  const isLoading = () => store.loading || products.loading
-  const hasError = () => store.error || products.error
-  const isUnauthorized = () => {
-    const userRole = user()?.role
-    return !userRole || (userRole !== 'seller' && userRole !== 'admin')
-  }
-
+  // Filter products based on search
   const filteredProducts = () => {
     const productData = products()
     if (!productData) return []
@@ -588,10 +565,7 @@ const ProductsPage: Component = () => {
     )
   }
 
-  const triggerRefetch = () => {
-    setRefetchTrigger((p) => p + 1)
-  }
-
+  // Delete handler
   const handleDeleteProduct = async (product: Product) => {
     if (!confirm(t('seller.products.confirmDelete'))) return
 
@@ -606,7 +580,6 @@ const ProductsPage: Component = () => {
         description: t('seller.products.form.success.deleted'),
         variant: 'success',
       })
-      triggerRefetch()
     } else {
       showToast({
         title: t('common.error'),
@@ -616,24 +589,11 @@ const ProductsPage: Component = () => {
     }
   }
 
-  const showUnauthorized = () => (
-    <Alert variant='destructive'>
-      <AlertDescription>You must be a seller to access this page.</AlertDescription>
-    </Alert>
-  )
-
-  const showError = () => (
-    <Alert variant='destructive'>
-      <AlertDescription>
-        {store.error?.message || products.error?.message || 'Failed to load products'}
-      </AlertDescription>
-    </Alert>
-  )
-
+  // Table columns configuration
   const tableColumns = [
     {
       header: t('seller.products.table.name'),
-      accessorKey: 'productName',
+      accessorKey: 'productName' as keyof Product,
       minWidth: '200px',
       maxWidth: '300px',
       cell: (product: Product) => (
@@ -651,7 +611,7 @@ const ProductsPage: Component = () => {
     },
     {
       header: t('seller.products.table.description'),
-      accessorKey: 'productDescription',
+      accessorKey: 'productDescription' as keyof Product,
       minWidth: '200px',
       maxWidth: '300px',
       cell: (product: Product) => (
@@ -662,7 +622,7 @@ const ProductsPage: Component = () => {
     },
     {
       header: t('seller.products.table.category'),
-      accessorKey: 'category',
+      accessorKey: 'category' as keyof Product,
       minWidth: '150px',
       cell: (product: Product) => (
         <Badge variant='outline'>
@@ -676,13 +636,13 @@ const ProductsPage: Component = () => {
     },
     {
       header: t('seller.products.table.price'),
-      accessorKey: 'price',
+      accessorKey: 'price' as keyof Product,
       minWidth: '100px',
       cell: (product: Product) => <span>${product.price.toFixed(2)}</span>,
     },
     {
       header: t('seller.products.table.inventory'),
-      accessorKey: 'totalInventory',
+      accessorKey: 'totalInventory' as keyof Product,
       minWidth: '200px',
       cell: (product: Product) => (
         <div class='space-y-1'>
@@ -701,7 +661,7 @@ const ProductsPage: Component = () => {
     },
     {
       header: t('seller.products.table.actions'),
-      accessorKey: 'productId',
+      accessorKey: 'productId' as keyof Product,
       minWidth: '100px',
       cell: (product: Product) => (
         <div class='flex items-center gap-2'>
@@ -723,12 +683,9 @@ const ProductsPage: Component = () => {
     },
   ]
 
-  if (isUnauthorized()) {
-    return <div class='p-6'>{showUnauthorized()}</div>
-  }
-
   return (
     <>
+      {/* Header */}
       <div class='sticky top-0 bg-background z-10 border-b'>
         <div class='p-6'>
           <div class='flex items-center justify-between'>
@@ -736,56 +693,58 @@ const ProductsPage: Component = () => {
               <h1 class='text-2xl font-bold tracking-tight'>{t('seller.products.title')}</h1>
               <p class='text-muted-foreground'>{t('seller.products.subtitle')}</p>
             </div>
-            <Show when={!isLoading()} fallback={<Button variant='general' class='h-9 w-36' disabled />}>
-              <Button variant='general' onClick={() => setIsOpen(true)}>
-                <FiPlus class='mr-2 h-4 w-4' />
-                {t('seller.products.addProduct')}
-              </Button>
-            </Show>
+            <Button variant='general' onClick={() => setIsOpen(true)}>
+              <FiPlus class='mr-2 h-4 w-4' />
+              {t('seller.products.addProduct')}
+            </Button>
           </div>
         </div>
       </div>
 
+      {/* Main Content */}
       <div class='max-w-[1600px] w-full mx-auto'>
         <div class='container mx-auto p-6'>
-          <Show when={!hasError()} fallback={showError()}>
-            <div class='space-y-6'>
-              <div class='flex items-center justify-between gap-4'>
-                <div class='relative flex-1 max-w-sm'>
-                  <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
-                  <Input
-                    placeholder={`${t('common.search')}...`}
-                    class='pl-8'
-                    value={search()}
-                    onInput={(e) => setSearch(e.currentTarget.value)}
-                  />
-                </div>
-                <Show when={!isLoading()} fallback={<StatsCardSkeleton />}>
+          <div class='space-y-6'>
+            {/* Search and Stats */}
+            <div class='flex items-center justify-between gap-4'>
+              <div class='relative flex-1 max-w-sm'>
+                <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+                <Input
+                  placeholder={`${t('common.search')}...`}
+                  class='pl-8'
+                  value={search()}
+                  onInput={(e) => setSearch(e.currentTarget.value)}
+                />
+              </div>
+              <Suspense fallback={<StatsCardSkeleton />}>
+                <Show when={products()}>
                   <StatsCard count={filteredProducts().length} />
                 </Show>
-              </div>
+              </Suspense>
+            </div>
 
-              <div class='rounded-md border'>
-                <Show when={!isLoading()} fallback={<TableSkeleton />}>
+            {/* Products Table */}
+            <div class='rounded-md border'>
+              <Suspense fallback={<TableSkeleton />}>
+                <Show when={products()}>
                   <Show
-                    when={products()?.length > 0}
+                    when={products()!.length > 0}
                     fallback={<div class='p-4 text-center text-muted-foreground'>{t('seller.layout.noProducts')}</div>}
                   >
                     <DataTable data={filteredProducts()} columns={tableColumns} />
                   </Show>
                 </Show>
-              </div>
+              </Suspense>
             </div>
-          </Show>
+          </div>
         </div>
       </div>
 
+      {/* Create Dialog */}
       <Dialog open={isOpen()} onOpenChange={(open) => !open && setIsOpen(false)}>
         <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
           <DialogHeader>
-            <DialogTitle>
-              {isEditOpen() ? t('seller.products.form.buttons.edit') : t('seller.products.addProduct')}
-            </DialogTitle>
+            <DialogTitle>{t('seller.products.addProduct')}</DialogTitle>
           </DialogHeader>
           <Show
             when={store()}
@@ -798,16 +757,14 @@ const ProductsPage: Component = () => {
             <ProductForm
               mode='create'
               storeId={store()!.storeId}
-              onSuccess={() => {
-                triggerRefetch()
-                setIsOpen(false)
-              }}
+              onSuccess={() => setIsOpen(false)}
               onClose={() => setIsOpen(false)}
             />
           </Show>
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
       <Dialog
         open={isEditOpen()}
         onOpenChange={(open) => {
@@ -819,7 +776,7 @@ const ProductsPage: Component = () => {
       >
         <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>{t('seller.products.form.buttons.edit')}</DialogTitle>
           </DialogHeader>
           <Show
             when={editProduct() && store()}
@@ -833,10 +790,7 @@ const ProductsPage: Component = () => {
               mode='edit'
               storeId={store()!.storeId}
               initialData={editProduct()!}
-              onSuccess={() => {
-                triggerRefetch()
-                setIsEditOpen(false)
-              }}
+              onSuccess={() => setIsEditOpen(false)}
               onClose={() => setIsEditOpen(false)}
             />
           </Show>
@@ -845,4 +799,5 @@ const ProductsPage: Component = () => {
     </>
   )
 }
+
 export default ProductsPage

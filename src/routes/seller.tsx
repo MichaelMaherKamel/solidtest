@@ -1,4 +1,4 @@
-import { RouteSectionProps } from '@solidjs/router'
+import { A, RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
 import { createEffect } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
@@ -13,19 +13,51 @@ import {
 import { Separator } from '~/components/ui/separator'
 import { SellerSidebar } from '~/components/seller/sellerSidebar'
 import { useI18n } from '~/contexts/i18n'
+import { SellerProvider } from '~/contexts/seller'
+import { useAuth } from '@solid-mediakit/auth/client'
+import { Alert, AlertDescription } from '~/components/ui/alerts'
+import { Show } from 'solid-js'
 
 export default function SellerLayout(props: RouteSectionProps) {
   const location = useLocation()
   const isMobile = createMediaQuery('(max-width: 767px)')
   const { locale } = useI18n()
   const isRTL = () => locale() === 'ar'
+  const auth = useAuth()
+  const user = () => auth.session()?.user
+
+  const isUnauthorized = () => {
+    const userRole = user()?.role
+    return !userRole || (userRole !== 'seller' && userRole !== 'admin')
+  }
 
   return (
-    <div class='flex h-screen overflow-hidden' dir={isRTL() ? 'rtl' : 'ltr'}>
-      <SidebarProvider>
-        <SellerDashboardContent location={location} isMobile={isMobile} children={props.children} />
-      </SidebarProvider>
-    </div>
+    <Show
+      when={!isUnauthorized()}
+      fallback={
+        <div class='p-6 flex items-center justify-center'>
+          <Alert variant='destructive' class='max-w-md'>
+            <AlertDescription class='text-center'>You must be a seller to access this page.</AlertDescription>
+            <div class='p-6 text-center'>
+              <A
+                href='/'
+                class='inline-block bg-red-500 text-white font-semibold px-4 py-2 rounded hover:bg-red-600 transition-colors duration-300'
+              >
+                Go to Home Page
+              </A>
+            </div>
+          </Alert>
+        </div>
+      }
+    >
+      <SellerProvider>
+        <div class='flex h-screen overflow-hidden' dir={isRTL() ? 'rtl' : 'ltr'}>
+          <SidebarProvider>
+            <SellerDashboardContent location={location} isMobile={isMobile} children={props.children} />
+          </SidebarProvider>
+        </div>
+      </SellerProvider>
+    </Show>
   )
 }
 

@@ -4,8 +4,8 @@ import { products, stores } from '~/db/schema'
 import { query } from '@solidjs/router'
 import type { Product, ColorVariant } from '~/db/schema'
 
-// Fetch all products
-export const getProducts = query(async () => {
+// Fetch all Store products
+export const getProducts = query(async (storeId: string) => {
   'use server'
   try {
     const result = await db
@@ -25,6 +25,7 @@ export const getProducts = query(async () => {
       })
       .from(products)
       .leftJoin(stores, eq(products.storeId, stores.storeId))
+      .where(eq(products.storeId, storeId))
       .orderBy(
         sql`CASE 
           WHEN ${stores.subscription} = 'premium' THEN 1
@@ -34,8 +35,7 @@ export const getProducts = query(async () => {
         END`,
         products.createdAt
       )
-    // Add artificial delay of 5 seconds
-    //await new Promise((resolve) => setTimeout(resolve, 5000))
+    // await new Promise((resolve) => setTimeout(resolve, 5000)) // Simulate a delay
     return result
   } catch (error) {
     console.error('Error fetching products:', error)
