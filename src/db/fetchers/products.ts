@@ -35,7 +35,7 @@ export const getProducts = query(async (storeId: string) => {
         END`,
         products.createdAt
       )
-    // await new Promise((resolve) => setTimeout(resolve, 5000)) // Simulate a delay
+    //await new Promise((resolve) => setTimeout(resolve, 5000)) // Simulate a delay
     return result
   } catch (error) {
     console.error('Error fetching products:', error)

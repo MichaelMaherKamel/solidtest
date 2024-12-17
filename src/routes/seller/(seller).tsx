@@ -214,6 +214,26 @@
 
 // export default SellerDashboard
 
-export default function SellerDashboard() {
-  return <div>Seller Dashboard</div>
+import { Component, createResource, Suspense } from 'solid-js'
+
+function LoadingSpinner() {
+  return (
+    <div class='flex items-center justify-center h-full'>
+      <div class='w-8 h-8 border-4 border-blue-500 border-dashed rounded-full animate-spin'></div>
+    </div>
+  )
+}
+
+const SellerDashboardComponent: Component = () => {
+  return (
+    <div class='w-full'>
+      <Suspense fallback={<LoadingSpinner />}>
+        <div>SellerDashboard</div>
+      </Suspense>
+    </div>
+  )
+}
+
+export const SellerDashboard: Component = () => {
+  return <SellerDashboardComponent />
 }
