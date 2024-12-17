@@ -234,6 +234,6 @@ const SellerDashboardComponent: Component = () => {
   )
 }
 
-export const SellerDashboard: Component = () => {
+export default function SellerDashboardPage() {
   return <SellerDashboardComponent />
 }
