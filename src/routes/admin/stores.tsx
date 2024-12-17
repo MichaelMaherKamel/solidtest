@@ -18,6 +18,7 @@ import type { Store, NewStore } from '~/db/schema'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
 import { showToast } from '~/components/ui/toast'
+import { useAdminContext } from '~/contexts/admin'
 
 type SellerData = {
   id: string
@@ -442,19 +443,15 @@ const StatsCard = ({ count }: { count: number }) => (
 
 // Main Stores Page Component
 const StoresPage: Component = () => {
+  const { stores, users } = useAdminContext()
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
   const [isEditOpen, setIsEditOpen] = createSignal(false)
   const [editStore, setEditStore] = createSignal<Store | null>(null)
-  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
 
-  const [stores] = createResource(refetchTrigger, async () => await getStores())
-  const [sellers] = createResource(refetchTrigger, async () => await getSellers())
-
-  const triggerRefetch = () => setRefetchTrigger((prev) => prev + 1)
-
+  // Filter available sellers using context data
   const availableSellers = () => {
-    const allSellers = sellers() || []
+    const allSellers = users()?.filter((user) => user.role === 'seller') || []
     const existingStores = stores() || []
     const sellersWithStores = new Set(existingStores.map((store) => store.userId))
     return allSellers.filter((seller) => !sellersWithStores.has(seller.id))
@@ -514,7 +511,7 @@ const StoresPage: Component = () => {
     },
     {
       header: 'Actions',
-      accessorKey: 'storeId', // Use storeId as the accessor for actions column
+      accessorKey: 'storeId',
       cell: (store: Store) => (
         <Button
           variant='ghost'
@@ -529,7 +526,8 @@ const StoresPage: Component = () => {
       ),
     },
   ]
-  // Filtered stores for search
+
+  // Filtered stores using context data
   const filteredStores = () => {
     const storeData = stores()
     if (!storeData) return []
@@ -558,7 +556,10 @@ const StoresPage: Component = () => {
   }
 
   const handleStoreCreated = () => {
-    triggerRefetch()
+    // Close dialogs after successful operation
+    setIsOpen(false)
+    setIsEditOpen(false)
+    setEditStore(null)
   }
 
   const handleDialogChange = (open: boolean) => {

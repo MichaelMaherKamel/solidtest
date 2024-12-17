@@ -214,26 +214,71 @@
 
 // export default SellerDashboard
 
-import { Component, createResource, Suspense } from 'solid-js'
+// import { Component, createResource, Suspense } from 'solid-js'
 
-function LoadingSpinner() {
+// function LoadingSpinner() {
+//   return (
+//     <div class='flex items-center justify-center h-full'>
+//       <div class='w-8 h-8 border-4 border-blue-500 border-dashed rounded-full animate-spin'></div>
+//     </div>
+//   )
+// }
+
+// const SellerDashboardComponent: Component = () => {
+//   return (
+//     <div class='w-full'>
+//       <Suspense fallback={<LoadingSpinner />}>
+//         <div>SellerDashboard</div>
+//       </Suspense>
+//     </div>
+//   )
+// }
+
+// export default function SellerDashboardPage() {
+//   return <SellerDashboardComponent />
+// }
+
+import { Component, createResource } from 'solid-js'
+import { Card, CardContent } from '~/components/ui/card'
+import { useSellerContext } from '~/contexts/seller'
+
+// Clean data fetch without delay
+async function fetchDashboardStats() {
+  return {
+    totalSales: '$15,231.89',
+    totalOrders: '256',
+    avgOrderValue: '$59.50',
+    conversionRate: '3.2%',
+  }
+}
+
+function StatCard(props: { title: string; value: string }) {
   return (
-    <div class='flex items-center justify-center h-full'>
-      <div class='w-8 h-8 border-4 border-blue-500 border-dashed rounded-full animate-spin'></div>
+    <Card>
+      <CardContent class='p-6'>
+        <h3 class='text-sm font-medium text-gray-500'>{props.title}</h3>
+        <p class='text-2xl font-bold mt-2'>{props.value}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+const SellerDashboard: Component = () => {
+  const { store } = useSellerContext()
+  const [stats] = createResource(fetchDashboardStats)
+
+  return (
+    <div class='p-6 space-y-6'>
+      <h1 class='text-2xl font-bold'>Welcome back, {store()?.storeName}</h1>
+
+      <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+        <StatCard title='Total Sales' value={stats()?.totalSales || ''} />
+        <StatCard title='Total Orders' value={stats()?.totalOrders || ''} />
+        <StatCard title='Average Order Value' value={stats()?.avgOrderValue || ''} />
+        <StatCard title='Conversion Rate' value={stats()?.conversionRate || ''} />
+      </div>
     </div>
   )
 }
 
-const SellerDashboardComponent: Component = () => {
-  return (
-    <div class='w-full'>
-      <Suspense fallback={<LoadingSpinner />}>
-        <div>SellerDashboard</div>
-      </Suspense>
-    </div>
-  )
-}
-
-export default function SellerDashboardPage() {
-  return <SellerDashboardComponent />
-}
+export default SellerDashboard

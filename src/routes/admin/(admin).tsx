@@ -11,16 +11,11 @@ interface StatCardProps {
   description: string
 }
 
-// Add type for component props
-interface CardProps {
-  children?: JSX.Element
-  class?: string
-}
+const StyledCard: Component<{ class?: string; children?: JSX.Element }> = (props) => (
+  <Card class={props.class}>{props.children}</Card>
+)
 
-// Create wrapper components to handle the class prop
-const StyledCard: Component<CardProps> = (props) => <Card class={props.class}>{props.children}</Card>
-
-const StyledCardContent: Component<CardProps> = (props) => (
+const StyledCardContent: Component<{ class?: string; children?: JSX.Element }> = (props) => (
   <CardContent class={props.class}>{props.children}</CardContent>
 )
 

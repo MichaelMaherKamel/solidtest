@@ -12,6 +12,8 @@ import { DataTable } from '~/components/admin/dataTable'
 import TableSkeleton from '~/components/admin/tableSkelton'
 import { Card, CardContent } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { useAdminContext } from '~/contexts/admin'
+import { showToast } from '~/components/ui/toast'
 
 const UserActions: Component<{ user: User; onActionComplete: () => void }> = (props) => {
   const [activeAction, setActiveAction] = createSignal<string | null>(null)
@@ -33,9 +35,18 @@ const UserActions: Component<{ user: User; onActionComplete: () => void }> = (pr
         throw new Error(updateSubmission.result.error)
       }
       props.onActionComplete()
+      showToast({
+        title: 'Success',
+        description: 'User role updated successfully',
+        variant: 'success',
+      })
     } catch (error) {
       console.error('Action failed:', error)
-      alert('Failed to update user role. Please try again.')
+      showToast({
+        title: 'Error',
+        description: 'Failed to update user role',
+        variant: 'destructive',
+      })
     } finally {
       setActiveAction(null)
     }
@@ -56,9 +67,18 @@ const UserActions: Component<{ user: User; onActionComplete: () => void }> = (pr
         throw new Error(deleteSubmission.result.error)
       }
       props.onActionComplete()
+      showToast({
+        title: 'Success',
+        description: 'User deleted successfully',
+        variant: 'success',
+      })
     } catch (error) {
       console.error('Action failed:', error)
-      alert('Failed to delete user. Please try again.')
+      showToast({
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'destructive',
+      })
     } finally {
       setActiveAction(null)
     }
@@ -124,20 +144,13 @@ export const route = {
 }
 
 const UsersPage: Component = () => {
+  const { users } = useAdminContext()
   const [search, setSearch] = createSignal('')
-  const [refetchTrigger, setRefetchTrigger] = createSignal(0)
-  const [users] = createResource(refetchTrigger, () => getUsers())
 
-  const triggerRefetch = () => setRefetchTrigger((prev) => prev + 1)
-
-  const columns: {
-    header: string
-    accessorKey: keyof User
-    cell?: (item: User) => any
-  }[] = [
+  const columns = [
     {
       header: 'Name',
-      accessorKey: 'name',
+      accessorKey: 'name' as keyof User,
       cell: (item: User) => (
         <div class='flex items-center gap-2'>
           <Avatar>
@@ -153,7 +166,7 @@ const UsersPage: Component = () => {
     },
     {
       header: 'Role',
-      accessorKey: 'role',
+      accessorKey: 'role' as keyof User,
       cell: (item: User) => (
         <Badge variant={item.role === 'admin' ? 'error' : item.role === 'seller' ? 'warning' : 'secondary'}>
           {item.role}
@@ -162,7 +175,7 @@ const UsersPage: Component = () => {
     },
     {
       header: 'Status',
-      accessorKey: 'emailVerified',
+      accessorKey: 'emailVerified' as keyof User,
       cell: (item: User) => (
         <Badge variant={item.emailVerified ? 'success' : 'secondary'}>
           {item.emailVerified ? 'Verified' : 'Unverified'}
@@ -171,10 +184,18 @@ const UsersPage: Component = () => {
     },
     {
       header: 'Actions',
-      accessorKey: 'id',
-      cell: (item: User) => <UserActions user={item} onActionComplete={triggerRefetch} />,
+      accessorKey: 'id' as keyof User,
+      cell: (item: User) => (
+        <UserActions
+          user={item}
+          onActionComplete={() => {
+            // Actions are handled by context updates
+          }}
+        />
+      ),
     },
   ]
+
   const filteredUsers = () => {
     const userData = users()
     if (!userData) return []
