@@ -11,6 +11,15 @@ export const arDict = {
     success: 'نجاح',
   },
 
+  auth: {
+    title: 'مرحباً بك في سوق الرفايع',
+    subtitle: 'سجل دخول لمواصلة التسوق',
+    signIn: 'تسجيل الدخول',
+    googleButton: 'المتابعة باستخدام Google',
+    facebookButton: 'المتابعة باستخدام Facebook',
+    error: 'تعذر تسجيل الدخول في الوقت الحالي. يرجى المحاولة مرة أخرى.',
+  },
+
   nav: {
     home: 'الرئيسية',
     about: 'عن المتجر',

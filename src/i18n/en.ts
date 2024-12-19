@@ -11,6 +11,15 @@ export const enDict = {
     success: 'Success',
   },
 
+  auth: {
+    title: 'Welcome to Souq El Rafay3',
+    subtitle: 'Sign in to continue shopping',
+    signIn: 'Sign In',
+    googleButton: 'Continue with Google',
+    facebookButton: 'Continue with Facebook',
+    error: 'Unable to sign in at the moment. Please try again.',
+  },
+
   nav: {
     home: 'Home',
     about: 'About',
