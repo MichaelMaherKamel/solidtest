@@ -66,16 +66,27 @@ export function AdminSidebar() {
     }
   }
 
-  // Effect to handle session changes
   createEffect(() => {
     const session = auth.session()
-    // Handle the possibly undefined session value
     setCurrentSession(session ?? null)
     setIsLoading(false)
   })
 
+  // Function to render menu item content with consistent LTR layout
+  const renderMenuContent = (Icon: any, title: string, collapsed = false) => {
+    if (collapsed && !isMobile()) {
+      return <Icon class='size-4' />
+    }
+    return (
+      <div class='flex items-center gap-2'>
+        <Icon class='size-4 flex-shrink-0' />
+        <span class='flex-1 truncate'>{title}</span>
+      </div>
+    )
+  }
+
   return (
-    <Sidebar collapsible='icon' side='left' dir='ltr'>
+    <div class='flex flex-col h-full' dir='ltr'>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -84,14 +95,7 @@ export function AdminSidebar() {
                 size='lg'
                 class='group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
-                <div class='flex aspect-square items-center justify-center rounded-lg text-sidebar-primary-foreground transition-all'>
-                  <BiLogosChrome class='size-4' />
-                </div>
-                {(state() !== 'collapsed' || isMobile()) && (
-                  <div class='grid flex-1 text-left text-sm leading-tight'>
-                    <span class='truncate font-semibold'>Souq El Rafay3</span>
-                  </div>
-                )}
+                {renderMenuContent(BiLogosChrome, 'Souq El Rafay3', state() === 'collapsed')}
               </SidebarMenuButton>
             </A>
           </SidebarMenuItem>
@@ -102,7 +106,7 @@ export function AdminSidebar() {
         <For each={MENU_DATA}>
           {(section) => (
             <SidebarGroup>
-              <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+              <SidebarGroupLabel class='text-left pl-2'>{section.title}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <For each={section.items}>
@@ -117,8 +121,7 @@ export function AdminSidebar() {
                           data-active={location.pathname === item.url}
                           data-state={location.pathname === item.url ? 'active' : 'inactive'}
                         >
-                          <item.icon class='size-4' />
-                          <span class='flex-1'>{item.title}</span>
+                          {renderMenuContent(item.icon, item.title, state() === 'collapsed')}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )}
@@ -142,8 +145,7 @@ export function AdminSidebar() {
               data-active={location.pathname === '/admin/settings'}
               data-state={location.pathname === '/admin/settings' ? 'active' : 'inactive'}
             >
-              <FiSettings class='size-4' />
-              <span class='flex-1'>Settings</span>
+              {renderMenuContent(FiSettings, 'Settings', state() === 'collapsed')}
             </SidebarMenuButton>
           </SidebarMenuItem>
           <Show when={!isLoading()}>
@@ -155,6 +157,8 @@ export function AdminSidebar() {
       </SidebarFooter>
 
       <SidebarRail />
-    </Sidebar>
+    </div>
   )
 }
+
+export default AdminSidebar

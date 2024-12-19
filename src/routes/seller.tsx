@@ -11,13 +11,14 @@ import {
 } from '~/components/ui/breadcrumb'
 import { Separator } from '~/components/ui/separator'
 import { SellerSidebar } from '~/components/seller/sellerSidebar'
+import TableSkeleton from '~/components/seller/TableSkeleton'
 import { useI18n } from '~/contexts/i18n'
 import { SellerProvider } from '~/contexts/seller'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { Alert, AlertDescription } from '~/components/ui/alerts'
 
-// Improved loading components
-function SidebarSkeleton() {
+// Skeleton Components
+const SidebarSkeleton = () => {
   const isMobile = createMediaQuery('(max-width: 767px)')
 
   return (
@@ -79,82 +80,19 @@ function SidebarSkeleton() {
   )
 }
 
-function HeaderSkeleton() {
-  const isMobile = createMediaQuery('(max-width: 767px)')
-
+const HeaderSkeleton = () => {
   return (
-    <div class='h-16 border-b flex items-center'>
-      <div class='flex items-center gap-2 px-4'>
-        <div class='w-8 h-8 rounded-md bg-muted animate-pulse' /> {/* Menu trigger */}
-        <div class='w-px h-4 bg-border mx-2' /> {/* Separator */}
-        <div class='flex items-center gap-2'>
-          <div class='hidden md:flex items-center gap-2'>
-            <div class='h-4 w-24 bg-muted animate-pulse rounded' /> {/* Store Overview */}
-            <div class='text-muted-foreground'>/</div>
-          </div>
-          <div class='h-4 w-20 bg-muted animate-pulse rounded' /> {/* Dashboard */}
+    <div class='flex items-center gap-2 px-4 w-full'>
+      <div class='w-8 h-8 rounded-md bg-muted animate-pulse' />
+      <div class='w-px h-4 bg-border mx-2' />
+      <div class='flex items-center gap-2'>
+        <div class='hidden md:flex items-center gap-2'>
+          <div class='h-4 w-24 bg-muted animate-pulse rounded' />
+          <div class='text-muted-foreground'>/</div>
         </div>
+        <div class='h-4 w-20 bg-muted animate-pulse rounded' />
       </div>
     </div>
-  )
-}
-
-function ContentSkeleton() {
-  return (
-    <div class='p-6 space-y-6'>
-      {/* Header section */}
-      <div class='space-y-1'>
-        <div class='h-7 w-32 bg-muted rounded animate-pulse' />
-      </div>
-
-      {/* Stats grid */}
-      <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-        {Array(4)
-          .fill(0)
-          .map(() => (
-            <div class='p-6 rounded-lg border bg-card text-card-foreground shadow-sm'>
-              <div class='space-y-3'>
-                <div class='h-4 w-24 bg-muted rounded animate-pulse' />
-                <div class='h-7 w-28 bg-muted rounded animate-pulse' />
-              </div>
-            </div>
-          ))}
-      </div>
-    </div>
-  )
-}
-
-// Auth wrapper component
-const AuthCheck: ParentComponent = (props) => {
-  const auth = useAuth()
-  const user = () => auth.session()?.user
-
-  const isUnauthorized = () => {
-    const userRole = user()?.role
-    return !userRole || (userRole !== 'seller' && userRole !== 'admin')
-  }
-
-  return (
-    <Show
-      when={!isUnauthorized()}
-      fallback={
-        <div class='p-6 flex items-center justify-center'>
-          <Alert variant='destructive' class='max-w-md'>
-            <AlertDescription class='text-center'>You must be a seller to access this page.</AlertDescription>
-            <div class='p-6 text-center'>
-              <A
-                href='/'
-                class='inline-block bg-red-500 text-white font-semibold px-4 py-2 rounded hover:bg-red-600 transition-colors duration-300'
-              >
-                Go to Home Page
-              </A>
-            </div>
-          </Alert>
-        </div>
-      }
-    >
-      {props.children}
-    </Show>
   )
 }
 
@@ -163,7 +101,7 @@ const SellerContentWrapper: ParentComponent = (props) => {
   const { locale, t } = useI18n()
   const location = useLocation()
   const isRTL = () => locale() === 'ar'
-  const { setOpen, setOpenMobile } = useSidebar()
+  const { setOpenMobile } = useSidebar()
   const isMobile = createMediaQuery('(max-width: 767px)')
 
   const getCurrentPageKey = () => {
@@ -191,7 +129,7 @@ const SellerContentWrapper: ParentComponent = (props) => {
       </Sidebar>
       <SidebarInset class='flex flex-col flex-1 min-w-0'>
         <header class='flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12'>
-          <div class='flex items-center gap-2 px-4'>
+          <div class='flex items-center gap-2 px-4 w-full'>
             <SidebarTrigger class={isRTL() ? '-mr-1' : '-ml-1'} aria-label={t('common.toggleSidebar')} />
             <Separator orientation='vertical' class={isRTL() ? 'mr-2' : 'ml-2'} />
             <Breadcrumb>
@@ -208,44 +146,51 @@ const SellerContentWrapper: ParentComponent = (props) => {
           </div>
         </header>
         <div class='flex-1 overflow-y-auto relative'>
-          <Suspense fallback={<ContentSkeleton />}>{props.children}</Suspense>
+          <Suspense fallback={<TableSkeleton />}>{props.children}</Suspense>
         </div>
       </SidebarInset>
     </div>
   )
 }
 
-// Main layout component
+// Root Layout Component
 export default function SellerLayout(props: RouteSectionProps) {
   const { locale } = useI18n()
   const isRTL = () => locale() === 'ar'
-  const isMobile = createMediaQuery('(max-width: 767px)')
+  const auth = useAuth()
+  const user = () => auth.session()?.user
+
+  const isUnauthorized = () => {
+    const userRole = user()?.role
+    return !userRole || (userRole !== 'seller' && userRole !== 'admin')
+  }
 
   return (
-    <AuthCheck>
-      <Suspense
-        fallback={
-          <div class='flex h-screen overflow-hidden' dir={isRTL() ? 'rtl' : 'ltr'}>
-            <Show when={!isMobile()}>
-              <div class='w-64 border-r'>
-                <SidebarSkeleton />
-              </div>
-            </Show>
-            <div class='flex-1'>
-              <HeaderSkeleton />
-              <ContentSkeleton />
+    <Show
+      when={!isUnauthorized()}
+      fallback={
+        <div class='p-6 flex items-center justify-center'>
+          <Alert variant='destructive' class='max-w-md'>
+            <AlertDescription class='text-center'>You must be a seller to access this page.</AlertDescription>
+            <div class='p-6 text-center'>
+              <A
+                href='/'
+                class='inline-block bg-red-500 text-white font-semibold px-4 py-2 rounded hover:bg-red-600 transition-colors duration-300'
+              >
+                Go to Home Page
+              </A>
             </div>
-          </div>
-        }
-      >
-        <SellerProvider>
-          <div class='flex h-screen overflow-hidden' dir={isRTL() ? 'rtl' : 'ltr'}>
-            <SidebarProvider>
-              <SellerContentWrapper>{props.children}</SellerContentWrapper>
-            </SidebarProvider>
-          </div>
-        </SellerProvider>
-      </Suspense>
-    </AuthCheck>
+          </Alert>
+        </div>
+      }
+    >
+      <SellerProvider>
+        <div class='flex h-screen overflow-hidden' dir={isRTL() ? 'rtl' : 'ltr'}>
+          <SidebarProvider>
+            <SellerContentWrapper>{props.children}</SellerContentWrapper>
+          </SidebarProvider>
+        </div>
+      </SellerProvider>
+    </Show>
   )
 }

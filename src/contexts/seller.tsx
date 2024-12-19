@@ -1,6 +1,5 @@
-// contexts/seller.tsx
 import { createContext, useContext, ParentComponent } from 'solid-js'
-import { createAsync } from '@solidjs/router'
+import { createResource, type Resource } from 'solid-js'
 import { getStoreByUserId } from '~/db/fetchers/stores'
 import { getProducts } from '~/db/fetchers/products'
 import { useAuth } from '@solid-mediakit/auth/client'
@@ -17,8 +16,9 @@ type AuthUser = {
 
 type SellerContextType = {
   user: () => AuthUser | undefined
-  store: () => Store | null | undefined
-  products: () => Product[] | undefined // Added this line
+  store: Resource<Store | null>
+  products: Resource<Product[]>
+  isLoading: () => boolean
 }
 
 const SellerContext = createContext<SellerContextType>()
@@ -26,22 +26,43 @@ const SellerContext = createContext<SellerContextType>()
 export const SellerProvider: ParentComponent = (props) => {
   const auth = useAuth()
   const user = () => auth.session()?.user as AuthUser | undefined
+  const userId = () => user()?.id
 
-  // Load store data
-  const store = createAsync(async () => {
-    const userId = user()?.id
-    if (!userId) return null
-    return await getStoreByUserId(userId)
-  })
+  // Store resource
+  const [store] = createResource(
+    userId,
+    async (id) => {
+      if (!id) return null
+      return await getStoreByUserId(id)
+    },
+    { initialValue: null }
+  )
 
-  // Load products data based on store
-  const products = createAsync(async () => {
-    const storeId = store()?.storeId
-    if (!storeId) return []
-    return await getProducts(storeId)
-  })
+  // Products resource that depends on store
+  const [products] = createResource(
+    store,
+    async (storeData) => {
+      if (!storeData?.storeId) return []
+      return await getProducts(storeData.storeId)
+    },
+    { initialValue: [] }
+  )
 
-  return <SellerContext.Provider value={{ user, store, products }}>{props.children}</SellerContext.Provider>
+  // Loading state
+  const isLoading = () => store.loading || products.loading
+
+  return (
+    <SellerContext.Provider
+      value={{
+        user,
+        store,
+        products,
+        isLoading,
+      }}
+    >
+      {props.children}
+    </SellerContext.Provider>
+  )
 }
 
 export const useSellerContext = () => {

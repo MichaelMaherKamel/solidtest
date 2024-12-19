@@ -18,7 +18,6 @@ import { Alert, AlertDescription } from '~/components/ui/alerts'
 // Improved loading components
 function SidebarSkeleton() {
   const isMobile = createMediaQuery('(max-width: 767px)')
-
   return (
     <div class='flex flex-col h-full'>
       {/* Header */}
@@ -244,7 +243,8 @@ export default function AdminLayout(props: RouteSectionProps) {
         }
       >
         <AdminProvider>
-          <div class='flex h-screen overflow-hidden'>
+          {/* Force LTR direction for admin layout */}
+          <div class='flex h-screen overflow-hidden' dir='ltr'>
             <SidebarProvider>
               <AdminContentWrapper>{props.children}</AdminContentWrapper>
             </SidebarProvider>

@@ -1,6 +1,7 @@
 import { For } from 'solid-js'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table'
 import { useI18n } from '~/contexts/i18n'
+import { useLocation } from '@solidjs/router'
 
 interface DataTableProps<T> {
   data: T[]
@@ -8,17 +9,19 @@ interface DataTableProps<T> {
     header: string
     accessorKey: keyof T
     cell?: (item: T) => any
-    minWidth?: string // Add minWidth option for responsive control
-    maxWidth?: string // Add maxWidth option for responsive control
+    minWidth?: string
+    maxWidth?: string
   }[]
 }
 
 export function DataTable<T>(props: DataTableProps<T>) {
   const { locale } = useI18n()
-  const isRTL = locale() === 'ar'
+  const location = useLocation()
+  const isAdminRoute = () => location.pathname.startsWith('/admin')
+  const isRTL = !isAdminRoute() && locale() === 'ar'
 
   return (
-    <div class='w-full overflow-auto' dir={isRTL ? 'rtl' : 'ltr'}>
+    <div class='w-full overflow-auto' dir={isAdminRoute() ? 'ltr' : isRTL ? 'rtl' : 'ltr'}>
       <Table>
         <TableHeader>
           <TableRow>
@@ -52,7 +55,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         width: column.maxWidth,
                       }}
                     >
-                      <div class='flex items-center gap-4 justify-start overflow-hidden'>
+                      <div
+                        class='flex items-center gap-4 justify-start overflow-hidden'
+                        dir={isAdminRoute() ? 'ltr' : isRTL ? 'rtl' : 'ltr'}
+                      >
                         {column.cell ? column.cell(item) : item[column.accessorKey]}
                       </div>
                     </TableCell>

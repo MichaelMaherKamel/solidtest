@@ -1,5 +1,5 @@
 import { createContext, useContext, ParentComponent } from 'solid-js'
-import { createAsync } from '@solidjs/router'
+import { createResource } from 'solid-js'
 import { getUsers } from '~/db/fetchers/users'
 import { getStores } from '~/db/fetchers/stores'
 import { getAllProducts } from '~/db/fetchers/products'
@@ -20,6 +20,7 @@ type AdminContextType = {
   stores: () => Store[] | undefined
   products: () => Product[] | undefined
   users: () => User[] | undefined
+  isLoading: () => boolean
 }
 
 const AdminContext = createContext<AdminContextType>()
@@ -27,30 +28,26 @@ const AdminContext = createContext<AdminContextType>()
 export const AdminProvider: ParentComponent = (props) => {
   const auth = useAuth()
   const user = () => auth.session()?.user as AuthUser | undefined
+  const userId = () => user()?.id
 
-  // Prefetch all data needed for admin dashboard
-  const stores = createAsync(async () => {
-    if (!user()) return undefined
-    return await getStores()
-  })
+  // Parallel data fetching with initial values
+  const [stores] = createResource(userId, async () => await getStores(), { initialValue: [] })
 
-  const products = createAsync(async () => {
-    if (!user()) return undefined
-    return await getAllProducts() // Using the new getAllProducts function
-  })
+  const [products] = createResource(userId, async () => await getAllProducts(), { initialValue: [] })
 
-  const users = createAsync(async () => {
-    if (!user()) return undefined
-    return await getUsers()
-  })
+  const [users] = createResource(userId, async () => await getUsers(), { initialValue: [] })
+
+  // Combined loading state
+  const isLoading = () => stores.loading || products.loading || users.loading
 
   return (
     <AdminContext.Provider
       value={{
         user,
-        stores,
-        products,
-        users,
+        stores: () => stores(),
+        products: () => products(),
+        users: () => users(),
+        isLoading,
       }}
     >
       {props.children}

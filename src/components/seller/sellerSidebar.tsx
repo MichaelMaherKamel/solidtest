@@ -32,7 +32,6 @@ export function SellerSidebar() {
   const { locale, t, isLoading: i18nLoading } = useI18n()
   const isRTL = () => locale() === 'ar'
 
-  // Add session management
   const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
 
@@ -42,10 +41,8 @@ export function SellerSidebar() {
     }
   }
 
-  // Effect to handle session changes
   createEffect(() => {
     const session = auth.session()
-    // Handle the possibly undefined session value
     setCurrentSession(session ?? null)
     setIsLoading(false)
   })
@@ -75,25 +72,41 @@ export function SellerSidebar() {
     ],
   })
 
+  // Function to render menu item content with left-aligned icons
+  const renderMenuContent = (icon: any, text: string, collapsed = false) => {
+    const Icon = icon
+    if (collapsed && !isMobile()) {
+      return <Icon class='size-4' />
+    }
+    return (
+      <div class='w-full flex items-center gap-3'>
+        {/* Icon always on the left */}
+        <div class='flex-shrink-0'>
+          <Icon class='size-4' />
+        </div>
+        {/* Text with proper alignment based on language */}
+        <span class={`truncate flex-1 ${isRTL() ? 'text-right' : 'text-left'}`}>{text}</span>
+      </div>
+    )
+  }
+
   return (
     <Show when={!i18nLoading()} fallback={<div class='h-full' />}>
-      <div class='flex flex-col h-full'>
+      <div
+        class='flex flex-col h-full'
+        style={{
+          direction: isRTL() ? 'rtl' : 'ltr',
+        }}
+      >
         <SidebarHeader>
-          <SidebarMenu dir={isRTL() ? 'rtl' : 'ltr'}>
+          <SidebarMenu>
             <SidebarMenuItem>
               <A href='/'>
                 <SidebarMenuButton
                   size='lg'
-                  class='group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+                  class='group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground w-full'
                 >
-                  <div class='flex items-center gap-3'>
-                    <div class='flex-shrink-0'>
-                      <BiLogosChrome class='size-4' />
-                    </div>
-                    {(state() !== 'collapsed' || isMobile()) && (
-                      <span class='truncate font-semibold'>{t('seller.sidebar.storeName')}</span>
-                    )}
-                  </div>
+                  {renderMenuContent(BiLogosChrome, t('seller.sidebar.storeName'), state() === 'collapsed')}
                 </SidebarMenuButton>
               </A>
             </SidebarMenuItem>
@@ -104,7 +117,9 @@ export function SellerSidebar() {
           <For each={getData().mainMenu}>
             {(section) => (
               <SidebarGroup>
-                <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                <SidebarGroupLabel class={`w-full ${isRTL() ? 'text-right pr-2' : 'text-left pl-2'}`}>
+                  {section.title}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <For each={section.items}>
@@ -114,13 +129,12 @@ export function SellerSidebar() {
                             as={A}
                             href={item.url}
                             tooltip={item.name}
-                            class='group/menu-item'
+                            class='group/menu-item w-full'
                             onClick={handleNavClick}
                             data-active={location.pathname === item.url}
                             data-state={location.pathname === item.url ? 'active' : 'inactive'}
                           >
-                            <item.icon class='size-4' />
-                            <span class='flex-1'>{item.name}</span>
+                            {renderMenuContent(item.icon, item.name, state() === 'collapsed')}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       )}
@@ -139,18 +153,19 @@ export function SellerSidebar() {
                 as={A}
                 href='/seller/settings'
                 tooltip={t('seller.sidebar.settings')}
-                class='group/menu-item'
+                class='group/menu-item w-full'
                 onClick={handleNavClick}
                 data-active={location.pathname === '/seller/settings'}
                 data-state={location.pathname === '/seller/settings' ? 'active' : 'inactive'}
               >
-                <FiSettings class='size-4' />
-                <span class='flex-1'>{t('seller.sidebar.settings')}</span>
+                {renderMenuContent(FiSettings, t('seller.sidebar.settings'), state() === 'collapsed')}
               </SidebarMenuButton>
             </SidebarMenuItem>
             <Show when={!isLoading()}>
               <SidebarMenuItem>
-                <SellerUserButton session={currentSession()} />
+                <div class='w-full'>
+                  <SellerUserButton session={currentSession()} />
+                </div>
               </SidebarMenuItem>
             </Show>
           </SidebarMenu>
@@ -161,3 +176,5 @@ export function SellerSidebar() {
     </Show>
   )
 }
+
+export default SellerSidebar
