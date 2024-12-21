@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from './ui/dropdown-menu'
 import { useI18n } from '~/contexts/i18n'
+import NavDropdown from './NavDropDown'
 
 interface Language {
   code: 'en' | 'ar'
@@ -30,6 +31,8 @@ export interface LocalizationButtonProps {
   variant?: 'ghost' | 'outline' | 'default'
   class?: string
   onLocaleChange?: () => void
+  iconOnly?: boolean
+  size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
 export const LocalizationButton: Component<LocalizationButtonProps> = (props) => {
@@ -37,7 +40,6 @@ export const LocalizationButton: Component<LocalizationButtonProps> = (props) =>
   const [isOpen, setIsOpen] = createSignal(false)
 
   const handleLanguageChange = (lang: Language) => {
-    // Update document direction based on language
     document.documentElement.dir = lang.direction
     document.documentElement.lang = lang.code
     setLocale(lang.code)
@@ -51,16 +53,16 @@ export const LocalizationButton: Component<LocalizationButtonProps> = (props) =>
     <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger>
         <Button
-          variant={props.variant || 'outline'}
-          size='sm'
-          class={`flex items-center gap-2 rounded-full ${props.class || ''}`}
+          variant={props.variant || 'ghost'}
+          size={props.size || (props.iconOnly ? 'icon' : 'sm')}
+          class={`${props.iconOnly ? '' : 'flex items-center gap-2 rounded-full'} ${props.class || ''}`}
+          aria-label='Change language'
         >
           <RiEditorTranslate2 class='w-5 h-5' />
-          <span class='text-xs font-semibold'>{getCurrentLanguage().nativeName}</span>
-          <span class='sr-only'>Change language</span>
+          {!props.iconOnly && <span class='text-xs font-semibold'>{getCurrentLanguage().nativeName}</span>}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent class='min-w-[150px]'>
+      <DropdownMenuContent>
         {languages.map((lang) => (
           <DropdownMenuItem
             class={`flex items-center justify-between px-3 py-2 ${locale() === lang.code ? 'bg-primary/10' : ''}`}

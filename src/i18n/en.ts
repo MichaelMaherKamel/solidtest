@@ -15,6 +15,8 @@ export const enDict = {
     title: 'Welcome to Souq El Rafay3',
     subtitle: 'Sign in to continue shopping',
     signIn: 'Sign In',
+    signOut: 'Sign Out',
+    signOutError: 'Error signing out. Please try again.',
     googleButton: 'Continue with Google',
     facebookButton: 'Continue with Facebook',
     error: 'Unable to sign in at the moment. Please try again.',
@@ -28,6 +30,8 @@ export const enDict = {
     admin: 'Admin',
     products: 'Products',
     seller: 'Seller',
+    account: 'My Account',
+    userMenu: 'User Menu',
   },
 
   hero: {
@@ -67,7 +71,9 @@ export const enDict = {
     quickLinks: 'Quick Links',
     email: 'Email',
     phone: 'Phone',
-    copyright: '© {{year}} Souq EL Rafay3. All rights reserved.',
+    copyright: '© {{year}} Souq El Rafay3. All rights reserved.',
+    terms: 'Terms',
+    companyInfo: '© {{year}} Operated by Wark Maze',
   },
 
   seller: {

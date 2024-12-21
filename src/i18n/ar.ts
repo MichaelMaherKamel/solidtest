@@ -15,6 +15,8 @@ export const arDict = {
     title: 'مرحباً بك في سوق الرفايع',
     subtitle: 'سجل دخول لمواصلة التسوق',
     signIn: 'تسجيل الدخول',
+    signOut: 'تسجيل الخروج',
+    signOutError: 'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.',
     googleButton: 'المتابعة باستخدام Google',
     facebookButton: 'المتابعة باستخدام Facebook',
     error: 'تعذر تسجيل الدخول في الوقت الحالي. يرجى المحاولة مرة أخرى.',
@@ -22,12 +24,14 @@ export const arDict = {
 
   nav: {
     home: 'الرئيسية',
-    about: 'عن المتجر',
+    about: 'مين إحنا',
     stores: 'المتاجر',
     gallery: 'المعرض',
     admin: 'الإدارة',
     products: 'المنتجات',
     seller: 'البائع',
+    account: 'حسابي',
+    userMenu: 'قائمة المستخدم',
   },
 
   hero: {
@@ -67,7 +71,9 @@ export const arDict = {
     quickLinks: 'روابط سريعة',
     email: 'البريد الإلكتروني',
     phone: 'الهاتف',
-    copyright: '© {{year}} سوق الرفايع. جميع الحقوق محفوظة.',
+    copyright: '© {{year}} سوق الرفايع. جميع الحقوق محفوظة',
+    terms: 'الشروط',
+    companyInfo: '© {{year}} تشغيل بواسطة وارك ميز',
   },
 
   seller: {

@@ -189,7 +189,7 @@ const HomePage: Component = () => {
       </section>
 
       {/* Footer */}
-      <footer class='bg-gray-900 text-white py-12'>
+      {/* <footer class='bg-gray-900 text-white py-12'>
         <div class='container mx-auto px-4'>
           <div class='grid grid-cols-1 md:grid-cols-3 gap-8'>
             <div>
@@ -230,7 +230,7 @@ const HomePage: Component = () => {
             <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   )
 }

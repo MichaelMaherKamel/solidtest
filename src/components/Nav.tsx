@@ -2,19 +2,11 @@ import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, 
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
-import { IoMenu } from 'solid-icons/io'
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
+import { Input } from './ui/input'
 import UserButton from './auth/UserBtn'
 import { useI18n } from '~/contexts/i18n'
 import { LocalizationButton } from './LocalizationButton'
-
-const isBrowser = () => typeof window !== 'undefined'
-
-interface NavItem {
-  path: string
-  key: string
-  roles?: string[]
-}
+import { FiShoppingCart } from 'solid-icons/fi'
 
 const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
@@ -26,16 +18,54 @@ const Nav: Component = () => {
   const { t, locale } = useI18n()
 
   const isRTL = createMemo(() => locale() === 'ar')
+  const menuRef = createSignal<HTMLDivElement>()
 
   // Initialize and track session state
   createEffect(() => {
     const session = auth.session()
     const status = auth.status()
-
     if (status !== 'loading' && session !== undefined) {
       setIsSessionLoaded(true)
-      console.log('Nav session loaded:', { status, session })
     }
+  })
+
+  // Handle escape key
+  createEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen()) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen()) {
+      window.addEventListener('keydown', handleEscape)
+    }
+
+    return () => window.removeEventListener('keydown', handleEscape)
+  })
+
+  // Handle click outside
+  createEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const menu = menuRef[0]()
+      if (menu && !menu.contains(e.target as Node) && isOpen()) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen()) {
+      document.addEventListener('click', handleClickOutside)
+    }
+
+    onCleanup(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+  })
+
+  // Close menu on route change
+  createEffect(() => {
+    location.pathname
+    setIsOpen(false)
   })
 
   const userRole = createMemo(() => {
@@ -43,7 +73,7 @@ const Nav: Component = () => {
     return session?.user?.role || 'guest'
   })
 
-  const MENU_ITEMS: NavItem[] = [
+  const MENU_ITEMS = [
     { path: '/', key: 'nav.home' },
     { path: '/about', key: 'nav.about' },
     { path: '/stores', key: 'nav.stores' },
@@ -59,51 +89,9 @@ const Nav: Component = () => {
     })
   })
 
-  // Media query handling
-  const mdBreakpoint = '(min-width: 768px)'
-  let scrollPosition = 0
-
-  const lockScroll = () => {
-    if (!isBrowser()) return
-    scrollPosition = window.pageYOffset
-    document.body.style.overflow = 'hidden'
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollPosition}px`
-    document.body.style.width = '100%'
-  }
-
-  const unlockScroll = () => {
-    if (!isBrowser()) return
-    document.body.style.removeProperty('overflow')
-    document.body.style.removeProperty('position')
-    document.body.style.removeProperty('top')
-    document.body.style.removeProperty('width')
-    window.scrollTo(0, scrollPosition)
-  }
-
-  const handleSheetChange = (open: boolean) => {
-    setIsOpen(open)
-    if (open) {
-      lockScroll()
-    } else {
-      unlockScroll()
-    }
-  }
-
-  const handleMediaChange = (e: MediaQueryListEvent | MediaQueryList) => {
-    if (e.matches && isOpen()) {
-      handleSheetChange(false)
-    }
-  }
-
+  // Scroll handling
   onMount(() => {
     setIsClient(true)
-    if (!isBrowser()) return
-
-    const mediaQuery = window.matchMedia(mdBreakpoint)
-    handleMediaChange(mediaQuery)
-    mediaQuery.addEventListener('change', handleMediaChange)
-
     let scrollRAF: number
     const handleScroll = () => {
       if (scrollRAF) {
@@ -118,31 +106,11 @@ const Nav: Component = () => {
     handleScroll()
 
     onCleanup(() => {
-      mediaQuery.removeEventListener('change', handleMediaChange)
       window.removeEventListener('scroll', handleScroll)
       if (scrollRAF) {
         cancelAnimationFrame(scrollRAF)
       }
-      if (isOpen()) {
-        unlockScroll()
-      }
     })
-  })
-
-  // Reset mobile menu on auth state change
-  createEffect(() => {
-    const session = auth.session()
-    const status = auth.status()
-
-    if (status === 'unauthenticated' || session === null) {
-      handleSheetChange(false)
-    }
-  })
-
-  // Reset mobile menu on route change
-  createEffect(() => {
-    location.pathname
-    handleSheetChange(false)
   })
 
   const isHomePage = createMemo(() => location.pathname === '/')
@@ -162,100 +130,147 @@ const Nav: Component = () => {
     return 'text-gray-900 hover:text-gray-800'
   })
 
-  const renderUserButton = () => (
-    <Show when={isSessionLoaded()} fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-      <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-        <UserButton buttonColorClass={textColor()} />
-      </Suspense>
-    </Show>
-  )
-
   return (
     <Show when={isClient()}>
-      <nav
-        class={`fixed w-full transition-all duration-300 z-50 ${
-          isHomePage() && !isScrolled()
-            ? 'bg-transparent'
-            : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md'
-        }`}
-        dir={isRTL() ? 'rtl' : 'ltr'}
-      >
-        <div class='container mx-auto px-4'>
-          {/* Desktop Navigation */}
-          <div class='hidden md:flex h-16 items-center justify-between'>
-            <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
-              Souq El Rafay3
-            </A>
-
-            <div class='flex items-center gap-4'>
-              <div class='flex items-center gap-2'>
-                {filteredMenuItems().map((item) => (
-                  <Button
-                    as={A}
-                    href={item.path}
-                    variant='ghost'
-                    class={`border-b-2 transition-all duration-200 ${
-                      active(item.path)
-                        ? 'bg-sky-700/50 border-sky-400'
-                        : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
-                    } ${textColor()}`}
-                  >
-                    {t(item.key)}
-                  </Button>
-                ))}
+      <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'} ref={menuRef[1]}>
+        <div class='w-full md:container md:mx-auto'>
+          <div
+            class={`transition-all duration-300 md:mx-4 md:rounded-lg ${
+              isHomePage() && !isScrolled() && !isOpen()
+                ? 'bg-transparent'
+                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md'
+            }`}
+          >
+            <div class='flex h-16 items-center justify-between px-4'>
+              {/* Logo Section */}
+              <div class='flex items-center gap-4'>
+                <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
+                  Souq El Rafay3
+                </A>
               </div>
 
+              {/* Search Bar - Desktop Only */}
+              <div class='hidden md:flex flex-1 max-w-xl mx-4'>
+                <Input type='search' placeholder={t('search.placeholder')} class={`w-full ${textColor()}`} />
+              </div>
+
+              {/* Right Actions */}
               <div class='flex items-center gap-2'>
-                <LocalizationButton />
-                <div class='w-10'>{renderUserButton()}</div>
+                {/* Cart - Desktop Only */}
+                <Button variant='ghost' size='icon' class={`hidden md:flex hover:bg-white/10 ${textColor()}`}>
+                  <FiShoppingCart class='h-5 w-5' />
+                </Button>
+
+                {/* Language Switch - Desktop Only */}
+                <div class='hidden md:block'>
+                  <LocalizationButton iconOnly variant='ghost' size='icon' class={`hover:bg-white/10 ${textColor()}`} />
+                </div>
+
+                {/* User Button - Desktop Only */}
+                <div class='w-10 hidden md:block'>
+                  <Show
+                    when={isSessionLoaded()}
+                    fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}
+                  >
+                    <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
+                      <UserButton buttonColorClass={textColor()} />
+                    </Suspense>
+                  </Show>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsOpen(!isOpen())
+                  }}
+                  aria-label={isOpen() ? 'Close menu' : 'Open menu'}
+                >
+                  <div class='w-5 h-5 flex items-center justify-center'>
+                    <span
+                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                        isRTL() ? 'left' : 'right'
+                      } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
+                    />
+                    <span
+                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                        isRTL() ? 'left' : 'right'
+                      } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
+                    />
+                  </div>
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Mobile Navigation */}
-          <div class='md:hidden flex h-16 items-center justify-between'>
-            <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
-              Souq El Rafay3
-            </A>
+            {/* Mobile Menu */}
+            <div
+              class='overflow-hidden transition-all duration-300 ease-in-out'
+              style={{
+                height: isOpen() ? 'auto' : '0',
+              }}
+            >
+              <div class='px-4 py-4'>
+                <ul class='space-y-2'>
+                  {/* Language Switch in Mobile Menu */}
+                  <li class='md:hidden'>
+                    <Button
+                      variant='ghost'
+                      class={`justify-start w-full text-start border-transparent hover:bg-sky-700/30 hover:border-sky-300 ${textColor()}`}
+                      onClick={() => {
+                        // Toggle language logic here
+                      }}
+                    >
+                      {t('nav.language')}
+                    </Button>
+                  </li>
 
-            <div class='flex items-center gap-2'>
-              {renderUserButton()}
-
-              <Sheet open={isOpen()} onOpenChange={handleSheetChange}>
-                <SheetTrigger>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    class={`hover:bg-white/10 ${textColor()}`}
-                    aria-label={t('nav.menuLabel')}
-                  >
-                    <IoMenu class='h-5 w-5' />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent position={isRTL() ? 'right' : 'left'}>
-                  <div class='flex flex-col space-y-4 pt-6'>
-                    {filteredMenuItems().map((item) => (
+                  {/* Regular Menu Items */}
+                  {filteredMenuItems().map((link, index) => (
+                    <li
+                      style={{
+                        animation: isOpen() ? `menuItemSlideDown 0.4s ease-out forwards` : '',
+                        'animation-delay': `${index * 0.05}s`,
+                        opacity: '0',
+                      }}
+                    >
                       <Button
                         as={A}
-                        href={item.path}
+                        href={link.path}
                         variant='ghost'
                         class={`justify-start w-full text-start ${
-                          active(item.path)
+                          active(link.path)
                             ? 'bg-sky-700/50 border-sky-400'
                             : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
-                        }`}
+                        } ${textColor()}`}
                       >
-                        {t(item.key)}
+                        {t(link.key)}
                       </Button>
-                    ))}
-                    <LocalizationButton onLocaleChange={() => handleSheetChange(false)} />
-                  </div>
-                </SheetContent>
-              </Sheet>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
       </nav>
+
+      <style>
+        {`
+          @keyframes menuItemSlideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-8px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
     </Show>
   )
 }
