@@ -49,29 +49,33 @@ export const LocalizationButton: Component<LocalizationButtonProps> = (props) =>
   const getCurrentLanguage = () => languages.find((lang) => lang.code === locale()) || languages[0]
 
   return (
-    <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger>
-        <Button
-          variant={props.variant || 'ghost'}
-          size={props.size || (props.iconOnly ? 'icon' : 'sm')}
-          class={`${props.iconOnly ? '' : 'flex items-center gap-2 rounded-full'} ${props.class || ''}`}
-          aria-label='Change language'
-        >
-          <RiEditorTranslate2 class='w-5 h-5' />
-          {!props.iconOnly && <span class='text-xs font-semibold'>{getCurrentLanguage().nativeName}</span>}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {languages.map((lang) => (
-          <DropdownMenuItem
-            class={`flex items-center justify-between px-3 py-2 ${locale() === lang.code ? 'bg-primary/10' : ''}`}
-            onClick={() => handleLanguageChange(lang)}
+    <div class='flex justify-end'>
+      {' '}
+      {/* Added container with flex justify-end */}
+      <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger>
+          <Button
+            variant={props.variant || 'ghost'}
+            size={props.size || (props.iconOnly ? 'icon' : 'sm')}
+            class={`${props.iconOnly ? '' : 'flex items-center gap-2 rounded-full'} ${props.class || ''}`}
+            aria-label='Change language'
           >
-            <span>{lang.nativeName}</span>
-            {locale() === lang.code && <span class='text-primary'>✓</span>}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <RiEditorTranslate2 class='w-5 h-5' />
+            {!props.iconOnly && <span class='text-xs font-semibold'>{getCurrentLanguage().nativeName}</span>}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {languages.map((lang) => (
+            <DropdownMenuItem
+              class={`flex items-center justify-between px-3 py-2 ${locale() === lang.code ? 'bg-primary/10' : ''}`}
+              onClick={() => handleLanguageChange(lang)}
+            >
+              <span>{lang.nativeName}</span>
+              {locale() === lang.code && <span class='text-primary'>✓</span>}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }

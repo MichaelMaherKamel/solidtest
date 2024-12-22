@@ -36,7 +36,6 @@ const DropdownMenuContent = <T extends ValidComponent = 'div'>(
     </DropdownMenuPrimitive.Portal>
   )
 }
-
 type DropdownMenuItemProps<T extends ValidComponent = 'div'> = DropdownMenuPrimitive.DropdownMenuItemProps<T> & {
   class?: string | undefined
 }

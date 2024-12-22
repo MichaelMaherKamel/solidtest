@@ -68,16 +68,16 @@ const MobileNavigation: Component = () => {
         class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 backdrop-blur-md'
         dir='ltr'
       >
-        <div class='flex items-center justify-between h-full text-xs'>
+        <div class='flex items-center justify-center h-full text-xs'>
           <span class='truncate'>{t('footer.companyInfo', { year: currentYear })}</span>
-          <div class='flex-shrink-0 space-x-4 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4'>
+          {/* <div class='flex-shrink-0 space-x-4 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4'>
             <A href='/about' class='font-medium hover:text-gray-900 transition-colors'>
               {t('nav.about')}
             </A>
             <A href='/terms' class='font-medium hover:text-gray-900 transition-colors'>
               {t('footer.terms')}
             </A>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
@@ -95,7 +95,6 @@ const DesktopFooter: Component = () => {
         <div class='flex items-center justify-between'>
           <div class='flex items-center gap-4'>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
-           
           </div>
           <div class='space-x-8 rtl:space-x-reverse'>
             <A href='/about' class='text-base font-medium hover:text-gray-900 transition-colors'>
