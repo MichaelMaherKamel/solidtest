@@ -1,4 +1,4 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Suspense, Show } from 'solid-js'
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
@@ -50,6 +50,38 @@ const Nav: Component = () => {
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
+  // Initialize and track session state
+  createEffect(() => {
+    const session = auth.session()
+    const status = auth.status()
+
+    // If we're unauthenticated but have a stored session, try to restore it
+    if (status === 'unauthenticated' && !session) {
+      const storedSession = localStorage.getItem('user-session')
+      if (storedSession) {
+        try {
+          const parsedSession = JSON.parse(storedSession)
+          if (parsedSession?.user) {
+            auth.refetch(true)
+          }
+        } catch (e) {
+          console.error('Error parsing stored session:', e)
+          localStorage.removeItem('user-session')
+        }
+      }
+    }
+
+    // Update session loaded state
+    if (status !== 'loading' && session !== undefined) {
+      setIsSessionLoaded(true)
+    }
+
+    // Sync session to localStorage when it changes
+    if (session) {
+      localStorage.setItem('user-session', JSON.stringify(session))
+    }
+  })
+
   // Close all dropdowns except the specified one
   const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
     if (except !== 'menu') setIsOpen(false)
@@ -75,15 +107,6 @@ const Nav: Component = () => {
     closeAllDropdowns('user')
     setIsUserOpen(!isUserOpen())
   }
-
-  // Initialize and track session state
-  createEffect(() => {
-    const session = auth.session()
-    const status = auth.status()
-    if (status !== 'loading' && session !== undefined) {
-      setIsSessionLoaded(true)
-    }
-  })
 
   // Handle escape key for all dropdowns
   createEffect(() => {
@@ -217,6 +240,12 @@ const Nav: Component = () => {
       setIsUserOpen(false)
       await auth.signOut()
       localStorage.removeItem('user-session')
+      // Clean up any other auth-related items
+      for (const key of Object.keys(localStorage)) {
+        if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
+          localStorage.removeItem(key)
+        }
+      }
       window.location.href = '/'
     } catch (error) {
       console.error('Error signing out:', error)
@@ -314,7 +343,7 @@ const Nav: Component = () => {
                     when={auth.session()}
                     fallback={
                       <A
-                        href='/login'
+                        href={getLoginUrl()}
                         class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
                       >
                         <FaRegularUser class='h-5 w-5' />

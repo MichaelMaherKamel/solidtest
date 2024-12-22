@@ -1,7 +1,7 @@
 import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
-import type { Session } from '@solid-mediakit/auth'
+import type { Session } from '@auth/core/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,43 +21,41 @@ interface UserButtonProps {
 
 export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
-  const [localSession, setLocalSession] = createSignal<Session | null>(null)
   const auth = useAuth()
   const location = useLocation()
   const { t } = useI18n()
 
-  // Create an effect to sync the session state
+  // Initialize auth state if needed
   createEffect(() => {
-    const currentSession = auth.session()
-    if (currentSession !== undefined) {
-      setLocalSession(currentSession)
-      if (currentSession) {
-        localStorage.setItem('user-session', JSON.stringify(currentSession))
-      } else {
-        localStorage.removeItem('user-session')
-      }
-    }
-  })
+    const status = auth.status()
+    const session = auth.session()
 
-  // Initialize session from localStorage if available
-  createEffect(() => {
-    if (!localSession()) {
+    if (status === 'unauthenticated' && !session) {
       const storedSession = localStorage.getItem('user-session')
       if (storedSession) {
         try {
           const parsedSession = JSON.parse(storedSession) as Session
-          setLocalSession(parsedSession)
-        } catch (e) {
-          console.error('Error parsing stored session:', e)
+          if (parsedSession?.user) {
+            auth.refetch()
+          }
+        } catch {
           localStorage.removeItem('user-session')
         }
       }
     }
   })
 
+  // Sync session to localStorage
+  createEffect(() => {
+    const session = auth.session()
+    if (session) {
+      localStorage.setItem('user-session', JSON.stringify(session))
+    }
+  })
+
   // Memoized values
-  const user = createMemo(() => localSession()?.user)
-  const isAuthenticated = createMemo(() => !!user())
+  const user = createMemo(() => auth.session()?.user)
+  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
@@ -67,8 +65,8 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     try {
       setIsOpen(false)
       await auth.signOut()
-      setLocalSession(null)
       localStorage.removeItem('user-session')
+      // Clean up any other auth-related items
       for (const key of Object.keys(localStorage)) {
         if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
           localStorage.removeItem(key)
@@ -139,19 +137,16 @@ export const UserButton: Component<UserButtonProps> = (props) => {
             <DropdownMenuSeparator />
           </Show>
 
-          {/* Always show Account option */}
           <DropdownMenuItem as={A} href='/account'>
             {t('nav.account')}
           </DropdownMenuItem>
 
-          {/* Show Admin Dashboard for admin users */}
           <Show when={userRole() === 'admin'}>
             <DropdownMenuItem as={A} href='/admin'>
               {t('nav.admin')}
             </DropdownMenuItem>
           </Show>
 
-          {/* Show Seller Dashboard for seller users */}
           <Show when={userRole() === 'seller'}>
             <DropdownMenuItem as={A} href='/seller'>
               {t('nav.seller')}

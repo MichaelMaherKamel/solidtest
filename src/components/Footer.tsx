@@ -92,18 +92,18 @@ const DesktopFooter: Component = () => {
   return (
     <footer class='bg-gray-100 shadow-md'>
       <div class='container mx-auto px-4 py-3 text-gray-600' dir='ltr'>
-        <div class='flex items-center justify-between'>
+        <div class='flex items-center justify-center'>
           <div class='flex items-center gap-4'>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
           </div>
-          <div class='space-x-8 rtl:space-x-reverse'>
+          {/* <div class='space-x-8 rtl:space-x-reverse'>
             <A href='/about' class='text-base font-medium hover:text-gray-900 transition-colors'>
               {t('nav.about')}
             </A>
             <A href='/terms' class='text-base font-medium hover:text-gray-900 transition-colors'>
               {t('footer.terms')}
             </A>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>
