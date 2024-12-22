@@ -3,7 +3,6 @@ import { Button } from './ui/button'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from './ui/dropdown-menu'
 import { useI18n } from '~/contexts/i18n'
-import NavDropdown from './NavDropDown'
 
 interface Language {
   code: 'en' | 'ar'

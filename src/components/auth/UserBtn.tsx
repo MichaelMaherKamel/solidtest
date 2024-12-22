@@ -1,9 +1,7 @@
-// UserBtn.tsx
 import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import type { Session } from '@solid-mediakit/auth'
-import NavDropdown from '../NavDropDown'
 import {
   DropdownMenu,
   DropdownMenuContent,

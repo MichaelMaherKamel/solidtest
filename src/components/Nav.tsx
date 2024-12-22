@@ -3,22 +3,78 @@ import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import UserButton from './auth/UserBtn'
 import { useI18n } from '~/contexts/i18n'
-import { LocalizationButton } from './LocalizationButton'
 import { FiShoppingCart } from 'solid-icons/fi'
+import { RiEditorTranslate2 } from 'solid-icons/ri'
+import { FaRegularUser } from 'solid-icons/fa'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+
+interface Language {
+  code: 'en' | 'ar'
+  name: string
+  nativeName: string
+  direction: 'ltr' | 'rtl'
+}
+
+const languages: Language[] = [
+  {
+    code: 'en',
+    name: 'English',
+    nativeName: 'English',
+    direction: 'ltr',
+  },
+  {
+    code: 'ar',
+    name: 'Arabic',
+    nativeName: 'العربية',
+    direction: 'rtl',
+  },
+]
 
 const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
+  const [isLangOpen, setIsLangOpen] = createSignal(false)
+  const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
   const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
+
   const location = useLocation()
   const auth = useAuth()
-  const { t, locale } = useI18n()
+  const { t, locale, setLocale } = useI18n()
+
+  const menuRef = createSignal<HTMLDivElement>()
+  const langRef = createSignal<HTMLDivElement>()
+  const userRef = createSignal<HTMLDivElement>()
 
   const isRTL = createMemo(() => locale() === 'ar')
-  const menuRef = createSignal<HTMLDivElement>()
+  const isHomePage = createMemo(() => location.pathname === '/')
+
+  // Close all dropdowns except the specified one
+  const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
+    if (except !== 'menu') setIsOpen(false)
+    if (except !== 'lang') setIsLangOpen(false)
+    if (except !== 'user') setIsUserOpen(false)
+  }
+
+  // Click handlers for dropdowns
+  const handleMenuClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('menu')
+    setIsOpen(!isOpen())
+  }
+
+  const handleLangClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('lang')
+    setIsLangOpen(!isLangOpen())
+  }
+
+  const handleUserClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('user')
+    setIsUserOpen(!isUserOpen())
+  }
 
   // Initialize and track session state
   createEffect(() => {
@@ -29,31 +85,40 @@ const Nav: Component = () => {
     }
   })
 
-  // Handle escape key
+  // Handle escape key for all dropdowns
   createEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen()) {
-        setIsOpen(false)
+      if (e.key === 'Escape') {
+        closeAllDropdowns()
       }
     }
 
-    if (isOpen()) {
+    if (isOpen() || isLangOpen() || isUserOpen()) {
       window.addEventListener('keydown', handleEscape)
     }
 
     return () => window.removeEventListener('keydown', handleEscape)
   })
 
-  // Handle click outside
+  // Handle click outside for all dropdowns
   createEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const menu = menuRef[0]()
+      const lang = langRef[0]()
+      const user = userRef[0]()
+
       if (menu && !menu.contains(e.target as Node) && isOpen()) {
         setIsOpen(false)
       }
+      if (lang && !lang.contains(e.target as Node) && isLangOpen()) {
+        setIsLangOpen(false)
+      }
+      if (user && !user.contains(e.target as Node) && isUserOpen()) {
+        setIsUserOpen(false)
+      }
     }
 
-    if (isOpen()) {
+    if (isOpen() || isLangOpen() || isUserOpen()) {
       document.addEventListener('click', handleClickOutside)
     }
 
@@ -62,17 +127,25 @@ const Nav: Component = () => {
     })
   })
 
-  // Close menu on route change
+  // Close dropdowns on route change
   createEffect(() => {
     location.pathname
-    setIsOpen(false)
+    closeAllDropdowns()
   })
 
-  const userRole = createMemo(() => {
+  // User data memo
+  const userData = createMemo(() => {
     const session = auth.session()
-    return session?.user?.role || 'guest'
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
   })
 
+  // Menu items configuration
   const MENU_ITEMS = [
     { path: '/', key: 'nav.home' },
     { path: '/about', key: 'nav.about' },
@@ -85,7 +158,7 @@ const Nav: Component = () => {
   const filteredMenuItems = createMemo(() => {
     return MENU_ITEMS.filter((item) => {
       if (!item.roles) return true
-      return item.roles.includes(userRole())
+      return item.roles.includes(userData().role)
     })
   })
 
@@ -113,7 +186,7 @@ const Nav: Component = () => {
     })
   })
 
-  const isHomePage = createMemo(() => location.pathname === '/')
+  // Style helpers
   const active = (path: string) => location.pathname === path
 
   const textColor = createMemo(() => {
@@ -130,9 +203,35 @@ const Nav: Component = () => {
     return 'text-gray-900 hover:text-gray-800'
   })
 
+  // Language handling
+  const handleLanguageChange = (lang: Language) => {
+    document.documentElement.dir = lang.direction
+    document.documentElement.lang = lang.code
+    setLocale(lang.code)
+    setIsLangOpen(false)
+  }
+
+  // Auth handling
+  const handleSignOut = async () => {
+    try {
+      setIsUserOpen(false)
+      await auth.signOut()
+      localStorage.removeItem('user-session')
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error signing out:', error)
+      alert(t('auth.signOutError'))
+    }
+  }
+
+  const getLoginUrl = () => {
+    const currentPath = location.pathname || '/'
+    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
+  }
+
   return (
     <Show when={isClient()}>
-      <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'} ref={menuRef[1]}>
+      <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto'>
           <div
             class={`transition-all duration-300 md:mx-4 md:rounded-lg ${
@@ -156,25 +255,127 @@ const Nav: Component = () => {
 
               {/* Right Actions */}
               <div class='flex items-center gap-2'>
-                {/* Cart - Desktop Only */}
+                {/* Cart Button */}
                 <Button variant='ghost' size='icon' class={`hidden md:flex hover:bg-white/10 ${textColor()}`}>
                   <FiShoppingCart class='h-5 w-5' />
                 </Button>
 
-                {/* Language Switch - Desktop Only */}
-                <div class='hidden md:block'>
-                  <LocalizationButton iconOnly variant='ghost' size='icon' class={`hover:bg-white/10 ${textColor()}`} />
+                {/* Language Dropdown - Desktop Only */}
+                <div class='hidden md:block relative' ref={langRef[1]}>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    class={`hover:bg-white/10 ${textColor()}`}
+                    onClick={handleLangClick}
+                  >
+                    <RiEditorTranslate2 class='w-5 h-5' />
+                  </Button>
+
+                  <div
+                    class={`absolute ${
+                      isRTL() ? 'left-0' : 'right-0'
+                    } mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
+                      isLangOpen()
+                        ? 'opacity-100 transform scale-100'
+                        : 'opacity-0 transform scale-95 pointer-events-none'
+                    }`}
+                  >
+                    <div class='py-1'>
+                      {languages.map((lang) => (
+                        <button
+                          class={`w-full px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
+                            locale() === lang.code ? 'bg-primary/10 font-medium' : ''
+                          }`}
+                          onClick={() => handleLanguageChange(lang)}
+                        >
+                          <span class={`${isRTL() ? 'text-right' : 'text-left'}`}>{lang.nativeName}</span>
+                          {locale() === lang.code && (
+                            <svg
+                              class='w-4 h-4 text-primary'
+                              viewBox='0 0 24 24'
+                              fill='none'
+                              stroke='currentColor'
+                              stroke-width='2'
+                              stroke-linecap='round'
+                              stroke-linejoin='round'
+                            >
+                              <polyline points='20 6 9 17 4 12' />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                {/* User Button - Desktop Only */}
-                <div class='w-10 hidden md:block'>
+                {/* User Dropdown - Desktop Only */}
+                <div class='hidden md:block relative' ref={userRef[1]}>
                   <Show
-                    when={isSessionLoaded()}
-                    fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}
+                    when={auth.session()}
+                    fallback={
+                      <A
+                        href='/login'
+                        class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
+                      >
+                        <FaRegularUser class='h-5 w-5' />
+                      </A>
+                    }
                   >
-                    <Suspense fallback={<Button variant='ghost' class='w-10 h-10 rounded-full animate-pulse' />}>
-                      <UserButton buttonColorClass={textColor()} />
-                    </Suspense>
+                    <Button
+                      variant='ghost'
+                      class={`relative h-10 w-10 rounded-full ${textColor()}`}
+                      onClick={handleUserClick}
+                    >
+                      <Avatar>
+                        <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
+                        <AvatarFallback>{userData().initials}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+
+                    <div
+                      class={`absolute ${
+                        isRTL() ? 'left-0' : 'right-0'
+                      } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
+                        isUserOpen()
+                          ? 'opacity-100 transform scale-100'
+                          : 'opacity-0 transform scale-95 pointer-events-none'
+                      }`}
+                    >
+                      <div class='py-1'>
+                        <div class='px-4 py-2 text-sm text-gray-700'>
+                          <div class='font-medium line-clamp-1'>{userData().name}</div>
+                          <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
+                        </div>
+                        <hr />
+                        <A
+                          href='/account'
+                          class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                            isRTL() ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          {t('nav.account')}
+                        </A>
+                        {userData().role === 'admin' && (
+                          <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                            {t('nav.admin')}
+                          </A>
+                        )}
+                        {userData().role === 'seller' && (
+                          <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                            {t('nav.seller')}
+                          </A>
+                        )}
+                        <hr class='my-1 border-gray-200' />
+                        <button
+                          class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                            isRTL() ? 'text-right' : 'text-left'
+                          }`}
+                          onClick={handleSignOut}
+                        >
+                          {t('auth.signOut')}
+                        </button>
+                      </div>
+                    </div>
                   </Show>
                 </div>
 
@@ -183,10 +384,7 @@ const Nav: Component = () => {
                   variant='ghost'
                   size='icon'
                   class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setIsOpen(!isOpen())
-                  }}
+                  onClick={handleMenuClick}
                   aria-label={isOpen() ? 'Close menu' : 'Open menu'}
                 >
                   <div class='w-5 h-5 flex items-center justify-center'>
@@ -205,7 +403,7 @@ const Nav: Component = () => {
               </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Only Navigation Items */}
             <div
               class='overflow-hidden transition-all duration-300 ease-in-out'
               style={{
@@ -214,20 +412,6 @@ const Nav: Component = () => {
             >
               <div class='px-4 py-4'>
                 <ul class='space-y-2'>
-                  {/* Language Switch in Mobile Menu */}
-                  <li class='md:hidden'>
-                    <Button
-                      variant='ghost'
-                      class={`justify-start w-full text-start border-transparent hover:bg-sky-700/30 hover:border-sky-300 ${textColor()}`}
-                      onClick={() => {
-                        // Toggle language logic here
-                      }}
-                    >
-                      {t('nav.language')}
-                    </Button>
-                  </li>
-
-                  {/* Regular Menu Items */}
                   {filteredMenuItems().map((link, index) => (
                     <li
                       style={{

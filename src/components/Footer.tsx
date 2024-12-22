@@ -95,7 +95,7 @@ const DesktopFooter: Component = () => {
         <div class='flex items-center justify-between'>
           <div class='flex items-center gap-4'>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
-            <LocalizationButton />
+           
           </div>
           <div class='space-x-8 rtl:space-x-reverse'>
             <A href='/about' class='text-base font-medium hover:text-gray-900 transition-colors'>
