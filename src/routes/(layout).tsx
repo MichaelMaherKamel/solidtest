@@ -41,18 +41,16 @@
 
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import { createSignal, createEffect, createMemo, Component } from 'solid-js'
+import { createSignal, createEffect, onMount } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
-import type { Session } from '@auth/core/types'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
 import { createMediaQuery } from '@solid-primitives/media'
 
-// Types for auth context
 export type AuthState = {
   isAuthenticated: boolean
   isSessionLoaded: boolean
-  user: Session['user'] | null
+  user: any | null
   userRole: string
 }
 
@@ -62,7 +60,6 @@ export default function RootLayout(props: RouteSectionProps) {
   const isHomePage = () => location.pathname === '/'
   const auth = useAuth()
 
-  // Centralized auth state
   const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
   const [authState, setAuthState] = createSignal<AuthState>({
     isAuthenticated: false,
@@ -71,16 +68,38 @@ export default function RootLayout(props: RouteSectionProps) {
     userRole: 'guest',
   })
 
-  // Initialize and manage auth state
+  // Initial session check on mount
+  onMount(() => {
+    const storedSession = localStorage.getItem('user-session')
+    if (storedSession) {
+      try {
+        const parsedSession = JSON.parse(storedSession)
+        if (parsedSession?.user) {
+          setAuthState({
+            isAuthenticated: true,
+            isSessionLoaded: true,
+            user: parsedSession.user,
+            userRole: parsedSession.user?.role || 'guest',
+          })
+        }
+      } catch (error) {
+        console.error('Error parsing stored session:', error)
+        localStorage.removeItem('user-session')
+      }
+    }
+  })
+
+  // Handle authentication state changes
   createEffect(() => {
     const status = auth.status()
     const session = auth.session()
 
+    // Attempt to recover session if unauthenticated
     if (status === 'unauthenticated' && !session) {
       const storedSession = localStorage.getItem('user-session')
       if (storedSession) {
         try {
-          const parsedSession = JSON.parse(storedSession) as Session
+          const parsedSession = JSON.parse(storedSession)
           if (parsedSession?.user) {
             auth.refetch()
           }
@@ -90,37 +109,57 @@ export default function RootLayout(props: RouteSectionProps) {
       }
     }
 
+    // Update state when session or status changes
     if (status !== 'loading' && session !== undefined) {
-      setIsSessionLoaded(true)
-      setAuthState({
+      const newState = {
         isAuthenticated: status === 'authenticated',
         isSessionLoaded: true,
         user: session?.user || null,
         userRole: session?.user?.role || 'guest',
-      })
+      }
+
+      setIsSessionLoaded(true)
+      setAuthState(newState)
+
+      // Store valid session
+      if (session?.user) {
+        localStorage.setItem('user-session', JSON.stringify(session))
+      }
     }
   })
 
-  // Sync session to localStorage
+  // Watch for session changes to keep localStorage in sync
   createEffect(() => {
     const session = auth.session()
-    if (session) {
+    const status = auth.status()
+
+    if (status === 'authenticated' && session?.user) {
       localStorage.setItem('user-session', JSON.stringify(session))
     }
   })
 
-  // Centralized sign out handler
   const handleSignOut = async () => {
     try {
       await auth.signOut()
+
+      // Clear session storage
       localStorage.removeItem('user-session')
-      // Clean up auth-related items
       for (const key of Object.keys(localStorage)) {
         if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
           localStorage.removeItem(key)
         }
       }
-      window.location.href = '/'
+
+      // Reset auth state
+      setAuthState({
+        isAuthenticated: false,
+        isSessionLoaded: true,
+        user: null,
+        userRole: 'guest',
+      })
+
+      // Use replace for cleaner navigation
+      window.location.replace('/')
     } catch (error) {
       console.error('Error signing out:', error)
     }
