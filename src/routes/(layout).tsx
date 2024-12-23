@@ -41,7 +41,7 @@
 
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import { createSignal, createEffect } from 'solid-js'
+import { createSignal, createEffect, createMemo } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
@@ -50,7 +50,7 @@ import { createMediaQuery } from '@solid-primitives/media'
 export type AuthState = {
   isAuthenticated: boolean
   isSessionLoaded: boolean
-  user: any | null // Using any to match the actual session user shape
+  user: any | null
   userRole: string
 }
 
@@ -60,64 +60,56 @@ export default function RootLayout(props: RouteSectionProps) {
   const isHomePage = () => location.pathname === '/'
   const auth = useAuth()
 
-  // Centralized auth state
+  // Directly use auth hook for session
+  const user = () => auth.session()?.user
   const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
-  const [authState, setAuthState] = createSignal<AuthState>({
-    isAuthenticated: false,
-    isSessionLoaded: false,
-    user: null,
-    userRole: 'guest',
+
+  // Simplified auth state
+  const authState = createMemo(() => ({
+    isAuthenticated: !!user(),
+    isSessionLoaded: isSessionLoaded(),
+    user: user(),
+    userRole: user()?.role || 'guest',
+  }))
+
+  // Simple session loading check
+  createEffect(() => {
+    if (auth.status() !== 'loading') {
+      setIsSessionLoaded(true)
+    }
   })
 
-  // Initialize and manage auth state
+  // Session recovery
   createEffect(() => {
     const status = auth.status()
-    const session = auth.session()
-
-    if (status === 'unauthenticated' && !session) {
+    if (status === 'unauthenticated' && !user()) {
       const storedSession = localStorage.getItem('user-session')
       if (storedSession) {
-        try {
-          const parsedSession = JSON.parse(storedSession)
-          if (parsedSession?.user) {
-            auth.refetch()
-          }
-        } catch {
-          localStorage.removeItem('user-session')
-        }
+        auth.refetch()
       }
-    }
-
-    if (status !== 'loading' && session !== undefined) {
-      setIsSessionLoaded(true)
-      setAuthState({
-        isAuthenticated: status === 'authenticated',
-        isSessionLoaded: true,
-        user: session?.user || null,
-        userRole: session?.user?.role || 'guest',
-      })
     }
   })
 
-  // Sync session to localStorage
+  // Keep localStorage in sync
   createEffect(() => {
     const session = auth.session()
-    if (session) {
+    if (session?.user) {
       localStorage.setItem('user-session', JSON.stringify(session))
     }
   })
 
-  // Centralized sign out handler
   const handleSignOut = async () => {
     try {
       await auth.signOut()
+
+      // Clear auth storage
       localStorage.removeItem('user-session')
-      // Clean up auth-related items
       for (const key of Object.keys(localStorage)) {
         if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
           localStorage.removeItem(key)
         }
       }
+
       window.location.replace('/')
     } catch (error) {
       console.error('Error signing out:', error)

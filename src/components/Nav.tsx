@@ -137,6 +137,7 @@ const Nav: Component<NavProps> = (props) => {
       image: user?.image || '',
       initials: user?.name?.[0]?.toUpperCase() || 'U',
       role: user?.role || 'guest',
+      isAuthenticated: props.authState.isAuthenticated,
     }
   })
 
@@ -293,7 +294,7 @@ const Nav: Component<NavProps> = (props) => {
                 {/* User Dropdown - Desktop Only */}
                 <div class='hidden md:block relative' ref={userRef[1]}>
                   <Show
-                    when={props.authState.isAuthenticated}
+                    when={props.isSessionLoaded && props.authState.isAuthenticated}
                     fallback={
                       <A
                         href={getLoginUrl()}
