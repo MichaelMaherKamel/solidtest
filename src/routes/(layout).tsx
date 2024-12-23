@@ -29,11 +29,11 @@ export default function RootLayout(props: RouteSectionProps) {
 
   return (
     <div class='min-h-screen flex flex-col relative'>
-      <Nav />
+      {/* <Nav /> */}
       <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
       {/* Add padding bottom on mobile to account for the dock navigation */}
       <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
-        <SiteFooter />
+        {/* <SiteFooter /> */}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { Component, createSignal } from 'solid-js'
+import { Component, createSignal, onMount } from 'solid-js'
 import { Button } from './ui/button'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from './ui/dropdown-menu'
@@ -38,11 +38,31 @@ export const LocalizationButton: Component<LocalizationButtonProps> = (props) =>
   const { locale, setLocale } = useI18n()
   const [isOpen, setIsOpen] = createSignal(false)
 
+  // Initialize locale from localStorage on mount
+  onMount(() => {
+    const storedLocale = localStorage.getItem('locale')
+    if (storedLocale && (storedLocale === 'en' || storedLocale === 'ar')) {
+      const lang = languages.find((l) => l.code === storedLocale)
+      if (lang) {
+        document.documentElement.dir = lang.direction
+        document.documentElement.lang = lang.code
+        setLocale(lang.code)
+      }
+    }
+  })
+
   const handleLanguageChange = (lang: Language) => {
+    // Update localStorage
+    localStorage.setItem('locale', lang.code)
+
+    // Update document direction and lang
     document.documentElement.dir = lang.direction
     document.documentElement.lang = lang.code
+
+    // Update locale in context
     setLocale(lang.code)
     setIsOpen(false)
+
     props.onLocaleChange?.()
   }
 
@@ -50,8 +70,6 @@ export const LocalizationButton: Component<LocalizationButtonProps> = (props) =>
 
   return (
     <div class='flex justify-end'>
-      {' '}
-      {/* Added container with flex justify-end */}
       <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger>
           <Button

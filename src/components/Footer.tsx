@@ -1,22 +1,31 @@
-import { Component, Show, Suspense } from 'solid-js'
+import { Component, Show, Suspense, onMount } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt } from 'solid-icons/bi'
 import { BiRegularMessageRounded } from 'solid-icons/bi'
 import { FiShoppingCart } from 'solid-icons/fi'
+import { BiRegularSearch } from 'solid-icons/bi'
 import { Separator } from '~/components/ui/separator'
 import { Dock, DockIcon } from '~/components/Dock'
 import { buttonVariants } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 import { createMediaQuery } from '@solid-primitives/media'
 import UserButton from './auth/UserBtn'
-import { BiRegularSearch } from 'solid-icons/bi'
 import { useI18n } from '~/contexts/i18n'
 import { LocalizationButton } from './LocalizationButton'
 
 // Mobile navigation component
 const MobileNavigation: Component = () => {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const currentYear = new Date().getFullYear()
+  const isRTL = () => locale() === 'ar'
+
+  // Initialize direction from localStorage on mount
+  onMount(() => {
+    const storedLocale = localStorage.getItem('locale')
+    if (storedLocale) {
+      document.documentElement.dir = storedLocale === 'ar' ? 'rtl' : 'ltr'
+    }
+  })
 
   return (
     <div class='fixed bottom-0 left-0 right-0 z-50'>
@@ -64,20 +73,9 @@ const MobileNavigation: Component = () => {
       </Dock>
 
       {/* Mobile Footer Info */}
-      <div
-        class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 backdrop-blur-md'
-        dir='ltr'
-      >
+      <div class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 backdrop-blur-md'>
         <div class='flex items-center justify-center h-full text-xs'>
           <span class='truncate'>{t('footer.companyInfo', { year: currentYear })}</span>
-          {/* <div class='flex-shrink-0 space-x-4 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4'>
-            <A href='/about' class='font-medium hover:text-gray-900 transition-colors'>
-              {t('nav.about')}
-            </A>
-            <A href='/terms' class='font-medium hover:text-gray-900 transition-colors'>
-              {t('footer.terms')}
-            </A>
-          </div> */}
         </div>
       </div>
     </div>
@@ -86,24 +84,25 @@ const MobileNavigation: Component = () => {
 
 // Desktop footer component
 const DesktopFooter: Component = () => {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const currentYear = new Date().getFullYear()
+  const isRTL = () => locale() === 'ar'
+
+  // Initialize direction from localStorage on mount
+  onMount(() => {
+    const storedLocale = localStorage.getItem('locale')
+    if (storedLocale) {
+      document.documentElement.dir = storedLocale === 'ar' ? 'rtl' : 'ltr'
+    }
+  })
 
   return (
     <footer class='bg-gray-100 shadow-md'>
-      <div class='container mx-auto px-4 py-3 text-gray-600' dir='ltr'>
+      <div class='container mx-auto px-4 py-3 text-gray-600'>
         <div class='flex items-center justify-center'>
           <div class='flex items-center gap-4'>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
           </div>
-          {/* <div class='space-x-8 rtl:space-x-reverse'>
-            <A href='/about' class='text-base font-medium hover:text-gray-900 transition-colors'>
-              {t('nav.about')}
-            </A>
-            <A href='/terms' class='text-base font-medium hover:text-gray-900 transition-colors'>
-              {t('footer.terms')}
-            </A>
-          </div> */}
         </div>
       </div>
     </footer>
@@ -113,11 +112,23 @@ const DesktopFooter: Component = () => {
 // Main SiteFooter component
 const SiteFooter: Component = () => {
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
+  const { locale } = useI18n()
+
+  // Initialize direction from localStorage on mount at the root level
+  onMount(() => {
+    const storedLocale = localStorage.getItem('locale')
+    if (storedLocale) {
+      document.documentElement.dir = storedLocale === 'ar' ? 'rtl' : 'ltr'
+      document.documentElement.lang = storedLocale
+    }
+  })
 
   return (
-    <Show when={isLargeScreen()} fallback={<MobileNavigation />}>
-      <DesktopFooter />
-    </Show>
+    <div dir={locale() === 'ar' ? 'rtl' : 'ltr'}>
+      <Show when={isLargeScreen()} fallback={<MobileNavigation />}>
+        <DesktopFooter />
+      </Show>
+    </div>
   )
 }
 
