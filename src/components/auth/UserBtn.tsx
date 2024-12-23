@@ -1,7 +1,5 @@
-import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
-import { useAuth } from '@solid-mediakit/auth/client'
+import { Component, createSignal, createMemo, Show } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
-import type { Session } from '@auth/core/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,48 +12,22 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
+import type { AuthState } from '~/routes/(layout)'
 
 interface UserButtonProps {
   buttonColorClass?: string
+  authState: AuthState
+  onSignOut: () => Promise<void>
 }
 
 export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
-  const auth = useAuth()
   const location = useLocation()
   const { t } = useI18n()
 
-  // Initialize auth state if needed
-  createEffect(() => {
-    const status = auth.status()
-    const session = auth.session()
-
-    if (status === 'unauthenticated' && !session) {
-      const storedSession = localStorage.getItem('user-session')
-      if (storedSession) {
-        try {
-          const parsedSession = JSON.parse(storedSession) as Session
-          if (parsedSession?.user) {
-            auth.refetch()
-          }
-        } catch {
-          localStorage.removeItem('user-session')
-        }
-      }
-    }
-  })
-
-  // Sync session to localStorage
-  createEffect(() => {
-    const session = auth.session()
-    if (session) {
-      localStorage.setItem('user-session', JSON.stringify(session))
-    }
-  })
-
-  // Memoized values
-  const user = createMemo(() => auth.session()?.user)
-  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
+  // Memoized values from props instead of auth hook
+  const user = createMemo(() => props.authState.user)
+  const isAuthenticated = createMemo(() => props.authState.isAuthenticated)
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
@@ -64,15 +36,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const handleSignOut = async () => {
     try {
       setIsOpen(false)
-      await auth.signOut()
-      localStorage.removeItem('user-session')
-      // Clean up any other auth-related items
-      for (const key of Object.keys(localStorage)) {
-        if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
-          localStorage.removeItem(key)
-        }
-      }
-      window.location.href = '/'
+      await props.onSignOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
