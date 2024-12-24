@@ -9,12 +9,6 @@ import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import type { AuthState } from '~/routes/(layout)'
 
-interface NavProps {
-  authState: AuthState
-  isSessionLoaded: boolean
-  signOut: () => Promise<void>
-}
-
 interface Language {
   code: 'en' | 'ar'
   name: string
@@ -37,6 +31,12 @@ const languages: Language[] = [
   },
 ]
 
+interface NavProps {
+  authState: AuthState
+  isSessionLoaded: boolean
+  signOut: () => Promise<void>
+}
+
 const Nav: Component<NavProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
@@ -53,6 +53,21 @@ const Nav: Component<NavProps> = (props) => {
 
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
+
+  // Session state memo
+  const sessionState = createMemo(() => ({
+    isLoading: !props.isSessionLoaded,
+    isAuthenticated: props.authState.isAuthenticated,
+    user: props.authState.user,
+  }))
+
+  // Effect to handle session initialization
+  createEffect(() => {
+    const state = sessionState()
+    if (!state.isLoading && state.isAuthenticated && state.user) {
+      console.log('Session loaded:', state.user)
+    }
+  })
 
   // Close all dropdowns except the specified one
   const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
@@ -128,8 +143,12 @@ const Nav: Component<NavProps> = (props) => {
     closeAllDropdowns()
   })
 
-  // User data memo
+  // User data memo with loading check
   const userData = createMemo(() => {
+    if (!props.isSessionLoaded) {
+      return null
+    }
+
     const user = props.authState.user
     return {
       name: user?.name || '',
@@ -154,7 +173,7 @@ const Nav: Component<NavProps> = (props) => {
   const filteredMenuItems = createMemo(() => {
     return MENU_ITEMS.filter((item) => {
       if (!item.roles) return true
-      return item.roles.includes(userData().role)
+      return item.roles.includes(userData()?.role || '')
     })
   })
 
@@ -212,6 +231,9 @@ const Nav: Component<NavProps> = (props) => {
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
+  // Loading state component
+  const LoadingState = () => <div class='h-10 w-10 rounded-full bg-gray-200 animate-pulse' />
+
   return (
     <Show when={isClient()}>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
@@ -243,7 +265,7 @@ const Nav: Component<NavProps> = (props) => {
                   <FiShoppingCart class='h-5 w-5' />
                 </Button>
 
-                {/* Language Dropdown - Desktop Only */}
+                {/* Language Dropdown */}
                 <div class='hidden md:block relative' ref={langRef[1]}>
                   <Button
                     variant='ghost'
@@ -291,74 +313,76 @@ const Nav: Component<NavProps> = (props) => {
                   </div>
                 </div>
 
-                {/* User Dropdown - Desktop Only */}
+                {/* User Section */}
                 <div class='hidden md:block relative' ref={userRef[1]}>
-                  <Show
-                    when={props.isSessionLoaded && props.authState.isAuthenticated}
-                    fallback={
-                      <A
-                        href={getLoginUrl()}
-                        class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
-                      >
-                        <FaRegularUser class='h-5 w-5' />
-                      </A>
-                    }
-                  >
-                    <Button
-                      variant='ghost'
-                      class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                      onClick={handleUserClick}
-                    >
-                      <Avatar>
-                        <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
-                        <AvatarFallback>{userData().initials}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-
-                    <div
-                      class={`absolute ${
-                        isRTL() ? 'left-0' : 'right-0'
-                      } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                        isUserOpen()
-                          ? 'opacity-100 transform scale-100'
-                          : 'opacity-0 transform scale-95 pointer-events-none'
-                      }`}
-                    >
-                      <div class='py-1'>
-                        <div class='px-4 py-2 text-sm text-gray-700'>
-                          <div class='font-medium line-clamp-1'>{userData().name}</div>
-                          <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                        </div>
-                        <hr />
+                  <Show when={props.isSessionLoaded} fallback={<LoadingState />}>
+                    <Show
+                      when={userData()?.isAuthenticated}
+                      fallback={
                         <A
-                          href='/account'
-                          class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
+                          href={getLoginUrl()}
+                          class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
                         >
-                          {t('nav.account')}
+                          <FaRegularUser class='h-5 w-5' />
                         </A>
-                        {userData().role === 'admin' && (
-                          <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.admin')}
+                      }
+                    >
+                      <Button
+                        variant='ghost'
+                        class={`relative h-10 w-10 rounded-full ${textColor()}`}
+                        onClick={handleUserClick}
+                      >
+                        <Avatar>
+                          <AvatarImage src={userData()?.image} alt={userData()?.name || 'User avatar'} />
+                          <AvatarFallback>{userData()?.initials}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+
+                      <div
+                        class={`absolute ${
+                          isRTL() ? 'left-0' : 'right-0'
+                        } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
+                          isUserOpen()
+                            ? 'opacity-100 transform scale-100'
+                            : 'opacity-0 transform scale-95 pointer-events-none'
+                        }`}
+                      >
+                        <div class='py-1'>
+                          <div class='px-4 py-2 text-sm text-gray-700'>
+                            <div class='font-medium line-clamp-1'>{userData()?.name}</div>
+                            <div class='text-xs text-gray-500 line-clamp-1'>{userData()?.email}</div>
+                          </div>
+                          <hr />
+                          <A
+                            href='/account'
+                            class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                              isRTL() ? 'text-right' : 'text-left'
+                            }`}
+                          >
+                            {t('nav.account')}
                           </A>
-                        )}
-                        {userData().role === 'seller' && (
-                          <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.seller')}
-                          </A>
-                        )}
-                        <hr class='my-1 border-gray-200' />
-                        <button
-                          class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
-                          onClick={() => props.signOut()}
-                        >
-                          {t('auth.signOut')}
-                        </button>
+                          {userData()?.role === 'admin' && (
+                            <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                              {t('nav.admin')}
+                            </A>
+                          )}
+                          {userData()?.role === 'seller' && (
+                            <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                              {t('nav.seller')}
+                            </A>
+                          )}
+                          <hr class='my-1 border-gray-200' />
+                          <button
+                            class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                              isRTL() ? 'text-right' : 'text-left'
+                            }`}
+                            onClick={() => props.signOut()}
+                          >
+                            {t('auth.signOut')}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </Show>
                   </Show>
                 </div>
 
