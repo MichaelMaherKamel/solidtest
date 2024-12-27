@@ -41,7 +41,7 @@
 
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import { createSignal, createEffect, createMemo, onMount } from 'solid-js'
+import { createSignal, createEffect, createMemo, onMount, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
@@ -58,14 +58,21 @@ export default function RootLayout(props: RouteSectionProps) {
   const auth = useAuth()
   const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
 
-  // Initialize session as soon as possible
+  // Initialize session synchronously if possible
   onMount(async () => {
     try {
-      // Attempt to initialize session from stored data
+      // Check for stored session first
       const storedSession = localStorage.getItem('user-session')
       if (storedSession) {
-        await auth.refetch()
+        const parsedSession = JSON.parse(storedSession)
+        if (parsedSession?.user) {
+          // If we have a stored session, mark as loaded immediately
+          setIsSessionLoaded(true)
+        }
       }
+
+      // Then refresh the session state
+      await auth.refetch()
     } catch (error) {
       console.error('Error initializing session:', error)
     } finally {
@@ -73,23 +80,12 @@ export default function RootLayout(props: RouteSectionProps) {
     }
   })
 
-  // Watch for session changes and store them
+  // Reactive session management
   createEffect(() => {
     const session = auth.session()
     if (session?.user) {
-      // Update localStorage when session changes
       localStorage.setItem('user-session', JSON.stringify(session))
-    } else {
-      // Clear stored session if user is not authenticated
-      localStorage.removeItem('user-session')
-    }
-  })
-
-  // Watch for auth status changes
-  createEffect(() => {
-    const status = auth.status()
-    if (status === 'unauthenticated') {
-      // Clear session storage on logout
+    } else if (auth.status() === 'unauthenticated') {
       localStorage.removeItem('user-session')
     }
   })
@@ -111,11 +107,14 @@ export default function RootLayout(props: RouteSectionProps) {
     }
   }
 
+  // We wrap the entire layout in a Show component to ensure consistent state
   return (
-    <div class='min-h-screen flex flex-col relative'>
-      <Nav authState={authState()} isSessionLoaded={isSessionLoaded()} signOut={handleSignOut} />
-      <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
-      <SiteFooter authState={authState()} onSignOut={handleSignOut} />
-    </div>
+    <Show when={true} fallback={null}>
+      <div class='min-h-screen flex flex-col relative'>
+        <Nav authState={authState()} isSessionLoaded={isSessionLoaded()} signOut={handleSignOut} />
+        <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
+        <SiteFooter authState={authState()} onSignOut={handleSignOut} />
+      </div>
+    </Show>
   )
 }
