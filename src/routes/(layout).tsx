@@ -1,47 +1,6 @@
-// import { RouteSectionProps } from '@solidjs/router'
-// import Nav from '~/components/Nav'
-// import { useLocation } from '@solidjs/router'
-// import Header from '~/components/Header'
-
-// export default function RootLayout(props: RouteSectionProps) {
-//   const location = useLocation()
-//   const isHomePage = () => location.pathname === '/'
-
-//   return (
-//     <div class='min-h-screen relative'>
-//       <Nav />
-//       {/* <Header /> */}
-//       <main class={`${isHomePage() ? '' : 'pt-16'} relative`}>{props.children}</main>
-//     </div>
-//   )
-// }
-
-// import { RouteSectionProps } from '@solidjs/router'
-// import { useLocation } from '@solidjs/router'
-// import Nav from '~/components/Nav'
-// import SiteFooter from '~/components/Footer'
-// import { createMediaQuery } from '@solid-primitives/media'
-
-// export default function RootLayout(props: RouteSectionProps) {
-//   const location = useLocation()
-//   const isLargeScreen = createMediaQuery('(min-width: 768px)')
-//   const isHomePage = () => location.pathname === '/'
-
-//   return (
-//     <div class='min-h-screen flex flex-col relative'>
-//       <Nav />
-//       <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
-//       {/* Add padding bottom on mobile to account for the dock navigation */}
-//       <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
-//         <SiteFooter />
-//       </div>
-//     </div>
-//   )
-// }
-
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import { createSignal, createEffect, createMemo, onMount, Show } from 'solid-js'
+import { createSignal, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
@@ -58,29 +17,43 @@ export default function RootLayout(props: RouteSectionProps) {
   const auth = useAuth()
   const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
 
-  // Initialize session synchronously if possible
-  onMount(async () => {
-    try {
-      // Check for stored session first
-      const storedSession = localStorage.getItem('user-session')
-      if (storedSession) {
-        const parsedSession = JSON.parse(storedSession)
-        if (parsedSession?.user) {
-          // If we have a stored session, mark as loaded immediately
-          setIsSessionLoaded(true)
-        }
-      }
-
-      // Then refresh the session state
-      await auth.refetch()
-    } catch (error) {
-      console.error('Error initializing session:', error)
-    } finally {
-      setIsSessionLoaded(true)
+  // Session state management
+  const sessionState = createMemo(() => {
+    const session = auth.session()
+    return {
+      isAuthenticated: !!session?.user,
+      user: session?.user,
+      userRole: session?.user?.role || 'guest',
     }
   })
 
-  // Reactive session management
+  // Init session state
+  createEffect(() => {
+    const initSession = async () => {
+      try {
+        // Try to restore session from storage
+        const storedSession = localStorage.getItem('user-session')
+        if (storedSession) {
+          const parsedSession = JSON.parse(storedSession)
+          if (parsedSession?.user) {
+            // We have stored session data
+            setIsSessionLoaded(true)
+          }
+        }
+
+        // Always refetch latest session state
+        await auth.refetch()
+      } catch (error) {
+        console.error('Error initializing session:', error)
+      } finally {
+        setIsSessionLoaded(true)
+      }
+    }
+
+    initSession()
+  })
+
+  // Handle session changes
   createEffect(() => {
     const session = auth.session()
     if (session?.user) {
@@ -91,10 +64,10 @@ export default function RootLayout(props: RouteSectionProps) {
   })
 
   const authState = createMemo(() => ({
-    isAuthenticated: !!auth.session()?.user,
+    isAuthenticated: sessionState().isAuthenticated,
     isSessionLoaded: isSessionLoaded(),
-    user: auth.session()?.user,
-    userRole: auth.session()?.user?.role || 'guest',
+    user: sessionState().user,
+    userRole: sessionState().userRole,
   }))
 
   const handleSignOut = async () => {
@@ -107,9 +80,9 @@ export default function RootLayout(props: RouteSectionProps) {
     }
   }
 
-  // We wrap the entire layout in a Show component to ensure consistent state
+  // Wrap everything in a Show component to ensure consistent render
   return (
-    <Show when={true} fallback={null}>
+    <Show when={isSessionLoaded()}>
       <div class='min-h-screen flex flex-col relative'>
         <Nav authState={authState()} isSessionLoaded={isSessionLoaded()} signOut={handleSignOut} />
         <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
