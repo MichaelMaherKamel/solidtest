@@ -242,7 +242,7 @@
 
 // export default HomePage
 
-import { Component, onMount, createSignal, createMemo } from 'solid-js'
+import { Component, onMount, createSignal } from 'solid-js'
 import { A } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -253,7 +253,7 @@ import type { JSX } from 'solid-js'
 import { SiteCategory } from '~/config/site'
 import { useI18n } from '~/contexts/i18n'
 
-// Localized Categories Component
+// LocalizedCategories remains the same
 const LocalizedCategories: Component = () => {
   const { locale } = useI18n()
 
@@ -282,16 +282,17 @@ const LocalizedCategories: Component = () => {
   )
 }
 
-// Main HomePage Component
+// Main HomePage Component - Simplified to focus on content only
 const HomePage: Component = () => {
   const [isHydrated, setIsHydrated] = createSignal(false)
   let categoriesRef: HTMLElement | undefined
   const { t } = useI18n()
 
-  // Scrolling implementation
+  // Handle only UI-specific mounting logic
   onMount(() => {
     setIsHydrated(true)
 
+    // Set up intersection observer for animations
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -376,7 +377,7 @@ const HomePage: Component = () => {
         </div>
       </div>
 
-      {/* Categories Section */}
+      {/* Rest of your sections remain the same */}
       <section ref={categoriesRef} class='py-20 bg-background'>
         <div class='container mx-auto px-4'>
           <h2 class='text-3xl font-bold text-center mb-12 animate-on-scroll'>{t('sections.categories')}</h2>
