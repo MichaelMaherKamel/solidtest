@@ -1,13 +1,14 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
+// ~/components/Nav.tsx
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show, Suspense } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
-import { FaRegularUser } from 'solid-icons/fa'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import type { AuthState } from '~/routes/(layout)'
+import { useAuth } from '@solid-mediakit/auth/client'
+import { handleSession } from '~/db/actions/auth'
+import { UserButton } from './auth/UserBtn'
 
 interface Language {
   code: 'en' | 'ar'
@@ -31,49 +32,50 @@ const languages: Language[] = [
   },
 ]
 
-interface NavProps {
-  authState: AuthState
-  isSessionLoaded: boolean
-  signOut: () => Promise<void>
-}
-
-const Nav: Component<NavProps> = (props) => {
+const NavContent: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
-  const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
 
   const location = useLocation()
   const { t, locale, setLocale } = useI18n()
+  const auth = useAuth()
+
+  // Handle session
+  const session = auth.session()
+  if (session) {
+    handleSession(session)
+  }
 
   const menuRef = createSignal<HTMLDivElement>()
   const langRef = createSignal<HTMLDivElement>()
-  const userRef = createSignal<HTMLDivElement>()
 
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // Session state memo
-  const sessionState = createMemo(() => ({
-    isLoading: !props.isSessionLoaded,
-    isAuthenticated: props.authState.isAuthenticated,
-    user: props.authState.user,
-  }))
+  // Menu items configuration
+  const MENU_ITEMS = [
+    { path: '/', key: 'nav.home' },
+    { path: '/about', key: 'nav.about' },
+    { path: '/stores', key: 'nav.stores' },
+    { path: '/gallery', key: 'nav.gallery' },
+    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
+    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
+  ]
 
-  // Effect to handle session initialization
-  createEffect(() => {
-    const state = sessionState()
-    if (!state.isLoading && state.isAuthenticated && state.user) {
-      console.log('Session loaded:', state.user)
-    }
+  const filteredMenuItems = createMemo(() => {
+    const userRole = auth.session()?.user?.role
+    return MENU_ITEMS.filter((item) => {
+      if (!item.roles) return true
+      return userRole && item.roles.includes(userRole)
+    })
   })
 
   // Close all dropdowns except the specified one
-  const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
+  const closeAllDropdowns = (except?: 'menu' | 'lang') => {
     if (except !== 'menu') setIsOpen(false)
     if (except !== 'lang') setIsLangOpen(false)
-    if (except !== 'user') setIsUserOpen(false)
   }
 
   // Click handlers for dropdowns
@@ -89,12 +91,6 @@ const Nav: Component<NavProps> = (props) => {
     setIsLangOpen(!isLangOpen())
   }
 
-  const handleUserClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('user')
-    setIsUserOpen(!isUserOpen())
-  }
-
   // Handle escape key for all dropdowns
   createEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -103,7 +99,7 @@ const Nav: Component<NavProps> = (props) => {
       }
     }
 
-    if (isOpen() || isLangOpen() || isUserOpen()) {
+    if (isOpen() || isLangOpen()) {
       window.addEventListener('keydown', handleEscape)
     }
 
@@ -115,7 +111,6 @@ const Nav: Component<NavProps> = (props) => {
     const handleClickOutside = (e: MouseEvent) => {
       const menu = menuRef[0]()
       const lang = langRef[0]()
-      const user = userRef[0]()
 
       if (menu && !menu.contains(e.target as Node) && isOpen()) {
         setIsOpen(false)
@@ -123,57 +118,14 @@ const Nav: Component<NavProps> = (props) => {
       if (lang && !lang.contains(e.target as Node) && isLangOpen()) {
         setIsLangOpen(false)
       }
-      if (user && !user.contains(e.target as Node) && isUserOpen()) {
-        setIsUserOpen(false)
-      }
     }
 
-    if (isOpen() || isLangOpen() || isUserOpen()) {
+    if (isOpen() || isLangOpen()) {
       document.addEventListener('click', handleClickOutside)
     }
 
     onCleanup(() => {
       document.removeEventListener('click', handleClickOutside)
-    })
-  })
-
-  // Close dropdowns on route change
-  createEffect(() => {
-    location.pathname
-    closeAllDropdowns()
-  })
-
-  // User data memo with loading check
-  const userData = createMemo(() => {
-    if (!props.isSessionLoaded) {
-      return null
-    }
-
-    const user = props.authState.user
-    return {
-      name: user?.name || '',
-      email: user?.email || '',
-      image: user?.image || '',
-      initials: user?.name?.[0]?.toUpperCase() || 'U',
-      role: user?.role || 'guest',
-      isAuthenticated: props.authState.isAuthenticated,
-    }
-  })
-
-  // Menu items configuration
-  const MENU_ITEMS = [
-    { path: '/', key: 'nav.home' },
-    { path: '/about', key: 'nav.about' },
-    { path: '/stores', key: 'nav.stores' },
-    { path: '/gallery', key: 'nav.gallery' },
-    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
-    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
-  ]
-
-  const filteredMenuItems = createMemo(() => {
-    return MENU_ITEMS.filter((item) => {
-      if (!item.roles) return true
-      return item.roles.includes(userData()?.role || '')
     })
   })
 
@@ -225,14 +177,6 @@ const Nav: Component<NavProps> = (props) => {
     setLocale(lang.code)
     setIsLangOpen(false)
   }
-
-  const getLoginUrl = () => {
-    const currentPath = location.pathname || '/'
-    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
-  }
-
-  // Loading state component
-  const LoadingState = () => <div class='h-10 w-10 rounded-full bg-gray-200 animate-pulse' />
 
   return (
     <Show when={isClient()}>
@@ -314,99 +258,33 @@ const Nav: Component<NavProps> = (props) => {
                 </div>
 
                 {/* User Section */}
-                <div class='hidden md:block relative' ref={userRef[1]}>
-                  <Show when={props.isSessionLoaded} fallback={<LoadingState />}>
-                    <Show
-                      when={userData()?.isAuthenticated}
-                      fallback={
-                        <A
-                          href={getLoginUrl()}
-                          class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
-                        >
-                          <FaRegularUser class='h-5 w-5' />
-                        </A>
-                      }
-                    >
-                      <Button
-                        variant='ghost'
-                        class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                        onClick={handleUserClick}
-                      >
-                        <Avatar>
-                          <AvatarImage src={userData()?.image} alt={userData()?.name || 'User avatar'} />
-                          <AvatarFallback>{userData()?.initials}</AvatarFallback>
-                        </Avatar>
-                      </Button>
-
-                      <div
-                        class={`absolute ${
-                          isRTL() ? 'left-0' : 'right-0'
-                        } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                          isUserOpen()
-                            ? 'opacity-100 transform scale-100'
-                            : 'opacity-0 transform scale-95 pointer-events-none'
-                        }`}
-                      >
-                        <div class='py-1'>
-                          <div class='px-4 py-2 text-sm text-gray-700'>
-                            <div class='font-medium line-clamp-1'>{userData()?.name}</div>
-                            <div class='text-xs text-gray-500 line-clamp-1'>{userData()?.email}</div>
-                          </div>
-                          <hr />
-                          <A
-                            href='/account'
-                            class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                              isRTL() ? 'text-right' : 'text-left'
-                            }`}
-                          >
-                            {t('nav.account')}
-                          </A>
-                          {userData()?.role === 'admin' && (
-                            <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                              {t('nav.admin')}
-                            </A>
-                          )}
-                          {userData()?.role === 'seller' && (
-                            <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                              {t('nav.seller')}
-                            </A>
-                          )}
-                          <hr class='my-1 border-gray-200' />
-                          <button
-                            class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                              isRTL() ? 'text-right' : 'text-left'
-                            }`}
-                            onClick={() => props.signOut()}
-                          >
-                            {t('auth.signOut')}
-                          </button>
-                        </div>
-                      </div>
-                    </Show>
-                  </Show>
+                <div class='hidden md:block'>
+                  <UserButton buttonColorClass={textColor()} />
                 </div>
 
                 {/* Mobile Menu Button */}
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
-                  onClick={handleMenuClick}
-                  aria-label={isOpen() ? 'Close menu' : 'Open menu'}
-                >
-                  <div class='w-5 h-5 flex items-center justify-center'>
-                    <span
-                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                        isRTL() ? 'left' : 'right'
-                      } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
-                    />
-                    <span
-                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                        isRTL() ? 'left' : 'right'
-                      } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
-                    />
-                  </div>
-                </Button>
+                <div ref={menuRef[1]}>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
+                    onClick={handleMenuClick}
+                    aria-label={isOpen() ? 'Close menu' : 'Open menu'}
+                  >
+                    <div class='w-5 h-5 flex items-center justify-center'>
+                      <span
+                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                          isRTL() ? 'left' : 'right'
+                        } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
+                      />
+                      <span
+                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                          isRTL() ? 'left' : 'right'
+                        } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
+                      />
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -463,6 +341,15 @@ const Nav: Component<NavProps> = (props) => {
         `}
       </style>
     </Show>
+  )
+}
+
+// Main Nav component with Suspense
+const Nav: Component = () => {
+  return (
+    <Suspense fallback={<div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm' />}>
+      <NavContent />
+    </Suspense>
   )
 }
 

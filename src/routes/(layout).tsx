@@ -42,48 +42,29 @@
 // ~/routes/(layout).tsx
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import { useAuth } from '@solid-mediakit/auth/client'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
-import { handleSession, handleSignOut } from '~/db/actions/auth'
+import { Suspense } from 'solid-js'
 
-export interface AuthState {
-  isAuthenticated: boolean
-  isSessionLoaded: boolean
-  user: any | null
-  userRole: string
-}
+// Simple loading component
+const LoadingShell = () => (
+  <div class='min-h-screen flex flex-col relative'>
+    <div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm' />
+    <div class='flex-1 animate-pulse bg-gray-50' />
+    <div class='h-16 bg-white/50 backdrop-blur-sm' />
+  </div>
+)
 
 export default function RootLayout(props: RouteSectionProps) {
   const location = useLocation()
-  const auth = useAuth()
-
-  // Handle session on component mount
-  if (auth.session()) {
-    handleSession(auth.session())
-  }
-
-  const authState: AuthState = {
-    isAuthenticated: !!auth.session()?.user,
-    isSessionLoaded: true,
-    user: auth.session()?.user || null,
-    userRole: auth.session()?.user?.role || 'guest',
-  }
-
-  const handleUserSignOut = async () => {
-    try {
-      await auth.signOut()
-      await handleSignOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
 
   return (
-    <div class='min-h-screen flex flex-col relative'>
-      <Nav authState={authState} isSessionLoaded={true} signOut={handleUserSignOut} />
-      <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
-      <SiteFooter authState={authState} onSignOut={handleUserSignOut} />
-    </div>
+    <Suspense fallback={<LoadingShell />}>
+      <div class='min-h-screen flex flex-col relative'>
+        <Nav />
+        <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
+        <SiteFooter />
+      </div>
+    </Suspense>
   )
 }

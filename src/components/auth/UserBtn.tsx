@@ -1,4 +1,5 @@
-import { Component, createSignal, createMemo, Show } from 'solid-js'
+// ~/components/auth/UserBtn.tsx
+import { Component, createSignal, createMemo, Show, createEffect, Suspense } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import {
   DropdownMenu,
@@ -12,31 +13,38 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import type { AuthState } from '~/routes/(layout)'
+import { useAuth } from '@solid-mediakit/auth/client'
+import { handleSession, handleSignOut } from '~/db/actions/auth'
 
 interface UserButtonProps {
   buttonColorClass?: string
-  authState: AuthState
-  onSignOut: () => Promise<void>
 }
 
-export const UserButton: Component<UserButtonProps> = (props) => {
+const UserButtonContent: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
   const location = useLocation()
   const { t } = useI18n()
+  const auth = useAuth()
 
-  // Memoized values from props instead of auth hook
-  const user = createMemo(() => props.authState.user)
-  const isAuthenticated = createMemo(() => props.authState.isAuthenticated)
+  // Session handling
+  const session = auth.session()
+  if (session) {
+    handleSession(session)
+  }
+
+  // Memoized user data
+  const user = createMemo(() => auth.session()?.user)
+  const isAuthenticated = createMemo(() => !!user())
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
   const userRole = createMemo(() => user()?.role || 'user')
 
-  const handleSignOut = async () => {
+  const handleSignOutClick = async () => {
     try {
       setIsOpen(false)
-      await props.onSignOut()
+      await auth.signOut()
+      await handleSignOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
@@ -91,7 +99,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
             <DropdownMenuLabel>
               <div class='flex flex-col space-y-1'>
                 <Show when={userName()}>
-                  <p class='text-sm font-medium'>{userName()}</p>
+                  <p class='text-sm font-medium leading-none'>{userName()}</p>
                 </Show>
                 <Show when={userEmail()}>
                   <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
@@ -118,10 +126,18 @@ export const UserButton: Component<UserButtonProps> = (props) => {
           </Show>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut}>{t('auth.signOut')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={handleSignOutClick}>{t('auth.signOut')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </Show>
+  )
+}
+
+export const UserButton: Component<UserButtonProps> = (props) => {
+  return (
+    <Suspense fallback={<div class='h-10 w-10 rounded-full bg-gray-200 animate-pulse' />}>
+      <UserButtonContent {...props} />
+    </Suspense>
   )
 }
 
