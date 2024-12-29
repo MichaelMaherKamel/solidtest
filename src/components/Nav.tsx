@@ -8,6 +8,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { getCookie, setCookie, deleteCookie } from '~/lib/cookies'
 
 interface Language {
   code: 'en' | 'ar'
@@ -55,30 +56,22 @@ const Nav: Component = () => {
     const session = auth.session()
     const status = auth.status()
 
-    // If we're unauthenticated but have a stored session, try to restore it
     if (status === 'unauthenticated' && !session) {
-      const storedSession = localStorage.getItem('user-session')
+      const storedSession = getCookie('user-session')
       if (storedSession) {
         try {
           const parsedSession = JSON.parse(storedSession)
           if (parsedSession?.user) {
-            auth.refetch(true)
+            auth.refetch()
           }
         } catch (e) {
-          console.error('Error parsing stored session:', e)
-          localStorage.removeItem('user-session')
+          deleteCookie('user-session')
         }
       }
     }
 
-    // Update session loaded state
-    if (status !== 'loading' && session !== undefined) {
-      setIsSessionLoaded(true)
-    }
-
-    // Sync session to localStorage when it changes
     if (session) {
-      localStorage.setItem('user-session', JSON.stringify(session))
+      setCookie('user-session', JSON.stringify(session))
     }
   })
 

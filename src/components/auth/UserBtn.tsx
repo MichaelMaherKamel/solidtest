@@ -14,6 +14,7 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
+import { deleteCookie, getCookie, setCookie } from '~/lib/cookies'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -31,25 +32,25 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     const session = auth.session()
 
     if (status === 'unauthenticated' && !session) {
-      const storedSession = localStorage.getItem('user-session')
+      const storedSession = getCookie('user-session')
       if (storedSession) {
         try {
-          const parsedSession = JSON.parse(storedSession) as Session
+          const parsedSession = JSON.parse(storedSession)
           if (parsedSession?.user) {
             auth.refetch()
           }
         } catch {
-          localStorage.removeItem('user-session')
+          deleteCookie('user-session')
         }
       }
     }
   })
 
-  // Sync session to localStorage
+  // Sync session to cookies
   createEffect(() => {
     const session = auth.session()
     if (session) {
-      localStorage.setItem('user-session', JSON.stringify(session))
+      setCookie('user-session', JSON.stringify(session))
     }
   })
 
