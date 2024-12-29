@@ -39,32 +39,25 @@
 //   )
 // }
 
-// ~/routes/(layout).tsx
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
 import Nav from '~/components/Nav'
 import SiteFooter from '~/components/Footer'
-import { Suspense } from 'solid-js'
-
-// Simple loading component
-const LoadingShell = () => (
-  <div class='min-h-screen flex flex-col relative'>
-    <div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm' />
-    <div class='flex-1 animate-pulse bg-gray-50' />
-    <div class='h-16 bg-white/50 backdrop-blur-sm' />
-  </div>
-)
+import { createMediaQuery } from '@solid-primitives/media'
 
 export default function RootLayout(props: RouteSectionProps) {
   const location = useLocation()
+  const isLargeScreen = createMediaQuery('(min-width: 768px)')
+  const isHomePage = () => location.pathname === '/'
 
   return (
-    <Suspense fallback={<LoadingShell />}>
-      <div class='min-h-screen flex flex-col relative'>
-        <Nav />
-        <main class={`${location.pathname === '/' ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
+    <div class='min-h-screen flex flex-col relative'>
+      <Nav />
+      <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
+      {/* Add padding bottom on mobile to account for the dock navigation */}
+      <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
         <SiteFooter />
       </div>
-    </Suspense>
+    </div>
   )
 }
