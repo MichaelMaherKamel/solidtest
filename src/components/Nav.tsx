@@ -9,6 +9,7 @@ import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { handleSession } from '~/db/actions/auth'
 import { UserButton } from './auth/UserBtn'
+import type { Session } from '@solid-mediakit/auth'
 
 interface Language {
   code: 'en' | 'ar'
@@ -37,16 +38,22 @@ const NavContent: Component = () => {
   const [isLangOpen, setIsLangOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
 
   const location = useLocation()
   const { t, locale, setLocale } = useI18n()
   const auth = useAuth()
 
-  // Handle session
-  const session = auth.session()
-  if (session) {
-    handleSession(session)
-  }
+  // Handle session initialization and updates
+  createEffect(() => {
+    const session = auth.session()
+    if (session) {
+      handleSession(session)
+      setCurrentSession(session)
+    } else {
+      setCurrentSession(null)
+    }
+  })
 
   const menuRef = createSignal<HTMLDivElement>()
   const langRef = createSignal<HTMLDivElement>()

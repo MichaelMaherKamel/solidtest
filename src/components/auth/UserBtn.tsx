@@ -15,6 +15,7 @@ import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { handleSession, handleSignOut } from '~/db/actions/auth'
+import type { Session } from '@solid-mediakit/auth'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -22,18 +23,24 @@ interface UserButtonProps {
 
 const UserButtonContent: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
   const location = useLocation()
   const { t } = useI18n()
   const auth = useAuth()
 
-  // Session handling
-  const session = auth.session()
-  if (session) {
-    handleSession(session)
-  }
+  // Handle session initialization and updates
+  createEffect(() => {
+    const session = auth.session()
+    if (session) {
+      handleSession(session)
+      setCurrentSession(session)
+    } else {
+      setCurrentSession(null)
+    }
+  })
 
   // Memoized user data
-  const user = createMemo(() => auth.session()?.user)
+  const user = createMemo(() => currentSession()?.user)
   const isAuthenticated = createMemo(() => !!user())
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')

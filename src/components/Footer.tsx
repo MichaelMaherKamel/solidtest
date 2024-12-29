@@ -1,5 +1,5 @@
 // ~/components/Footer.tsx
-import { Component, Show, Suspense } from 'solid-js'
+import { Component, createSignal, createEffect, Show, Suspense } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt } from 'solid-icons/bi'
 import { BiRegularMessageRounded } from 'solid-icons/bi'
@@ -15,6 +15,7 @@ import { LocalizationButton } from './LocalizationButton'
 import { UserButton } from './auth/UserBtn'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { handleSession } from '~/db/actions/auth'
+import type { Session } from '@solid-mediakit/auth'
 
 // Loading skeleton for the footer
 const FooterSkeleton = () => (
@@ -30,15 +31,11 @@ const MobileNavigation: Component = () => {
   const { t, locale } = useI18n()
   const currentYear = new Date().getFullYear()
   const isRTL = () => locale() === 'ar'
-
-  // Get WhatsApp number from environment or config
   const whatsappNumber = '201022618610'
 
   return (
     <div class='fixed bottom-0 left-0 right-0 z-50'>
-      {/* Main Dock Navigation */}
       <Dock direction='middle' class='bg-white shadow-md'>
-        {/* Home Button */}
         <DockIcon>
           <A href='/' class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}>
             <BiRegularHomeAlt class='w-5 h-5' />
@@ -47,14 +44,12 @@ const MobileNavigation: Component = () => {
 
         <Separator orientation='vertical' class='h-full' />
 
-        {/* Search Button */}
         <DockIcon>
           <button class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}>
             <BiRegularSearch class='w-5 h-5' />
           </button>
         </DockIcon>
 
-        {/* WhatsApp Contact */}
         <DockIcon>
           <A
             href={`https://wa.me/${whatsappNumber}`}
@@ -66,27 +61,23 @@ const MobileNavigation: Component = () => {
           </A>
         </DockIcon>
 
-        {/* Cart Button */}
         <DockIcon>
           <button class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}>
             <FiShoppingCart class='w-5 h-5' />
           </button>
         </DockIcon>
 
-        {/* Language Toggle */}
         <DockIcon>
           <LocalizationButton iconOnly size='icon' variant='ghost' />
         </DockIcon>
 
         <Separator orientation='vertical' class='h-full py-2' />
 
-        {/* User Menu */}
         <DockIcon>
           <UserButton buttonColorClass='text-gray-800 hover:text-gray-900' />
         </DockIcon>
       </Dock>
 
-      {/* Copyright Bar */}
       <div class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 backdrop-blur-md'>
         <div class='flex items-center justify-center h-full text-xs'>
           <span class='truncate'>{t('footer.companyInfo', { year: currentYear })}</span>
@@ -115,17 +106,19 @@ const DesktopFooter: Component = () => {
   )
 }
 
-// Footer content component that handles session
+// Footer content component
 const FooterContent: Component = () => {
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
   const { locale } = useI18n()
   const auth = useAuth()
 
   // Handle session
-  const session = auth.session()
-  if (session) {
-    handleSession(session)
-  }
+  createEffect(() => {
+    const session = auth.session()
+    if (session) {
+      handleSession(session)
+    }
+  })
 
   return (
     <div dir={locale() === 'ar' ? 'rtl' : 'ltr'}>
