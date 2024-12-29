@@ -1,7 +1,7 @@
-// ~/components/auth/UserBtn.tsx
-import { Component, createSignal, createEffect, createMemo, Show, Suspense } from 'solid-js'
+import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
+import type { Session } from '@auth/core/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,48 +14,65 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { handleSession, handleSignOut } from '~/db/actions/auth'
-import type { Session } from '@auth/core/types'
 
 interface UserButtonProps {
   buttonColorClass?: string
 }
 
-const UserButtonContent: Component<UserButtonProps> = (props) => {
+export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
-  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
+  const auth = useAuth()
   const location = useLocation()
   const { t } = useI18n()
-  const auth = useAuth()
 
-  // Handle session initialization and refresh
+  // Initialize auth state if needed
   createEffect(() => {
     const status = auth.status()
     const session = auth.session()
 
     if (status === 'unauthenticated' && !session) {
-      // If we don't have a session but might have a cookie, force refresh
-      auth.refetch()
-    } else if (session) {
-      // If we have a session, ensure cookie is set/updated
-      setCurrentSession(session)
-      handleSession(session)
+      const storedSession = localStorage.getItem('user-session')
+      if (storedSession) {
+        try {
+          const parsedSession = JSON.parse(storedSession) as Session
+          if (parsedSession?.user) {
+            auth.refetch()
+          }
+        } catch {
+          localStorage.removeItem('user-session')
+        }
+      }
     }
   })
 
-  // Memoized user data
-  const user = createMemo(() => currentSession()?.user)
-  const isAuthenticated = createMemo(() => !!currentSession())
+  // Sync session to localStorage
+  createEffect(() => {
+    const session = auth.session()
+    if (session) {
+      localStorage.setItem('user-session', JSON.stringify(session))
+    }
+  })
+
+  // Memoized values
+  const user = createMemo(() => auth.session()?.user)
+  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
   const userRole = createMemo(() => user()?.role || 'user')
 
-  const handleSignOutClick = async () => {
+  const handleSignOut = async () => {
     try {
       setIsOpen(false)
       await auth.signOut()
-      await handleSignOut()
+      localStorage.removeItem('user-session')
+      // Clean up any other auth-related items
+      for (const key of Object.keys(localStorage)) {
+        if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
+          localStorage.removeItem(key)
+        }
+      }
+      window.location.href = '/'
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
@@ -110,7 +127,7 @@ const UserButtonContent: Component<UserButtonProps> = (props) => {
             <DropdownMenuLabel>
               <div class='flex flex-col space-y-1'>
                 <Show when={userName()}>
-                  <p class='text-sm font-medium leading-none'>{userName()}</p>
+                  <p class='text-sm font-medium'>{userName()}</p>
                 </Show>
                 <Show when={userEmail()}>
                   <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
@@ -137,18 +154,10 @@ const UserButtonContent: Component<UserButtonProps> = (props) => {
           </Show>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={handleSignOutClick}>{t('auth.signOut')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSignOut}>{t('auth.signOut')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </Show>
-  )
-}
-
-const UserButton: Component<UserButtonProps> = (props) => {
-  return (
-    <Suspense fallback={<div class='h-10 w-10 rounded-full bg-gray-200 animate-pulse' />}>
-      <UserButtonContent {...props} />
-    </Suspense>
   )
 }
 
