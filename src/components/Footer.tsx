@@ -1,5 +1,4 @@
-// ~/components/Footer.tsx
-import { Component, createEffect, Show, Suspense } from 'solid-js'
+import { Component, createEffect, Show, Suspense, createSignal } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt } from 'solid-icons/bi'
 import { BiRegularMessageRounded } from 'solid-icons/bi'
@@ -15,6 +14,7 @@ import { LocalizationButton } from './LocalizationButton'
 import UserButton from './auth/UserBtn'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { handleSession } from '~/db/actions/auth'
+import type { Session } from '@auth/core/types'
 
 // Loading skeleton for the footer
 const FooterSkeleton = () => (
@@ -90,7 +90,6 @@ const MobileNavigation: Component = () => {
 const DesktopFooter: Component = () => {
   const { t, locale } = useI18n()
   const currentYear = new Date().getFullYear()
-  const isRTL = () => locale() === 'ar'
 
   return (
     <footer class='bg-gray-100 shadow-md'>
@@ -110,6 +109,7 @@ const FooterContent: Component = () => {
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
   const { locale } = useI18n()
   const auth = useAuth()
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
 
   // Handle session initialization and refresh
   createEffect(() => {
@@ -119,6 +119,7 @@ const FooterContent: Component = () => {
     if (status === 'unauthenticated' && !session) {
       auth.refetch()
     } else if (session) {
+      setCurrentSession(session)
       handleSession(session)
     }
   })

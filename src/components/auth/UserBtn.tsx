@@ -23,6 +23,7 @@ interface UserButtonProps {
 
 const UserButtonContent: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
   const location = useLocation()
   const { t } = useI18n()
   const auth = useAuth()
@@ -37,13 +38,14 @@ const UserButtonContent: Component<UserButtonProps> = (props) => {
       auth.refetch()
     } else if (session) {
       // If we have a session, ensure cookie is set/updated
+      setCurrentSession(session)
       handleSession(session)
     }
   })
 
   // Memoized user data
-  const user = createMemo(() => auth.session()?.user)
-  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
+  const user = createMemo(() => currentSession()?.user)
+  const isAuthenticated = createMemo(() => !!currentSession())
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')

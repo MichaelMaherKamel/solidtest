@@ -1,5 +1,5 @@
 // ~/components/Nav.tsx
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
+import { Component, createSignal, onMount, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
@@ -9,6 +9,8 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { handleSession } from '~/db/actions/auth'
 import UserButton from './auth/UserBtn'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu'
+import type { Session } from '@auth/core/types'
 
 interface Language {
   code: 'en' | 'ar'
@@ -27,9 +29,7 @@ const Nav: Component = () => {
   const [isLangOpen, setIsLangOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
-
-  const menuRef = createSignal<HTMLDivElement | undefined>()
-  const langRef = createSignal<HTMLDivElement | undefined>()
+  const [currentSession, setCurrentSession] = createSignal<Session | null>(null)
 
   const location = useLocation()
   const auth = useAuth()
@@ -40,10 +40,11 @@ const Nav: Component = () => {
     const status = auth.status()
     const session = auth.session()
 
-    if (status === 'unauthenticated' && !session) {
-      auth.refetch()
-    } else if (session) {
+    if (session) {
+      setCurrentSession(session)
       handleSession(session)
+    } else if (status === 'unauthenticated') {
+      auth.refetch()
     }
   })
 
@@ -61,60 +62,31 @@ const Nav: Component = () => {
   ]
 
   const filteredMenuItems = createMemo(() => {
-    const userRole = auth.session()?.user?.role
+    const userRole = currentSession()?.user?.role
     return MENU_ITEMS.filter((item) => {
       if (!item.roles) return true
       return userRole && item.roles.includes(userRole)
     })
   })
 
-  // Close all dropdowns except the specified one
-  const closeAllDropdowns = (except?: 'menu' | 'lang') => {
-    if (except !== 'menu') setIsOpen(false)
-    if (except !== 'lang') setIsLangOpen(false)
-  }
-
-  // Click handlers for dropdowns
-  const handleMenuClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('menu')
+  // Handle mobile menu
+  const handleMenuClick = () => {
     setIsOpen(!isOpen())
   }
 
-  const handleLangClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('lang')
-    setIsLangOpen(!isLangOpen())
+  // Language handling
+  const handleLanguageChange = (lang: Language) => {
+    document.documentElement.dir = lang.direction
+    document.documentElement.lang = lang.code
+    setLocale(lang.code)
+    setIsLangOpen(false)
   }
 
-  // Click outside and escape key handling
-  const handleClickOutside = (e: MouseEvent) => {
-    const menuElement = menuRef[0]()
-    const langElement = langRef[0]()
-
-    if (!menuElement?.contains(e.target as Node) && isOpen()) {
-      setIsOpen(false)
-    }
-
-    if (!langElement?.contains(e.target as Node) && isLangOpen()) {
-      setIsLangOpen(false)
-    }
-  }
-
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      closeAllDropdowns()
-    }
-  }
-
-  // Mount handlers
+  // Scroll handling
   onMount(() => {
     setIsClient(true)
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleEscape)
-
-    // Scroll handling
     let scrollRAF: number
+
     const handleScroll = () => {
       if (scrollRAF) cancelAnimationFrame(scrollRAF)
       scrollRAF = requestAnimationFrame(() => {
@@ -125,18 +97,10 @@ const Nav: Component = () => {
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
 
-    onCleanup(() => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('keydown', handleEscape)
+    return () => {
       window.removeEventListener('scroll', handleScroll)
       if (scrollRAF) cancelAnimationFrame(scrollRAF)
-    })
-  })
-
-  // Route change handler
-  createEffect(() => {
-    location.pathname
-    closeAllDropdowns()
+    }
   })
 
   // Style helpers
@@ -155,14 +119,6 @@ const Nav: Component = () => {
     }
     return 'text-gray-900 hover:text-gray-800'
   })
-
-  // Language handling
-  const handleLanguageChange = (lang: Language) => {
-    document.documentElement.dir = lang.direction
-    document.documentElement.lang = lang.code
-    setLocale(lang.code)
-    setIsLangOpen(false)
-  }
 
   return (
     <Show when={isClient()}>
@@ -196,35 +152,20 @@ const Nav: Component = () => {
                 </Button>
 
                 {/* Language Dropdown */}
-                <div class='hidden md:block relative' ref={langRef[1]}>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    class={`hover:bg-white/10 ${textColor()}`}
-                    onClick={handleLangClick}
-                  >
-                    <RiEditorTranslate2 class='w-5 h-5' />
-                  </Button>
-
-                  <div
-                    class={`absolute ${
-                      isRTL() ? 'left-0' : 'right-0'
-                    } mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                      isLangOpen()
-                        ? 'opacity-100 transform scale-100'
-                        : 'opacity-0 transform scale-95 pointer-events-none'
-                    }`}
-                  >
-                    <div class='py-1'>
+                <div class='hidden md:block'>
+                  <DropdownMenu open={isLangOpen()} onOpenChange={setIsLangOpen}>
+                    <DropdownMenuTrigger>
+                      <Button variant='ghost' size='icon' class={`hover:bg-white/10 ${textColor()}`}>
+                        <RiEditorTranslate2 class='w-5 h-5' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
                       {languages.map((lang) => (
-                        <button
-                          class={`w-full px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between ${
-                            locale() === lang.code ? 'bg-primary/10 font-medium' : ''
-                          }`}
+                        <DropdownMenuItem
                           onClick={() => handleLanguageChange(lang)}
+                          class={locale() === lang.code ? 'bg-primary/10 font-medium' : ''}
                         >
-                          // Continuing Nav.tsx
-                          <span class={`${isRTL() ? 'text-right' : 'text-left'}`}>{lang.nativeName}</span>
+                          <span class={`${isRTL() ? 'text-right' : 'text-left'} flex-1`}>{lang.nativeName}</span>
                           {locale() === lang.code && (
                             <svg
                               class='w-4 h-4 text-primary'
@@ -238,10 +179,10 @@ const Nav: Component = () => {
                               <polyline points='20 6 9 17 4 12' />
                             </svg>
                           )}
-                        </button>
+                        </DropdownMenuItem>
                       ))}
-                    </div>
-                  </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* User Menu - Desktop Only */}
@@ -250,28 +191,26 @@ const Nav: Component = () => {
                 </div>
 
                 {/* Mobile Menu Button */}
-                <div ref={menuRef[1]}>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
-                    onClick={handleMenuClick}
-                    aria-label={isOpen() ? 'Close menu' : 'Open menu'}
-                  >
-                    <div class='w-5 h-5 flex items-center justify-center'>
-                      <span
-                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                          isRTL() ? 'left' : 'right'
-                        } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
-                      />
-                      <span
-                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                          isRTL() ? 'left' : 'right'
-                        } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
-                      />
-                    </div>
-                  </Button>
-                </div>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
+                  onClick={handleMenuClick}
+                  aria-label={isOpen() ? 'Close menu' : 'Open menu'}
+                >
+                  <div class='w-5 h-5 flex items-center justify-center'>
+                    <span
+                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                        isRTL() ? 'left' : 'right'
+                      } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
+                    />
+                    <span
+                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                        isRTL() ? 'left' : 'right'
+                      } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
+                    />
+                  </div>
+                </Button>
               </div>
             </div>
 
