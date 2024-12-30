@@ -8,7 +8,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { getCookie, setCookie, deleteCookie } from '~/lib/cookies'
+import { handleSession, handleSignOut, getSession } from '~/db/actions/auth'
 
 interface Language {
   code: 'en' | 'ar'
@@ -38,7 +38,6 @@ const Nav: Component = () => {
   const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
-  const [isSessionLoaded, setIsSessionLoaded] = createSignal(false)
 
   const location = useLocation()
   const auth = useAuth()
@@ -51,131 +50,21 @@ const Nav: Component = () => {
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // Initialize and track session state
-  createEffect(() => {
+  // Initialize session
+  createEffect(async () => {
     const session = auth.session()
     const status = auth.status()
 
     if (status === 'unauthenticated' && !session) {
-      const storedSession = getCookie('user-session')
-      if (storedSession) {
-        try {
-          const parsedSession = JSON.parse(storedSession)
-          if (parsedSession?.user) {
-            auth.refetch()
-          }
-        } catch (e) {
-          deleteCookie('user-session')
-        }
+      const serverSession = await getSession()
+      if (serverSession.user) {
+        auth.refetch(true)
       }
     }
 
     if (session) {
-      setCookie('user-session', JSON.stringify(session))
+      await handleSession(session)
     }
-  })
-
-  // Close all dropdowns except the specified one
-  const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
-    if (except !== 'menu') setIsOpen(false)
-    if (except !== 'lang') setIsLangOpen(false)
-    if (except !== 'user') setIsUserOpen(false)
-  }
-
-  // Click handlers for dropdowns
-  const handleMenuClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('menu')
-    setIsOpen(!isOpen())
-  }
-
-  const handleLangClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('lang')
-    setIsLangOpen(!isLangOpen())
-  }
-
-  const handleUserClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('user')
-    setIsUserOpen(!isUserOpen())
-  }
-
-  // Handle escape key for all dropdowns
-  createEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeAllDropdowns()
-      }
-    }
-
-    if (isOpen() || isLangOpen() || isUserOpen()) {
-      window.addEventListener('keydown', handleEscape)
-    }
-
-    return () => window.removeEventListener('keydown', handleEscape)
-  })
-
-  // Handle click outside for all dropdowns
-  createEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const menu = menuRef[0]()
-      const lang = langRef[0]()
-      const user = userRef[0]()
-
-      if (menu && !menu.contains(e.target as Node) && isOpen()) {
-        setIsOpen(false)
-      }
-      if (lang && !lang.contains(e.target as Node) && isLangOpen()) {
-        setIsLangOpen(false)
-      }
-      if (user && !user.contains(e.target as Node) && isUserOpen()) {
-        setIsUserOpen(false)
-      }
-    }
-
-    if (isOpen() || isLangOpen() || isUserOpen()) {
-      document.addEventListener('click', handleClickOutside)
-    }
-
-    onCleanup(() => {
-      document.removeEventListener('click', handleClickOutside)
-    })
-  })
-
-  // Close dropdowns on route change
-  createEffect(() => {
-    location.pathname
-    closeAllDropdowns()
-  })
-
-  // User data memo
-  const userData = createMemo(() => {
-    const session = auth.session()
-    return {
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
-      image: session?.user?.image || '',
-      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
-      role: session?.user?.role || 'guest',
-    }
-  })
-
-  // Menu items configuration
-  const MENU_ITEMS = [
-    { path: '/', key: 'nav.home' },
-    { path: '/about', key: 'nav.about' },
-    { path: '/stores', key: 'nav.stores' },
-    { path: '/gallery', key: 'nav.gallery' },
-    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
-    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
-  ]
-
-  const filteredMenuItems = createMemo(() => {
-    return MENU_ITEMS.filter((item) => {
-      if (!item.roles) return true
-      return item.roles.includes(userData().role)
-    })
   })
 
   // Scroll handling
@@ -202,6 +91,43 @@ const Nav: Component = () => {
     })
   })
 
+  // User data from session
+  const userData = createMemo(() => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
+  })
+
+  // Dropdown handlers
+  const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
+    if (except !== 'menu') setIsOpen(false)
+    if (except !== 'lang') setIsLangOpen(false)
+    if (except !== 'user') setIsUserOpen(false)
+  }
+
+  const handleMenuClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('menu')
+    setIsOpen(!isOpen())
+  }
+
+  const handleLangClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('lang')
+    setIsLangOpen(!isLangOpen())
+  }
+
+  const handleUserClick = (e: Event) => {
+    e.stopPropagation()
+    closeAllDropdowns('user')
+    setIsUserOpen(!isUserOpen())
+  }
+
   // Style helpers
   const active = (path: string) => location.pathname === path
 
@@ -220,36 +146,75 @@ const Nav: Component = () => {
   })
 
   // Language handling
-  const handleLanguageChange = (lang: Language) => {
+  const handleLanguageChange = async (lang: Language) => {
     document.documentElement.dir = lang.direction
     document.documentElement.lang = lang.code
     setLocale(lang.code)
     setIsLangOpen(false)
   }
 
-  // Auth handling
-  const handleSignOut = async () => {
-    try {
-      setIsUserOpen(false)
-      await auth.signOut()
-      localStorage.removeItem('user-session')
-      // Clean up any other auth-related items
-      for (const key of Object.keys(localStorage)) {
-        if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
-          localStorage.removeItem(key)
-        }
-      }
-      window.location.href = '/'
-    } catch (error) {
-      console.error('Error signing out:', error)
-      alert(t('auth.signOutError'))
-    }
-  }
+  // Menu configuration
+  const MENU_ITEMS = [
+    { path: '/', key: 'nav.home' },
+    { path: '/about', key: 'nav.about' },
+    { path: '/stores', key: 'nav.stores' },
+    { path: '/gallery', key: 'nav.gallery' },
+    { path: '/admin', key: 'nav.admin', roles: ['admin'] },
+    { path: '/seller', key: 'nav.seller', roles: ['seller'] },
+  ]
+
+  const filteredMenuItems = createMemo(() => {
+    return MENU_ITEMS.filter((item) => {
+      if (!item.roles) return true
+      return item.roles.includes(userData().role)
+    })
+  })
 
   const getLoginUrl = () => {
     const currentPath = location.pathname || '/'
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
+
+  // Effect for escape key and click outside handling
+  createEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeAllDropdowns()
+      }
+    }
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const menu = menuRef[0]()
+      const lang = langRef[0]()
+      const user = userRef[0]()
+
+      if (menu && !menu.contains(e.target as Node) && isOpen()) {
+        setIsOpen(false)
+      }
+      if (lang && !lang.contains(e.target as Node) && isLangOpen()) {
+        setIsLangOpen(false)
+      }
+      if (user && !user.contains(e.target as Node) && isUserOpen()) {
+        setIsUserOpen(false)
+      }
+    }
+
+    if (isOpen() || isLangOpen() || isUserOpen()) {
+      document.addEventListener('click', handleClickOutside)
+      window.addEventListener('keydown', handleEscape)
+    }
+
+    onCleanup(() => {
+      document.removeEventListener('click', handleClickOutside)
+      window.removeEventListener('keydown', handleEscape)
+    })
+  })
+
+  // Close dropdowns on route change
+  createEffect(() => {
+    location.pathname
+    closeAllDropdowns()
+  })
 
   return (
     <Show when={isClient()}>

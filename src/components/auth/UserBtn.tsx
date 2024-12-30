@@ -1,7 +1,7 @@
+// ~/components/auth/UserBtn.tsx
 import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
-import type { Session } from '@auth/core/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { deleteCookie, getCookie, setCookie } from '~/lib/cookies'
+import { handleSession, handleSignOut, getSession } from '~/db/actions/auth'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -26,31 +26,20 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const location = useLocation()
   const { t } = useI18n()
 
-  // Initialize auth state if needed
-  createEffect(() => {
+  // Initialize auth state with server session
+  createEffect(async () => {
     const status = auth.status()
     const session = auth.session()
 
     if (status === 'unauthenticated' && !session) {
-      const storedSession = getCookie('user-session')
-      if (storedSession) {
-        try {
-          const parsedSession = JSON.parse(storedSession)
-          if (parsedSession?.user) {
-            auth.refetch()
-          }
-        } catch {
-          deleteCookie('user-session')
-        }
+      const serverSession = await getSession()
+      if (serverSession.user) {
+        auth.refetch(true)
       }
     }
-  })
 
-  // Sync session to cookies
-  createEffect(() => {
-    const session = auth.session()
     if (session) {
-      setCookie('user-session', JSON.stringify(session))
+      await handleSession(session)
     }
   })
 
@@ -62,18 +51,11 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const userImage = createMemo(() => user()?.image || '')
   const userRole = createMemo(() => user()?.role || 'user')
 
-  const handleSignOut = async () => {
+  const onSignOut = async () => {
     try {
       setIsOpen(false)
       await auth.signOut()
-      localStorage.removeItem('user-session')
-      // Clean up any other auth-related items
-      for (const key of Object.keys(localStorage)) {
-        if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
-          localStorage.removeItem(key)
-        }
-      }
-      window.location.href = '/'
+      await handleSignOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
@@ -155,7 +137,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
           </Show>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut}>{t('auth.signOut')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </Show>

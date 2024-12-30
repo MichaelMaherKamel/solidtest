@@ -1,3 +1,4 @@
+// ~/components/SiteFooter.tsx
 import { Component, Show, Suspense } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt } from 'solid-icons/bi'
@@ -20,7 +21,6 @@ const MobileNavigation: Component = () => {
 
   return (
     <div class='fixed bottom-0 left-0 right-0 z-50'>
-      {/* Navigation Dock */}
       <Dock direction='middle' class='bg-white shadow-md'>
         <DockIcon>
           <A href='/' class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}>
@@ -63,21 +63,9 @@ const MobileNavigation: Component = () => {
         </DockIcon>
       </Dock>
 
-      {/* Mobile Footer Info */}
-      <div
-        class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 backdrop-blur-md'
-        dir='ltr'
-      >
+      <div class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 backdrop-blur-md' dir='ltr'>
         <div class='flex items-center justify-center h-full text-xs'>
           <span class='truncate'>{t('footer.companyInfo', { year: currentYear })}</span>
-          {/* <div class='flex-shrink-0 space-x-4 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4'>
-            <A href='/about' class='font-medium hover:text-gray-900 transition-colors'>
-              {t('nav.about')}
-            </A>
-            <A href='/terms' class='font-medium hover:text-gray-900 transition-colors'>
-              {t('footer.terms')}
-            </A>
-          </div> */}
         </div>
       </div>
     </div>
@@ -96,14 +84,6 @@ const DesktopFooter: Component = () => {
           <div class='flex items-center gap-4'>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
           </div>
-          {/* <div class='space-x-8 rtl:space-x-reverse'>
-            <A href='/about' class='text-base font-medium hover:text-gray-900 transition-colors'>
-              {t('nav.about')}
-            </A>
-            <A href='/terms' class='text-base font-medium hover:text-gray-900 transition-colors'>
-              {t('footer.terms')}
-            </A>
-          </div> */}
         </div>
       </div>
     </footer>
