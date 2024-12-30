@@ -47,6 +47,18 @@ export const enDict = {
     contact: 'Contact Us',
   },
 
+  categories: {
+    kitchensupplies: 'Kitchen Supplies', // Full name
+    bathroomsupplies: 'Bathroom Supplies',
+    homesupplies: 'Home Supplies',
+    // Short names for tabs
+    tabNames: {
+      kitchensupplies: 'Kitchen',
+      bathroomsupplies: 'Bathroom',
+      homesupplies: 'Home',
+    },
+  },
+
   stores: {
     kitchen: 'Kitchen Paradise',
     kitchenDesc: 'Premium kitchen equipment and accessories',

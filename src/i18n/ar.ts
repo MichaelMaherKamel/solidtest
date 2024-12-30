@@ -47,6 +47,18 @@ export const arDict = {
     contact: 'اتصل بنا',
   },
 
+  categories: {
+    kitchensupplies: 'مستلزمات المطبخ', // Full name
+    bathroomsupplies: 'مستلزمات الحمام',
+    homesupplies: 'مستلزمات المنزل',
+    // Short names for tabs
+    tabNames: {
+      kitchensupplies: 'المطبخ',
+      bathroomsupplies: 'الحمام',
+      homesupplies: 'المنزل',
+    },
+  },
+
   stores: {
     kitchen: 'جنة المطبخ',
     kitchenDesc: 'معدات وإكسسوارات مطبخ فاخرة',
