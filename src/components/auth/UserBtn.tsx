@@ -1,4 +1,4 @@
-import { Component, createSignal, createMemo, Show } from 'solid-js'
+import { Component, createSignal, createMemo, Show, Switch, Match } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
 import { useAuthState } from '~/contexts/auth'
+import { Skeleton } from '~/components/ui/skeleton'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -26,7 +27,6 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   // Memoized values
   const user = createMemo(() => auth.user)
-  const isAuthenticated = createMemo(() => auth.status === 'authenticated')
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
@@ -57,8 +57,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   }
 
   return (
-    <Show
-      when={isAuthenticated()}
+    <Switch
       fallback={
         <Button
           as={A}
@@ -72,55 +71,70 @@ export const UserButton: Component<UserButtonProps> = (props) => {
         </Button>
       }
     >
-      <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger>
-          <Button
-            variant='ghost'
-            class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
-            aria-label={t('nav.userMenu')}
-          >
-            <Avatar>
-              <AvatarImage src={userImage()} alt={userName()} />
-              <AvatarFallback>{getInitials(userName())}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <Show when={userName() || userEmail()}>
-            <DropdownMenuLabel>
-              <div class='flex flex-col space-y-1'>
-                <Show when={userName()}>
-                  <p class='text-sm font-medium'>{userName()}</p>
-                </Show>
-                <Show when={userEmail()}>
-                  <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
-                </Show>
+      <Match when={auth.status === 'loading'}>
+        <div class='h-10 w-10'>
+          <Skeleton class='h-full w-full rounded-full' />
+        </div>
+      </Match>
+      <Match when={auth.status === 'authenticated'}>
+        <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger>
+            <Button
+              variant='ghost'
+              class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
+              aria-label={t('nav.userMenu')}
+            >
+              <Avatar>
+                <AvatarImage src={userImage()} alt={userName()} />
+                <AvatarFallback>{getInitials(userName())}</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <Show when={!auth.loading}>
+              <Show when={userName() || userEmail()}>
+                <DropdownMenuLabel>
+                  <div class='flex flex-col space-y-1'>
+                    <Show when={userName()}>
+                      <p class='text-sm font-medium'>{userName()}</p>
+                    </Show>
+                    <Show when={userEmail()}>
+                      <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
+                    </Show>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+              </Show>
+
+              <DropdownMenuItem as={A} href='/account'>
+                {t('nav.account')}
+              </DropdownMenuItem>
+
+              <Show when={userRole() === 'admin'}>
+                <DropdownMenuItem as={A} href='/admin'>
+                  {t('nav.admin')}
+                </DropdownMenuItem>
+              </Show>
+
+              <Show when={userRole() === 'seller'}>
+                <DropdownMenuItem as={A} href='/seller'>
+                  {t('nav.seller')}
+                </DropdownMenuItem>
+              </Show>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
+            </Show>
+            <Show when={auth.loading}>
+              <div class='p-2'>
+                <Skeleton class='h-4 w-32 mb-2' />
+                <Skeleton class='h-3 w-24' />
               </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-          </Show>
-
-          <DropdownMenuItem as={A} href='/account'>
-            {t('nav.account')}
-          </DropdownMenuItem>
-
-          <Show when={userRole() === 'admin'}>
-            <DropdownMenuItem as={A} href='/admin'>
-              {t('nav.admin')}
-            </DropdownMenuItem>
-          </Show>
-
-          <Show when={userRole() === 'seller'}>
-            <DropdownMenuItem as={A} href='/seller'>
-              {t('nav.seller')}
-            </DropdownMenuItem>
-          </Show>
-
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Show>
+            </Show>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Match>
+    </Switch>
   )
 }
 

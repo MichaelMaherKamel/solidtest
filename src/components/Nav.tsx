@@ -1,4 +1,5 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show, Switch, Match } from 'solid-js'
+import { Skeleton } from '~/components/ui/skeleton'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -42,9 +43,9 @@ const Nav: Component = () => {
   const auth = useAuthState()
   const { t, locale, setLocale } = useI18n()
 
-  const menuRef = createSignal<HTMLDivElement>()
-  const langRef = createSignal<HTMLDivElement>()
-  const userRef = createSignal<HTMLDivElement>()
+  const [menuRef, setMenuRef] = createSignal<HTMLDivElement>()
+  const [langRef, setLangRef] = createSignal<HTMLDivElement>()
+  const [userRef, setUserRef] = createSignal<HTMLDivElement>()
 
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
@@ -105,6 +106,42 @@ const Nav: Component = () => {
     if (except !== 'lang') setIsLangOpen(false)
     if (except !== 'user') setIsUserOpen(false)
   }
+
+  // Click outside handling
+  createEffect(() => {
+    if (!isOpen() && !isLangOpen() && !isUserOpen()) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const clickedEl = e.target as Node
+      const menu = menuRef()
+      const lang = langRef()
+      const user = userRef()
+
+      if (menu && !menu.contains(clickedEl) && isOpen()) {
+        setIsOpen(false)
+      }
+      if (lang && !lang.contains(clickedEl) && isLangOpen()) {
+        setIsLangOpen(false)
+      }
+      if (user && !user.contains(clickedEl) && isUserOpen()) {
+        setIsUserOpen(false)
+      }
+    }
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeAllDropdowns()
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+
+    onCleanup(() => {
+      document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    })
+  })
 
   const handleMenuClick = (e: Event) => {
     e.stopPropagation()
@@ -171,41 +208,6 @@ const Nav: Component = () => {
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
-  // Effect for escape key and click outside handling
-  createEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeAllDropdowns()
-      }
-    }
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const menu = menuRef[0]()
-      const lang = langRef[0]()
-      const user = userRef[0]()
-
-      if (menu && !menu.contains(e.target as Node) && isOpen()) {
-        setIsOpen(false)
-      }
-      if (lang && !lang.contains(e.target as Node) && isLangOpen()) {
-        setIsLangOpen(false)
-      }
-      if (user && !user.contains(e.target as Node) && isUserOpen()) {
-        setIsUserOpen(false)
-      }
-    }
-
-    if (isOpen() || isLangOpen() || isUserOpen()) {
-      document.addEventListener('click', handleClickOutside)
-      window.addEventListener('keydown', handleEscape)
-    }
-
-    onCleanup(() => {
-      document.removeEventListener('click', handleClickOutside)
-      window.removeEventListener('keydown', handleEscape)
-    })
-  })
-
   // Close dropdowns on route change
   createEffect(() => {
     location.pathname
@@ -244,7 +246,7 @@ const Nav: Component = () => {
                 </Button>
 
                 {/* Language Dropdown - Desktop Only */}
-                <div class='hidden md:block relative' ref={langRef[1]}>
+                <div class='hidden md:block relative' ref={setLangRef}>
                   <Button
                     variant='ghost'
                     size='icon'
@@ -292,9 +294,8 @@ const Nav: Component = () => {
                 </div>
 
                 {/* User Dropdown - Desktop Only */}
-                <div class='hidden md:block relative' ref={userRef[1]}>
-                  <Show
-                    when={auth.status === 'authenticated'}
+                <div class='hidden md:block relative' ref={setUserRef}>
+                  <Switch
                     fallback={
                       <A
                         href={getLoginUrl()}
@@ -304,85 +305,106 @@ const Nav: Component = () => {
                       </A>
                     }
                   >
-                    <Button
-                      variant='ghost'
-                      class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                      onClick={handleUserClick}
-                    >
-                      <Avatar>
-                        <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
-                        <AvatarFallback>{userData().initials}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-
-                    <div
-                      class={`absolute ${
-                        isRTL() ? 'left-0' : 'right-0'
-                      } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                        isUserOpen()
-                          ? 'opacity-100 transform scale-100'
-                          : 'opacity-0 transform scale-95 pointer-events-none'
-                      }`}
-                    >
-                      <div class='py-1'>
-                        <div class='px-4 py-2 text-sm text-gray-700'>
-                          <div class='font-medium line-clamp-1'>{userData().name}</div>
-                          <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                        </div>
-                        <hr />
-                        <A
-                          href='/account'
-                          class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
-                        >
-                          {t('nav.account')}
-                        </A>
-                        {userData().role === 'admin' && (
-                          <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.admin')}
-                          </A>
-                        )}
-                        {userData().role === 'seller' && (
-                          <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.seller')}
-                          </A>
-                        )}
-                        <hr class='my-1 border-gray-200' />
-                        <button
-                          class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
-                          onClick={handleSignOut}
-                        >
-                          {t('auth.signOut')}
-                        </button>
+                    <Match when={auth.status === 'loading'}>
+                      <div class='h-10 w-10'>
+                        <Skeleton class='h-full w-full rounded-full' />
                       </div>
-                    </div>
-                  </Show>
+                    </Match>
+                    <Match when={auth.status === 'authenticated'}>
+                      <>
+                        <Button
+                          variant='ghost'
+                          class={`relative h-10 w-10 rounded-full ${textColor()}`}
+                          onClick={handleUserClick}
+                        >
+                          <Avatar>
+                            <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
+                            <AvatarFallback>{userData().initials}</AvatarFallback>
+                          </Avatar>
+                        </Button>
+
+                        <div
+                          class={`absolute ${
+                            isRTL() ? 'left-0' : 'right-0'
+                          } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
+                            isUserOpen()
+                              ? 'opacity-100 transform scale-100'
+                              : 'opacity-0 transform scale-95 pointer-events-none'
+                          }`}
+                        >
+                          <div class='py-1'>
+                            <Show
+                              when={!auth.loading}
+                              fallback={
+                                <div class='px-4 py-2'>
+                                  <Skeleton class='h-4 w-32 mb-2' />
+                                  <Skeleton class='h-3 w-24' />
+                                </div>
+                              }
+                            >
+                              <div class='px-4 py-2 text-sm text-gray-700'>
+                                <div class='font-medium line-clamp-1'>{userData().name}</div>
+                                <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
+                              </div>
+                            </Show>
+                            <hr />
+                            <A
+                              href='/account'
+                              class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                                isRTL() ? 'text-right' : 'text-left'
+                              }`}
+                            >
+                              {t('nav.account')}
+                            </A>
+                            {userData().role === 'admin' && (
+                              <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                                {t('nav.admin')}
+                              </A>
+                            )}
+                            {userData().role === 'seller' && (
+                              <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                                {t('nav.seller')}
+                              </A>
+                            )}
+                            <hr class='my-1 border-gray-200' />
+                            <button
+                              class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                                isRTL() ? 'text-right' : 'text-left'
+                              }`}
+                              onClick={handleSignOut}
+                            >
+                              {t('auth.signOut')}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    </Match>
+                  </Switch>
                 </div>
 
                 {/* Mobile Menu Button */}
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
-                  onClick={handleMenuClick}
-                  aria-label={isOpen() ? 'Close menu' : 'Open menu'}
-                >
-                  <div class='w-5 h-5 flex items-center justify-center'>
-                    <span
-                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                        isRTL() ? 'left' : 'right'
-                      } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
-                    />
-                    <span
-                      class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
-                        isRTL() ? 'left' : 'right'
-                      } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
-                    />
-                  </div>
-                </Button>
+                <div ref={setMenuRef}>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
+                    onClick={handleMenuClick}
+                    aria-label={isOpen() ? 'Close menu' : 'Open menu'}
+                  >
+                    <div class='w-5 h-5 flex items-center justify-center'>
+                      <span
+                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                          isRTL() ? 'left' : 'right'
+                        } ${isOpen() ? 'rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} -translate-y-1`}`}
+                      />
+                      <span
+                        class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out origin-${
+                          isRTL() ? 'left' : 'right'
+                        } ${isOpen() ? '-rotate-45' : `${isRTL() ? 'translate-x-0' : '-translate-x-0'} translate-y-1`}`}
+                      />
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
 
