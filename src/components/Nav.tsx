@@ -52,7 +52,7 @@ const UserAvatar: Component = () => {
 
 // Skeleton loader for avatar
 const UserAvatarSkeleton: Component = () => {
-  return <Skeleton class='h-10 w-10 rounded-full' />
+  return <Skeleton height={48} circle animate={false} />
 }
 
 const Nav: Component = () => {
@@ -319,70 +319,77 @@ const Nav: Component = () => {
                 {/* User Dropdown - Desktop Only */}
                 <div class='hidden md:block relative' ref={userRef[1]}>
                   <Show
-                    when={auth.status === 'authenticated'}
+                    when={auth.status !== 'loading'}
                     fallback={
-                      <A
-                        href={getLoginUrl()}
-                        class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
-                      >
-                        <FaRegularUser class='h-5 w-5' />
-                      </A>
+                      <Button variant='ghost' class={`relative h-10 w-10 rounded-full ${textColor()}`} disabled>
+                        <UserAvatarSkeleton />
+                      </Button>
                     }
                   >
-                    <Button
-                      variant='ghost'
-                      class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                      onClick={handleUserClick}
-                    >
-                      <Show when={auth.status !== 'loading'} fallback={<UserAvatarSkeleton />}>
-                        <UserAvatar />
-                      </Show>
-                    </Button>
-
-                    <div
-                      class={`absolute ${
-                        isRTL() ? 'left-0' : 'right-0'
-                      } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                        isUserOpen()
-                          ? 'opacity-100 transform scale-100'
-                          : 'opacity-0 transform scale-95 pointer-events-none'
-                      }`}
-                    >
-                      <div class='py-1'>
-                        <div class='px-4 py-2 text-sm text-gray-700'>
-                          <div class='font-medium line-clamp-1'>{userData().name}</div>
-                          <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                        </div>
-                        <hr />
+                    <Show
+                      when={auth.status === 'authenticated'}
+                      fallback={
                         <A
-                          href='/account'
-                          class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
+                          href={getLoginUrl()}
+                          class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
                         >
-                          {t('nav.account')}
+                          <FaRegularUser class='h-5 w-5' />
                         </A>
-                        {userData().role === 'admin' && (
-                          <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.admin')}
+                      }
+                    >
+                      <Button
+                        variant='ghost'
+                        class={`relative h-10 w-10 rounded-full ${textColor()}`}
+                        onClick={handleUserClick}
+                      >
+                        <UserAvatar />
+                      </Button>
+
+                      <div
+                        class={`absolute ${
+                          isRTL() ? 'left-0' : 'right-0'
+                        } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
+                          isUserOpen()
+                            ? 'opacity-100 transform scale-100'
+                            : 'opacity-0 transform scale-95 pointer-events-none'
+                        }`}
+                      >
+                        <div class='py-1'>
+                          <div class='px-4 py-2 text-sm text-gray-700'>
+                            <div class='font-medium line-clamp-1'>{userData().name}</div>
+                            <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
+                          </div>
+                          <hr />
+                          <A
+                            href='/account'
+                            class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                              isRTL() ? 'text-right' : 'text-left'
+                            }`}
+                          >
+                            {t('nav.account')}
                           </A>
-                        )}
-                        {userData().role === 'seller' && (
-                          <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                            {t('nav.seller')}
-                          </A>
-                        )}
-                        <hr class='my-1 border-gray-200' />
-                        <button
-                          class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            isRTL() ? 'text-right' : 'text-left'
-                          }`}
-                          onClick={handleSignOut}
-                        >
-                          {t('auth.signOut')}
-                        </button>
+                          {userData().role === 'admin' && (
+                            <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                              {t('nav.admin')}
+                            </A>
+                          )}
+                          {userData().role === 'seller' && (
+                            <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
+                              {t('nav.seller')}
+                            </A>
+                          )}
+                          <hr class='my-1 border-gray-200' />
+                          <button
+                            class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                              isRTL() ? 'text-right' : 'text-left'
+                            }`}
+                            onClick={handleSignOut}
+                          >
+                            {t('auth.signOut')}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </Show>
                   </Show>
                 </div>
 

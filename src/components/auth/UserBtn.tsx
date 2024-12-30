@@ -21,7 +21,7 @@ interface UserButtonProps {
 
 // Skeleton loader for avatar
 const UserAvatarSkeleton: Component = () => {
-  return <Skeleton class='h-10 w-10 rounded-full' />
+  return <Skeleton height={48} circle animate={false} />
 }
 
 // Separate avatar component
@@ -116,7 +116,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
               <DropdownMenuLabel>
                 <div class='flex flex-col space-y-1'>
                   <Show when={userName()}>
-                    <p class='text-sm font-medium'>{userName()}</p>
+                    <p class='text-sm font-medium line-clamp-1'>{userName()}</p>
                   </Show>
                   <Show when={userEmail()}>
                     <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
