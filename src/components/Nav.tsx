@@ -1,7 +1,8 @@
-import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
+import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show, Suspense } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { Skeleton } from './ui/skeleton'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
@@ -31,6 +32,29 @@ const languages: Language[] = [
   },
 ]
 
+// Separate component for user avatar
+const UserAvatar: Component = () => {
+  const auth = useAuthState()
+  const userData = createMemo(() => ({
+    name: auth.user?.name || '',
+    email: auth.user?.email || '',
+    image: auth.user?.image || '',
+    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
+  }))
+
+  return (
+    <Avatar>
+      <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
+      <AvatarFallback>{userData().initials}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+// Skeleton loader for avatar
+const UserAvatarSkeleton: Component = () => {
+  return <Skeleton class='h-10 w-10 rounded-full' />
+}
+
 const Nav: Component = () => {
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
@@ -49,10 +73,10 @@ const Nav: Component = () => {
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // Auth effect to handle user state updates
+  // Auth effect for user state updates
   createEffect(() => {
     if (auth.user) {
-      // Handle any nav-specific user state updates
+      // Handle nav-specific user state updates
     }
   })
 
@@ -80,6 +104,7 @@ const Nav: Component = () => {
     })
   })
 
+  // Sign out handler
   const handleSignOut = async () => {
     try {
       setIsUserOpen(false)
@@ -90,7 +115,7 @@ const Nav: Component = () => {
     }
   }
 
-  // User data from auth context
+  // User data memoization
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
     email: auth.user?.email || '',
@@ -309,10 +334,9 @@ const Nav: Component = () => {
                       class={`relative h-10 w-10 rounded-full ${textColor()}`}
                       onClick={handleUserClick}
                     >
-                      <Avatar>
-                        <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
-                        <AvatarFallback>{userData().initials}</AvatarFallback>
-                      </Avatar>
+                      <Show when={auth.status !== 'loading'} fallback={<UserAvatarSkeleton />}>
+                        <UserAvatar />
+                      </Show>
                     </Button>
 
                     <div
