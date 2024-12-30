@@ -1,6 +1,5 @@
 // ~/components/auth/UserBtn.tsx
-import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
-import { useAuth } from '@solid-mediakit/auth/client'
+import { Component, createSignal } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import {
   DropdownMenu,
@@ -14,7 +13,9 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
+import { useAuthState } from '~/contexts/auth'
+import { signOutUser } from '~/db/actions/auth'
+import { useAuth } from '@solid-mediakit/auth/client'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -22,48 +23,30 @@ interface UserButtonProps {
 
 export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
-  const auth = useAuth()
+  const authClient = useAuth()
+  const auth = useAuthState()
   const location = useLocation()
   const { t } = useI18n()
 
-  // Initialize auth state with server session
-  createEffect(async () => {
-    const status = auth.status()
-    const session = auth.session()
+  // Early return for loading state
+  if (!auth.initialized) {
+    return <div class='w-10 h-10 rounded-full animate-pulse bg-gray-200' />
+  }
 
-    if (status === 'unauthenticated' && !session) {
-      const serverSession = await getSession()
-      if (serverSession.user) {
-        auth.refetch(true)
-      }
-    }
-
-    if (session) {
-      await handleSession(session)
-    }
-  })
-
-  // Memoized values
-  const user = createMemo(() => auth.session()?.user)
-  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
-  const userName = createMemo(() => user()?.name || user()?.email || 'User')
-  const userEmail = createMemo(() => user()?.email || '')
-  const userImage = createMemo(() => user()?.image || '')
-  const userRole = createMemo(() => user()?.role || 'user')
+  const getLoginUrl = () => {
+    const currentPath = location.pathname
+    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
+  }
 
   const onSignOut = async () => {
     try {
-      await signOutUser(auth, () => setIsOpen(false))
+      setIsOpen(false)
+      await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
     }
   }
-
-  const getLoginUrl = createMemo(() => {
-    const currentPath = location.pathname
-    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
-  })
 
   const getInitials = (name: string) => {
     if (!name) return 'U'
@@ -74,71 +57,64 @@ export const UserButton: Component<UserButtonProps> = (props) => {
       .toUpperCase()
   }
 
+  if (!auth.user) {
+    return (
+      <Button
+        as={A}
+        href={getLoginUrl()}
+        variant='ghost'
+        size='icon'
+        class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
+        aria-label={t('auth.signIn')}
+      >
+        <FaRegularUser class='h-5 w-5' />
+      </Button>
+    )
+  }
+
   return (
-    <Show
-      when={isAuthenticated()}
-      fallback={
+    <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger>
         <Button
-          as={A}
-          href={getLoginUrl()}
           variant='ghost'
-          size='icon'
-          class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
-          aria-label={t('auth.signIn')}
+          class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
+          aria-label={t('nav.userMenu')}
         >
-          <FaRegularUser class='h-5 w-5' />
+          <Avatar>
+            <AvatarImage src={auth.user.image} alt={auth.user.name} />
+            <AvatarFallback>{getInitials(auth.user.name)}</AvatarFallback>
+          </Avatar>
         </Button>
-      }
-    >
-      <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger>
-          <Button
-            variant='ghost'
-            class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
-            aria-label={t('nav.userMenu')}
-          >
-            <Avatar>
-              <AvatarImage src={userImage()} alt={userName()} />
-              <AvatarFallback>{getInitials(userName())}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <Show when={userName() || userEmail()}>
-            <DropdownMenuLabel>
-              <div class='flex flex-col space-y-1'>
-                <Show when={userName()}>
-                  <p class='text-sm font-medium'>{userName()}</p>
-                </Show>
-                <Show when={userEmail()}>
-                  <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
-                </Show>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-          </Show>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuLabel>
+          <div class='flex flex-col space-y-1'>
+            <p class='text-sm font-medium'>{auth.user.name}</p>
+            <p class='text-xs text-muted-foreground truncate'>{auth.user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
 
-          <DropdownMenuItem as={A} href='/account'>
-            {t('nav.account')}
+        <DropdownMenuItem as={A} href='/account'>
+          {t('nav.account')}
+        </DropdownMenuItem>
+
+        {auth.user.role === 'admin' && (
+          <DropdownMenuItem as={A} href='/admin'>
+            {t('nav.admin')}
           </DropdownMenuItem>
+        )}
 
-          <Show when={userRole() === 'admin'}>
-            <DropdownMenuItem as={A} href='/admin'>
-              {t('nav.admin')}
-            </DropdownMenuItem>
-          </Show>
+        {auth.user.role === 'seller' && (
+          <DropdownMenuItem as={A} href='/seller'>
+            {t('nav.seller')}
+          </DropdownMenuItem>
+        )}
 
-          <Show when={userRole() === 'seller'}>
-            <DropdownMenuItem as={A} href='/seller'>
-              {t('nav.seller')}
-            </DropdownMenuItem>
-          </Show>
-
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Show>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

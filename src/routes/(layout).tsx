@@ -42,19 +42,18 @@
 // ~/routes/(layout).tsx
 import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
-import Nav from '~/components/Nav'
-import SiteFooter from '~/components/Footer'
+import { Suspense, lazy } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
-import { Suspense } from 'solid-js'
+import { AuthProvider } from '~/contexts/auth'
 
-// Simple loading component
-const LoadingShell = () => (
-  <div class='min-h-screen flex flex-col relative'>
-    <div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm' />
-    <div class='flex-1 animate-pulse bg-gray-50' />
-    <div class='h-16 bg-white/50 backdrop-blur-sm' />
-  </div>
-)
+// Lazy load components
+const Nav = lazy(() => import('~/components/Nav'))
+const SiteFooter = lazy(() => import('~/components/Footer'))
+
+// Loading components
+const NavSkeleton = () => <div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm animate-pulse' />
+
+const FooterSkeleton = () => <div class='h-16 bg-white/50 backdrop-blur-sm animate-pulse' />
 
 export default function RootLayout(props: RouteSectionProps) {
   const location = useLocation()
@@ -62,14 +61,22 @@ export default function RootLayout(props: RouteSectionProps) {
   const isHomePage = () => location.pathname === '/'
 
   return (
-    // <Suspense fallback={<LoadingShell />}>
+    <AuthProvider>
       <div class='min-h-screen flex flex-col relative'>
-        <Nav />
-        <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
+        <Suspense fallback={<NavSkeleton />}>
+          <Nav />
+        </Suspense>
+
+        <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`} role='main'>
+          {props.children}
+        </main>
+
         <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
-          <SiteFooter />
+          <Suspense fallback={<FooterSkeleton />}>
+            <SiteFooter />
+          </Suspense>
         </div>
       </div>
-    // </Suspense>
+    </AuthProvider>
   )
 }
