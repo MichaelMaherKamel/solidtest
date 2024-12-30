@@ -21,7 +21,7 @@ interface UserButtonProps {
 
 // Skeleton loader for avatar
 const UserAvatarSkeleton: Component = () => {
-  return <Skeleton height={48} width={48} circle animate={false} />
+  return <Skeleton height={48} circle animate={false} />
 }
 
 // Separate avatar component
@@ -51,8 +51,6 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   // Memoized values
   const user = createMemo(() => auth.user)
-  const isAuthenticated = createMemo(() => auth.status === 'authenticated')
-  const isLoading = createMemo(() => auth.status === 'loading')
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
@@ -75,80 +73,78 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   return (
     <Show
-      when={!isLoading()}
+      when={auth.status === 'loading'}
       fallback={
-        <Button
-          variant='ghost'
-          class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
-          disabled
+        <Show
+          when={auth.status === 'authenticated'}
+          fallback={
+            <Button
+              as={A}
+              href={getLoginUrl()}
+              variant='ghost'
+              size='icon'
+              class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
+              aria-label={t('auth.signIn')}
+            >
+              <FaRegularUser class='h-5 w-5' />
+            </Button>
+          }
         >
-          <UserAvatarSkeleton />
-        </Button>
+          <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger>
+              <Button
+                variant='ghost'
+                class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
+                aria-label={t('nav.userMenu')}
+              >
+                <UserAvatar name={userName()} image={userImage()} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <Show when={userName() || userEmail()}>
+                <DropdownMenuLabel>
+                  <div class='flex flex-col space-y-1'>
+                    <Show when={userName()}>
+                      <p class='text-sm font-medium line-clamp-1'>{userName()}</p>
+                    </Show>
+                    <Show when={userEmail()}>
+                      <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
+                    </Show>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+              </Show>
+
+              <DropdownMenuItem as={A} href='/account'>
+                {t('nav.account')}
+              </DropdownMenuItem>
+
+              <Show when={userRole() === 'admin'}>
+                <DropdownMenuItem as={A} href='/admin'>
+                  {t('nav.admin')}
+                </DropdownMenuItem>
+              </Show>
+
+              <Show when={userRole() === 'seller'}>
+                <DropdownMenuItem as={A} href='/seller'>
+                  {t('nav.seller')}
+                </DropdownMenuItem>
+              </Show>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Show>
       }
     >
-      <Show
-        when={isAuthenticated()}
-        fallback={
-          <Button
-            as={A}
-            href={getLoginUrl()}
-            variant='ghost'
-            size='icon'
-            class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
-            aria-label={t('auth.signIn')}
-          >
-            <FaRegularUser class='h-5 w-5' />
-          </Button>
-        }
+      <Button
+        variant='ghost'
+        class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
+        disabled
       >
-        <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-          <DropdownMenuTrigger>
-            <Button
-              variant='ghost'
-              class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
-              aria-label={t('nav.userMenu')}
-            >
-              <UserAvatar name={userName()} image={userImage()} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <Show when={userName() || userEmail()}>
-              <DropdownMenuLabel>
-                <div class='flex flex-col space-y-1'>
-                  <Show when={userName()}>
-                    <p class='text-sm font-medium line-clamp-1'>{userName()}</p>
-                  </Show>
-                  <Show when={userEmail()}>
-                    <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
-                  </Show>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-            </Show>
-
-            <DropdownMenuItem as={A} href='/account'>
-              {t('nav.account')}
-            </DropdownMenuItem>
-
-            <Show when={userRole() === 'admin'}>
-              <DropdownMenuItem as={A} href='/admin'>
-                {t('nav.admin')}
-              </DropdownMenuItem>
-            </Show>
-
-            <Show when={userRole() === 'seller'}>
-              <DropdownMenuItem as={A} href='/seller'>
-                {t('nav.seller')}
-              </DropdownMenuItem>
-            </Show>
-
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Show>
+        <UserAvatarSkeleton />
+      </Button>
     </Show>
   )
 }
-
-export default UserButton
