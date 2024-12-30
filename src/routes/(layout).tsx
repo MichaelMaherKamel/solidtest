@@ -44,7 +44,7 @@ import { RouteSectionProps } from '@solidjs/router'
 import { useLocation } from '@solidjs/router'
 import { Suspense, lazy } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
-
+import { AuthProvider } from '~/contexts/auth'
 
 // Lazy load components
 const Nav = lazy(() => import('~/components/Nav'))
@@ -61,22 +61,22 @@ export default function RootLayout(props: RouteSectionProps) {
   const isHomePage = () => location.pathname === '/'
 
   return (
-  
+    <AuthProvider>
       <div class='min-h-screen flex flex-col relative'>
-        {/* <Suspense fallback={<NavSkeleton />}> */}
+        <Suspense fallback={<NavSkeleton />}>
           <Nav />
-        {/* </Suspense> */}
+        </Suspense>
 
         <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`} role='main'>
           {props.children}
         </main>
 
         <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
-          {/* <Suspense fallback={<FooterSkeleton />}> */}
+          <Suspense fallback={<FooterSkeleton />}>
             <SiteFooter />
-          {/* </Suspense> */}
+          </Suspense>
         </div>
       </div>
-  
+    </AuthProvider>
   )
 }

@@ -1,6 +1,4 @@
-// ~/components/auth/UserBtn.tsx
-import { Component, createSignal, createEffect, createMemo, Show } from 'solid-js'
-import { useAuth } from '@solid-mediakit/auth/client'
+import { Component, createSignal, createMemo, Show } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import {
   DropdownMenu,
@@ -14,7 +12,7 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
+import { useAuthState } from '~/contexts/auth'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -22,30 +20,13 @@ interface UserButtonProps {
 
 export const UserButton: Component<UserButtonProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false)
-  const auth = useAuth()
+  const auth = useAuthState()
   const location = useLocation()
   const { t } = useI18n()
 
-  // Initialize auth state with server session
-  createEffect(async () => {
-    const status = auth.status()
-    const session = auth.session()
-
-    if (status === 'unauthenticated' && !session) {
-      const serverSession = await getSession()
-      if (serverSession.user) {
-        auth.refetch(true)
-      }
-    }
-
-    if (session) {
-      await handleSession(session)
-    }
-  })
-
   // Memoized values
-  const user = createMemo(() => auth.session()?.user)
-  const isAuthenticated = createMemo(() => auth.status() === 'authenticated')
+  const user = createMemo(() => auth.user)
+  const isAuthenticated = createMemo(() => auth.status === 'authenticated')
   const userName = createMemo(() => user()?.name || user()?.email || 'User')
   const userEmail = createMemo(() => user()?.email || '')
   const userImage = createMemo(() => user()?.image || '')
@@ -53,7 +34,8 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   const onSignOut = async () => {
     try {
-      await signOutUser(auth, () => setIsOpen(false))
+      setIsOpen(false)
+      await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))

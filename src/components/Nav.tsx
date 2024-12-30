@@ -1,5 +1,4 @@
 import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
-import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -8,7 +7,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
+import { useAuthState } from '~/contexts/auth'
 
 interface Language {
   code: 'en' | 'ar'
@@ -40,7 +39,7 @@ const Nav: Component = () => {
   const [isClient, setIsClient] = createSignal(false)
 
   const location = useLocation()
-  const auth = useAuth()
+  const auth = useAuthState()
   const { t, locale, setLocale } = useI18n()
 
   const menuRef = createSignal<HTMLDivElement>()
@@ -50,20 +49,10 @@ const Nav: Component = () => {
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // Initialize session
-  createEffect(async () => {
-    const session = auth.session()
-    const status = auth.status()
-
-    if (status === 'unauthenticated' && !session) {
-      const serverSession = await getSession()
-      if (serverSession.user) {
-        auth.refetch(true)
-      }
-    }
-
-    if (session) {
-      await handleSession(session)
+  // Auth effect to handle user state updates
+  createEffect(() => {
+    if (auth.user) {
+      // Handle any nav-specific user state updates
     }
   })
 
@@ -94,24 +83,21 @@ const Nav: Component = () => {
   const handleSignOut = async () => {
     try {
       setIsUserOpen(false)
-      await signOutUser(auth)
+      await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))
     }
   }
 
-  // User data from session
-  const userData = createMemo(() => {
-    const session = auth.session()
-    return {
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
-      image: session?.user?.image || '',
-      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
-      role: session?.user?.role || 'guest',
-    }
-  })
+  // User data from auth context
+  const userData = createMemo(() => ({
+    name: auth.user?.name || '',
+    email: auth.user?.email || '',
+    image: auth.user?.image || '',
+    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
+    role: auth.user?.role || 'guest',
+  }))
 
   // Dropdown handlers
   const closeAllDropdowns = (except?: 'menu' | 'lang' | 'user') => {
@@ -308,7 +294,7 @@ const Nav: Component = () => {
                 {/* User Dropdown - Desktop Only */}
                 <div class='hidden md:block relative' ref={userRef[1]}>
                   <Show
-                    when={auth.session()}
+                    when={auth.status === 'authenticated'}
                     fallback={
                       <A
                         href={getLoginUrl()}
