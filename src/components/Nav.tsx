@@ -52,7 +52,7 @@ const UserAvatar: Component = () => {
 
 // Skeleton loader for avatar
 const UserAvatarSkeleton: Component = () => {
-  return <Skeleton height={48} circle animate={false} />
+  return <Skeleton class='h-10 w-10 rounded-full' />
 }
 
 const Nav: Component = () => {
