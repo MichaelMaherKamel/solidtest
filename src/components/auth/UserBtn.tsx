@@ -73,7 +73,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     >
       <Match when={auth.status === 'loading'}>
         <div class='h-10 w-10'>
-          <Skeleton class='h-full w-full rounded-full' />
+          <Skeleton height={40} width={40} radius={20} />
         </div>
       </Match>
       <Match when={auth.status === 'authenticated'}>
@@ -127,8 +127,8 @@ export const UserButton: Component<UserButtonProps> = (props) => {
             </Show>
             <Show when={auth.loading}>
               <div class='p-2'>
-                <Skeleton class='h-4 w-32 mb-2' />
-                <Skeleton class='h-3 w-24' />
+                <Skeleton height={16} width={128} radius={8} class='mb-2' />
+                <Skeleton height={12} width={96} radius={6} />
               </div>
             </Show>
           </DropdownMenuContent>

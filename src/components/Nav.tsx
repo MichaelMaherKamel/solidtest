@@ -307,7 +307,7 @@ const Nav: Component = () => {
                   >
                     <Match when={auth.status === 'loading'}>
                       <div class='h-10 w-10'>
-                        <Skeleton class='h-full w-full rounded-full' />
+                        <Skeleton height={40} width={40} radius={20} />
                       </div>
                     </Match>
                     <Match when={auth.status === 'authenticated'}>
