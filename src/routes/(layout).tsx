@@ -62,7 +62,7 @@ export default function RootLayout(props: RouteSectionProps) {
   const isHomePage = () => location.pathname === '/'
 
   return (
-    <Suspense fallback={<LoadingShell />}>
+    // <Suspense fallback={<LoadingShell />}>
       <div class='min-h-screen flex flex-col relative'>
         <Nav />
         <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`}>{props.children}</main>
@@ -70,6 +70,6 @@ export default function RootLayout(props: RouteSectionProps) {
           <SiteFooter />
         </div>
       </div>
-    </Suspense>
+    // </Suspense>
   )
 }
