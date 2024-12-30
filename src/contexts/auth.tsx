@@ -1,4 +1,3 @@
-// ~/contexts/auth.tsx
 import { createContext, useContext, ParentComponent, createEffect } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { useAuth } from '@solid-mediakit/auth/client'
@@ -27,15 +26,19 @@ export const AuthProvider: ParentComponent = (props) => {
       try {
         setState({ loading: true })
         await signOutUser(client)
+      } catch (error) {
+        console.error('Error in signOutUser:', error)
+        // Only propagate non-redirect errors
+        if (!(error instanceof Error && error.message.includes('RedirectError'))) {
+          throw error
+        }
+      } finally {
+        // Always clean up the auth state
         setState({
           user: null,
           status: 'unauthenticated',
           loading: false,
         })
-      } catch (error) {
-        console.error('Error signing out:', error)
-        setState({ loading: false })
-        throw error
       }
     },
   })
