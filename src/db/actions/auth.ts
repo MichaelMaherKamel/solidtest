@@ -78,7 +78,7 @@ export async function handleSession(session: any) {
   return { success: false, user: null }
 }
 
-// Handle sign out
+// Handle sign out - Server Action
 export async function handleSignOut() {
   'use server'
 
@@ -90,9 +90,39 @@ export async function handleSignOut() {
     maxAge: 0,
   })
 
+  // Clear any localStorage items
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('user-session')
+    // Clean up any other auth-related items
+    for (const key of Object.keys(localStorage)) {
+      if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+
   throw redirect('/')
 }
 
+// Client-side sign out handler for components
+export async function signOutUser(auth: any, onBeforeSignOut?: () => void) {
+  try {
+    // Execute any pre-signout cleanup if provided
+    if (onBeforeSignOut) {
+      onBeforeSignOut()
+    }
+
+    // First clear client-side auth state
+    await auth.signOut()
+
+    // Then call server action to clear cookie
+    await handleSignOut()
+  } catch (error) {
+    console.error('Error signing out:', error)
+    // Re-throw to let component handle error
+    throw error
+  }
+}
 // Check if user has required role
 export async function checkRole(allowedRoles: string[]) {
   'use server'

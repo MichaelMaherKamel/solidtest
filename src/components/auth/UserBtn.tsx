@@ -14,7 +14,7 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { handleSession, handleSignOut, getSession } from '~/db/actions/auth'
+import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -53,9 +53,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   const onSignOut = async () => {
     try {
-      setIsOpen(false)
-      await auth.signOut()
-      await handleSignOut()
+      await signOutUser(auth, () => setIsOpen(false))
     } catch (error) {
       console.error('Error signing out:', error)
       alert(t('auth.signOutError'))

@@ -8,7 +8,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { handleSession, handleSignOut, getSession } from '~/db/actions/auth'
+import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
 
 interface Language {
   code: 'en' | 'ar'
@@ -90,6 +90,16 @@ const Nav: Component = () => {
       }
     })
   })
+
+  const handleSignOut = async () => {
+    try {
+      setIsUserOpen(false)
+      await signOutUser(auth)
+    } catch (error) {
+      console.error('Error signing out:', error)
+      alert(t('auth.signOutError'))
+    }
+  }
 
   // User data from session
   const userData = createMemo(() => {
