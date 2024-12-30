@@ -21,7 +21,7 @@ interface UserButtonProps {
 
 // Skeleton loader for avatar
 const UserAvatarSkeleton: Component = () => {
-  return <Skeleton height={48} circle animate={false} />
+  return <Skeleton height={10} width={10} circle animate={false} />
 }
 
 // Separate avatar component
