@@ -1,5 +1,5 @@
-// ~/components/Nav.tsx
 import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show } from 'solid-js'
+import { useAuth } from '@solid-mediakit/auth/client'
 import { A, useLocation } from '@solidjs/router'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -8,8 +8,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { useAuthState } from '~/contexts/auth'
-
+import { handleSession, getSession, signOutUser } from '~/db/actions/auth'
 
 interface Language {
   code: 'en' | 'ar'
@@ -41,7 +40,7 @@ const Nav: Component = () => {
   const [isClient, setIsClient] = createSignal(false)
 
   const location = useLocation()
-  const auth = useAuthState()
+  const auth = useAuth()
   const { t, locale, setLocale } = useI18n()
 
   const menuRef = createSignal<HTMLDivElement>()
@@ -51,25 +50,22 @@ const Nav: Component = () => {
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // User data from auth state
-  const userData = createMemo(() => ({
-    name: auth.user?.name || '',
-    email: auth.user?.email || '',
-    image: auth.user?.image || '',
-    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
-    role: auth.user?.role || 'guest',
-  }))
+  // Initialize session
+  createEffect(async () => {
+    const session = auth.session()
+    const status = auth.status()
 
-  // Handle sign out
-  const handleSignOut = async () => {
-    try {
-      setIsUserOpen(false)
-      await auth.signOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-      alert(t('auth.signOutError'))
+    if (status === 'unauthenticated' && !session) {
+      const serverSession = await getSession()
+      if (serverSession.user) {
+        auth.refetch(true)
+      }
     }
-  }
+
+    if (session) {
+      await handleSession(session)
+    }
+  })
 
   // Scroll handling
   onMount(() => {
@@ -93,6 +89,28 @@ const Nav: Component = () => {
         cancelAnimationFrame(scrollRAF)
       }
     })
+  })
+
+  const handleSignOut = async () => {
+    try {
+      setIsUserOpen(false)
+      await signOutUser(auth)
+    } catch (error) {
+      console.error('Error signing out:', error)
+      alert(t('auth.signOutError'))
+    }
+  }
+
+  // User data from session
+  const userData = createMemo(() => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
   })
 
   // Dropdown handlers
@@ -208,11 +226,6 @@ const Nav: Component = () => {
     closeAllDropdowns()
   })
 
-  // Early return while authentication is initializing
-  if (!auth.initialized) {
-    return <div class='h-16 bg-white/50 backdrop-blur-sm shadow-sm animate-pulse' />
-  }
-
   return (
     <Show when={isClient()}>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
@@ -295,7 +308,7 @@ const Nav: Component = () => {
                 {/* User Dropdown - Desktop Only */}
                 <div class='hidden md:block relative' ref={userRef[1]}>
                   <Show
-                    when={auth.user}
+                    when={auth.session()}
                     fallback={
                       <A
                         href={getLoginUrl()}
