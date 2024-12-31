@@ -437,30 +437,25 @@ const ShoppingNav: Component = () => {
 
             {/* Categories Bar */}
             <div class='border-t relative z-10'>
-              <div class='container mx-auto'>
-                <div class='w-full flex justify-between overflow-x-auto scrollbar-hide'>
-                  <div class='flex-1 flex items-center justify-center'>
-                    <div class='inline-flex h-12 items-center gap-2 px-4 md:px-0 w-full justify-center'>
-                      {siteConfig.categories.map((category) => {
-                        const isSelected = currentCategory() === category.slug
-                        return (
-                          <A
-                            href={`/shopping/${category.slug}`}
-                            class={`flex-1 max-w-[200px] inline-flex items-center justify-center px-3 py-2 rounded-md transition-colors
-                              ${
-                                isSelected
-                                  ? 'bg-primary/10 text-primary font-medium'
-                                  : 'hover:bg-gray-100 text-gray-700'
-                              }`}
-                          >
-                            <div class='inline-flex items-center gap-2'>
-                              <category.icon class='h-5 w-5' />
-                              <span class='whitespace-nowrap'>{t(`categories.tabNames.${category.slug}`)}</span>
-                            </div>
-                          </A>
-                        )
-                      })}
-                    </div>
+              <div class='w-full overflow-x-auto scrollbar-hide'>
+                <div class='flex items-center justify-center min-w-full'>
+                  <div class='inline-flex h-12 items-center gap-2 px-4 w-auto'>
+                    {siteConfig.categories.map((category) => {
+                      const isSelected = currentCategory() === category.slug
+                      return (
+                        <A
+                          href={`/shopping/${category.slug}`}
+                          class={`flex items-center justify-center px-3 py-2 rounded-md transition-colors whitespace-nowrap
+                          w-24 sm:w-32 md:w-40 lg:w-48
+                          ${isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
+                        >
+                          <div class='inline-flex items-center gap-2'>
+                            <category.icon class='h-5 w-5' />
+                            <span class='text-sm sm:text-base'>{t(`categories.tabNames.${category.slug}`)}</span>
+                          </div>
+                        </A>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
