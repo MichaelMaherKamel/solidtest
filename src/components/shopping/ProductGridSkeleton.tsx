@@ -1,32 +1,36 @@
 import { Component } from 'solid-js'
-import { Skeleton } from '~/components/ui/skeleton'
 
+const ProductCardSkeleton: Component = () => {
+  return (
+    <div class='bg-white rounded-xl shadow-sm w-full'>
+      {/* Image skeleton */}
+      <div class='relative aspect-[4/3] overflow-hidden rounded-t-xl'>
+        <div class='absolute inset-0 bg-gray-200 animate-pulse' />
+      </div>
+
+      <div class='p-2'>
+        {/* Title skeleton */}
+        <div class='h-4 w-3/4 bg-gray-200 rounded animate-pulse mb-1.5' />
+
+        <div class='pt-2 flex items-center justify-between'>
+          {/* Price skeleton */}
+          <div class='h-4 w-1/4 bg-gray-200 rounded animate-pulse' />
+          {/* Add to cart button skeleton */}
+          <div class='h-7 w-7 bg-gray-200 rounded animate-pulse' />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Updated ProductGridSkeleton to use the new ProductCardSkeleton
 const ProductGridSkeleton: Component = () => {
   return (
     <div class='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 auto-rows-auto'>
-      {Array(10)
+      {Array(20)
         .fill(0)
         .map((_, i) => (
-          <div class='bg-white rounded-xl shadow-sm'>
-            {/* Image skeleton */}
-            <div class='relative aspect-[4/3] rounded-t-xl overflow-hidden'>
-              <Skeleton class='h-full w-full' />
-            </div>
-
-            {/* Content container */}
-            <div class='p-2'>
-              {/* Product name skeleton */}
-              <div class='mb-1.5'>
-                <Skeleton class='h-4 w-4/5' />
-              </div>
-
-              {/* Price and cart button row */}
-              <div class='flex items-center justify-between'>
-                <Skeleton class='h-4 w-16' />
-                <Skeleton class='h-7 w-7 rounded-md' />
-              </div>
-            </div>
-          </div>
+          <ProductCardSkeleton />
         ))}
     </div>
   )

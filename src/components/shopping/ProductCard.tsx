@@ -1,3 +1,4 @@
+// ~/components/shopping/ProductCard.tsx
 import { Component, createSignal } from 'solid-js'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { Button } from '~/components/ui/button'
@@ -10,11 +11,15 @@ interface ProductCardProps {
   image: string
   description: string
   category: ProductCategory
+  images?: string[]
 }
 
 const ProductCard: Component<ProductCardProps> = (props) => {
   const [imageError, setImageError] = createSignal(false)
   const [imageLoaded, setImageLoaded] = createSignal(false)
+
+  const fallbackImage = '/api/placeholder/300/300'
+  const imageUrl = () => (imageError() ? fallbackImage : props.image || fallbackImage)
 
   return (
     <div class='bg-white rounded-xl shadow-sm'>
@@ -28,9 +33,9 @@ const ProductCard: Component<ProductCardProps> = (props) => {
         </div>
 
         <img
-          src={imageError() ? '/api/placeholder/300/300' : props.image || '/api/placeholder/300/300'}
+          src={imageUrl()}
           alt={props.name}
-          class={`h-full w-full object-cover transition-opacity duration-300 
+          class={`h-full w-full object-cover transition-opacity duration-300
                  ${imageLoaded() ? 'opacity-100' : 'opacity-0'}`}
           onError={() => setImageError(true)}
           onLoad={() => setImageLoaded(true)}
@@ -40,7 +45,9 @@ const ProductCard: Component<ProductCardProps> = (props) => {
 
       {/* Content container */}
       <div class='p-2'>
-        <h3 class='font-medium text-sm mb-1.5 line-clamp-1'>{props.name}</h3>
+        <h3 class='font-medium text-sm mb-1.5 line-clamp-1' title={props.name}>
+          {props.name}
+        </h3>
         <div class='flex items-center justify-between'>
           <span class='text-sm font-bold'>${props.price.toFixed(2)}</span>
           <Button size='sm' variant='pay' class='h-7 w-7 p-0' aria-label='Add to cart'>

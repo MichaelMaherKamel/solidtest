@@ -2,7 +2,9 @@ import { sql, eq } from 'drizzle-orm'
 import { db } from '~/db'
 import { products, stores } from '~/db/schema'
 import { query } from '@solidjs/router'
-import type { Product, ColorVariant } from '~/db/schema'
+import type { Product, ColorVariant, ProductCategory } from '~/db/schema'
+import { products as prods } from '~/components/shopping/productData'
+import type { Product as Prod } from '~/components/shopping/productData'
 
 // New function to fetch all products for admin
 export const getAllProducts = query(async () => {
@@ -192,3 +194,8 @@ export const getProductById = query(async (productId: string) => {
     throw new Error('Failed to fetch product')
   }
 }, 'product')
+
+export const getProductsDataByCategory = async (category: ProductCategory): Promise<Prod[]> => {
+  'use server'
+  return prods.filter((product) => product.category === category)
+}

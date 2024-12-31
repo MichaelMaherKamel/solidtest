@@ -6,6 +6,7 @@ import { SessionProvider } from '@solid-mediakit/auth/client'
 import { MetaProvider } from '@solidjs/meta'
 import { Toaster } from '~/components/ui/toast'
 import { I18nProvider } from '~/contexts/i18n'
+import { AuthProvider } from '~/contexts/auth'
 import './app.css'
 
 export default function App() {
@@ -14,10 +15,12 @@ export default function App() {
       root={(props) => (
         <MetaProvider>
           <SessionProvider>
-            <I18nProvider>
-              <Suspense>{props.children}</Suspense>
-              <Toaster />
-            </I18nProvider>
+            <AuthProvider>
+              <I18nProvider>
+                <Suspense>{props.children}</Suspense>
+                <Toaster />
+              </I18nProvider>
+            </AuthProvider>
           </SessionProvider>
         </MetaProvider>
       )}

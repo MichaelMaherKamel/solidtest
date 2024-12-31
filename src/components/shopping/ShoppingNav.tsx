@@ -1,14 +1,17 @@
+// ~/components/ShoppingNav.tsx
 import { Component, createSignal, onMount, onCleanup, createEffect, createMemo, Show, Switch, Match } from 'solid-js'
 import { Skeleton } from '~/components/ui/skeleton'
 import { A, useLocation } from '@solidjs/router'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
+import { siteConfig } from '~/config/site'
+import { createMediaQuery } from '@solid-primitives/media'
 
 interface Language {
   code: 'en' | 'ar'
@@ -32,25 +35,36 @@ const languages: Language[] = [
   },
 ]
 
-const Nav: Component = () => {
+const ShoppingNav: Component = () => {
+  // State signals
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
   const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isClient, setIsClient] = createSignal(false)
 
-  const location = useLocation()
-  const auth = useAuthState()
-  const { t, locale, setLocale } = useI18n()
-
+  // Refs for click outside handling
   const [menuRef, setMenuRef] = createSignal<HTMLDivElement>()
   const [langRef, setLangRef] = createSignal<HTMLDivElement>()
   const [userRef, setUserRef] = createSignal<HTMLDivElement>()
 
+  // Hooks and context
+  const location = useLocation()
+  const auth = useAuthState()
+  const { t, locale, setLocale } = useI18n()
+  const isLargeScreen = createMediaQuery('(min-width: 768px)')
+
+  // Memoized values
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
 
-  // Auth effect to handle user state updates
+  const currentCategory = createMemo(() => {
+    const path = location.pathname
+    const category = path.split('/').pop()
+    return category || siteConfig.categories[0].slug
+  })
+
+  // Auth effect
   createEffect(() => {
     if (auth.user) {
       // Handle any nav-specific user state updates
@@ -81,6 +95,7 @@ const Nav: Component = () => {
     })
   })
 
+  // Sign out handler
   const handleSignOut = async () => {
     try {
       setIsUserOpen(false)
@@ -91,7 +106,7 @@ const Nav: Component = () => {
     }
   }
 
-  // User data from auth context
+  // User data memo
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
     email: auth.user?.email || '',
@@ -143,6 +158,7 @@ const Nav: Component = () => {
     })
   })
 
+  // Button click handlers
   const handleMenuClick = (e: Event) => {
     e.stopPropagation()
     closeAllDropdowns('menu')
@@ -160,23 +176,6 @@ const Nav: Component = () => {
     closeAllDropdowns('user')
     setIsUserOpen(!isUserOpen())
   }
-
-  // Style helpers
-  const active = (path: string) => location.pathname === path
-
-  const textColor = createMemo(() => {
-    if (isHomePage()) {
-      return isScrolled() ? 'text-gray-800 hover:text-gray-900' : 'text-white hover:text-white'
-    }
-    return 'text-gray-800 hover:text-gray-900'
-  })
-
-  const logoColor = createMemo(() => {
-    if (isHomePage()) {
-      return isScrolled() ? 'text-gray-900 hover:text-gray-800' : 'text-white hover:text-white/90'
-    }
-    return 'text-gray-900 hover:text-gray-800'
-  })
 
   // Language handling
   const handleLanguageChange = async (lang: Language) => {
@@ -203,12 +202,15 @@ const Nav: Component = () => {
     })
   })
 
+  // Helper functions
+  const active = (path: string) => location.pathname === path
+
   const getLoginUrl = () => {
     const currentPath = location.pathname || '/'
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
-  // Close dropdowns on route change
+  // Route change effect
   createEffect(() => {
     location.pathname
     closeAllDropdowns()
@@ -218,41 +220,31 @@ const Nav: Component = () => {
     <Show when={isClient()}>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto md:!px-0'>
-          <div
-            class={`transition-all duration-300 md:rounded-lg ${
-              isHomePage() && !isScrolled() && !isOpen()
-                ? 'bg-transparent'
-                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md'
-            }`}
-          >
-            <div class='flex h-16 items-center justify-between px-4'>
+          <div class='bg-white/95 backdrop-blur-md shadow-md  md:rounded-lg'>
+            {/* Top Navigation Bar */}
+            <div class='flex h-16 items-center justify-between px-4 relative z-30'>
               {/* Logo Section */}
               <div class='flex items-center gap-4'>
-                <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
+                <A href='/' class='font-bold text-xl transition-colors text-gray-900 hover:text-gray-700'>
                   Souq El Rafay3
                 </A>
               </div>
 
               {/* Search Bar - Desktop Only */}
               <div class='hidden md:flex flex-1 max-w-xl mx-4'>
-                <Input type='search' placeholder={t('search.placeholder')} class={`w-full ${textColor()}`} />
+                <Input type='search' placeholder={t('search.placeholder')} class='w-full' />
               </div>
 
               {/* Right Actions */}
               <div class='flex items-center gap-2'>
                 {/* Cart Button */}
-                <Button variant='ghost' size='icon' class={`hidden md:flex hover:bg-white/10 ${textColor()}`}>
+                <Button variant='ghost' size='icon' class='hidden md:flex'>
                   <FiShoppingCart class='h-5 w-5' />
                 </Button>
 
                 {/* Language Dropdown - Desktop Only */}
                 <div class='hidden md:block relative' ref={setLangRef}>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    class={`hover:bg-white/10 ${textColor()}`}
-                    onClick={handleLangClick}
-                  >
+                  <Button variant='ghost' size='icon' onClick={handleLangClick}>
                     <RiEditorTranslate2 class='w-5 h-5' />
                   </Button>
 
@@ -293,13 +285,13 @@ const Nav: Component = () => {
                   </div>
                 </div>
 
-                {/* User Dropdown - Desktop Only */}
+                {/* User Menu - Desktop Only */}
                 <div class='hidden md:block relative' ref={setUserRef}>
                   <Switch
                     fallback={
                       <A
                         href={getLoginUrl()}
-                        class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
+                        class='inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-gray-100'
                       >
                         <FaRegularUser class='h-5 w-5' />
                       </A>
@@ -312,11 +304,7 @@ const Nav: Component = () => {
                     </Match>
                     <Match when={auth.status === 'authenticated'}>
                       <>
-                        <Button
-                          variant='ghost'
-                          class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                          onClick={handleUserClick}
-                        >
+                        <Button variant='ghost' class='relative h-10 w-10 rounded-full' onClick={handleUserClick}>
                           <Avatar>
                             <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
                             <AvatarFallback>{userData().initials}</AvatarFallback>
@@ -387,7 +375,7 @@ const Nav: Component = () => {
                   <Button
                     variant='ghost'
                     size='icon'
-                    class={`hover:bg-white/10 h-10 w-10 p-0 ${textColor()}`}
+                    class='hover:bg-gray-100 h-10 w-10 p-0'
                     onClick={handleMenuClick}
                     aria-label={isOpen() ? 'Close menu' : 'Open menu'}
                   >
@@ -408,11 +396,15 @@ const Nav: Component = () => {
               </div>
             </div>
 
-            {/* Mobile Menu - Only Navigation Items */}
+            {/* Mobile Menu - Positioned to drop from top nav */}
             <div
-              class='overflow-hidden transition-all duration-300 ease-in-out'
+              class={`absolute left-0 right-0 bg-white/95 backdrop-blur-md shadow-md transition-all duration-300 ease-in-out overflow-hidden z-20 ${
+                isOpen() ? 'border-b' : ''
+              }`}
               style={{
                 height: isOpen() ? 'auto' : '0',
+                opacity: isOpen() ? '1' : '0',
+                transform: `translateY(${isOpen() ? '0' : '-8px'})`,
               }}
             >
               <div class='px-4 py-4'>
@@ -433,13 +425,44 @@ const Nav: Component = () => {
                           active(link.path)
                             ? 'bg-sky-700/50 border-sky-400'
                             : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
-                        } ${textColor()}`}
+                        }`}
                       >
                         {t(link.key)}
                       </Button>
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+
+            {/* Categories Bar */}
+            <div class='border-t relative z-10'>
+              <div class='container mx-auto'>
+                <div class='w-full flex justify-between overflow-x-auto scrollbar-hide'>
+                  <div class='flex-1 flex items-center justify-center'>
+                    <div class='inline-flex h-12 items-center gap-2 px-4 md:px-0 w-full justify-center'>
+                      {siteConfig.categories.map((category) => {
+                        const isSelected = currentCategory() === category.slug
+                        return (
+                          <A
+                            href={`/shopping/${category.slug}`}
+                            class={`flex-1 max-w-[200px] inline-flex items-center justify-center px-3 py-2 rounded-md transition-colors
+                              ${
+                                isSelected
+                                  ? 'bg-primary/10 text-primary font-medium'
+                                  : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                          >
+                            <div class='inline-flex items-center gap-2'>
+                              <category.icon class='h-5 w-5' />
+                              <span class='whitespace-nowrap'>{t(`categories.tabNames.${category.slug}`)}</span>
+                            </div>
+                          </A>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -458,10 +481,19 @@ const Nav: Component = () => {
               transform: translateY(0);
             }
           }
+
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
         `}
       </style>
     </Show>
   )
 }
 
-export default Nav
+export default ShoppingNav
