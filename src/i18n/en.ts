@@ -9,6 +9,8 @@ export const enDict = {
     products: 'products',
     total: 'total',
     success: 'Success',
+    loadMore: 'Load More',
+    noProductsFound: 'No products found in this category',
   },
 
   auth: {
@@ -57,6 +59,13 @@ export const enDict = {
       bathroomsupplies: 'Bathroom',
       homesupplies: 'Home',
     },
+  },
+
+  pagination: {
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page',
+    of: 'of',
   },
 
   stores: {

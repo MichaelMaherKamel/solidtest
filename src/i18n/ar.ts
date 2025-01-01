@@ -9,6 +9,8 @@ export const arDict = {
     products: 'منتجات',
     total: 'الإجمالي',
     success: 'نجاح',
+    loadMore: 'تحميل المزيد',
+    noProductsFound: 'لا توجد منتجات في هذه الفئة',
   },
 
   auth: {
@@ -57,6 +59,13 @@ export const arDict = {
       bathroomsupplies: 'الحمام',
       homesupplies: 'المنزل',
     },
+  },
+
+  pagination: {
+    previous: 'السابق',
+    next: 'التالي',
+    page: 'صفحة',
+    of: 'من',
   },
 
   stores: {

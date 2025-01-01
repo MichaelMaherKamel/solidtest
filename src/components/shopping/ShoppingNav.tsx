@@ -220,7 +220,7 @@ const ShoppingNav: Component = () => {
     <Show when={isClient()}>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto md:!px-0'>
-          <div class='bg-white/95 backdrop-blur-md shadow-md  md:rounded-lg'>
+        <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md'>
             {/* Top Navigation Bar */}
             <div class='flex h-16 items-center justify-between px-4 relative z-30'>
               {/* Logo Section */}
@@ -436,7 +436,7 @@ const ShoppingNav: Component = () => {
             </div>
 
             {/* Categories Bar */}
-            <div class='border-t relative z-10'>
+            <div class=' relative z-10'>
               <div class='w-full overflow-x-auto scrollbar-hide'>
                 <div class='flex items-center justify-center min-w-full'>
                   <div class='inline-flex h-12 items-center gap-2 px-4 w-auto'>

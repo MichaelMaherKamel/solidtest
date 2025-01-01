@@ -3,6 +3,7 @@ import { RouteSectionProps } from '@solidjs/router'
 import { createMediaQuery } from '@solid-primitives/media'
 import { Suspense, lazy } from 'solid-js'
 import { Skeleton } from '~/components/ui/skeleton'
+import ProductGridSkeleton from '~/components/shopping/ProductGridSkeleton'
 
 const ShoppingNav = lazy(() => import('~/components/shopping/ShoppingNav'))
 const SiteFooter = lazy(() => import('~/components/Footer'))
@@ -34,8 +35,8 @@ export default function ShoppingLayout(props: RouteSectionProps) {
       {/* Main content area with fixed top padding */}
       <div class='flex-1 flex flex-col' style='padding-top: 7rem'>
         <main role='main' class='flex-1 w-full'>
-          <div class='container mx-auto px-4 py-6'>
-            <Suspense fallback={<div class='animate-pulse'>Loading...</div>}>{props.children}</Suspense>
+          <div class='container mx-auto px-4 py-6 shadow-none lg:shadow-sm'>
+            <Suspense fallback={<ProductGridSkeleton />}>{props.children}</Suspense>
           </div>
         </main>
 

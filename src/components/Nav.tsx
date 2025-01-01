@@ -219,10 +219,10 @@ const Nav: Component = () => {
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto md:!px-0'>
           <div
-            class={`transition-all duration-300 md:rounded-lg ${
+            class={`transition-all duration-300 md:rounded-md ${
               isHomePage() && !isScrolled() && !isOpen()
                 ? 'bg-transparent'
-                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-md'
+                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-lg shadow-black/10'
             }`}
           >
             <div class='flex h-16 items-center justify-between px-4'>

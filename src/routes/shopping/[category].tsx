@@ -26,7 +26,7 @@ const ShoppingCategoryPage: Component = () => {
 
   return (
     <Show when={category()} fallback={<CategorySkeleton />}>
-      <div class='min-h-[calc(100vh-7rem)] space-y-6'>
+      <div class='min-h-[calc(100vh-7rem)] space-y-6 '>
         {/* Category Header */}
         <div class='flex items-center justify-between bg-white/50 backdrop-blur-sm rounded-lg p-4'>
           <div class='flex items-center gap-4'>
@@ -40,7 +40,7 @@ const ShoppingCategoryPage: Component = () => {
         </div>
 
         {/* Products Grid */}
-        <div class='bg-white/50 backdrop-blur-sm rounded-lg p-4'>
+        <div class='bg-white/50 backdrop-blur-sm rounded-lg p-4 '>
           <ProductGrid category={validCategory()} />
         </div>
       </div>
