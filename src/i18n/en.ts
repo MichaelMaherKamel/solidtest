@@ -68,6 +68,17 @@ export const enDict = {
     of: 'of',
   },
 
+  product: {
+    inStock: '{{count}} in stock',
+    outOfStock: 'Out of stock',
+    addToCart: 'Add to Cart',
+    addToWishlist: 'Add to Wishlist',
+    share: 'Share Product',
+    brand: 'Brand',
+    rating: 'Rating',
+    discount: 'OFF',
+  },
+
   stores: {
     kitchen: 'Kitchen Paradise',
     kitchenDesc: 'Premium kitchen equipment and accessories',

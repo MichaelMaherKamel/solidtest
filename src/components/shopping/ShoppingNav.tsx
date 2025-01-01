@@ -220,7 +220,7 @@ const ShoppingNav: Component = () => {
     <Show when={isClient()}>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto md:!px-0'>
-        <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md'>
+        <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md shadow-sm rounded-sm'>
             {/* Top Navigation Bar */}
             <div class='flex h-16 items-center justify-between px-4 relative z-30'>
               {/* Logo Section */}

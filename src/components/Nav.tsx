@@ -222,7 +222,7 @@ const Nav: Component = () => {
             class={`transition-all duration-300 md:rounded-md ${
               isHomePage() && !isScrolled() && !isOpen()
                 ? 'bg-transparent'
-                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-lg shadow-black/10'
+                : 'supports-backdrop-blur:bg-white/95 backdrop-blur-md shadow-sm'
             }`}
           >
             <div class='flex h-16 items-center justify-between px-4'>

@@ -67,6 +67,17 @@ export const arDict = {
     page: 'صفحة',
     of: 'من',
   },
+  
+  product: {
+    inStock: '{{count}} متوفر في المخزون',
+    outOfStock: 'غير متوفر في المخزون',
+    addToCart: 'أضف إلى السلة',
+    addToWishlist: 'أضف إلى المفضلة',
+    share: 'مشاركة المنتج',
+    brand: 'العلامة التجارية',
+    rating: 'التقييم',
+    discount: 'خصم',
+  },
 
   stores: {
     kitchen: 'جنة المطبخ',
