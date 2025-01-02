@@ -11,7 +11,6 @@ import { FaRegularUser } from 'solid-icons/fa'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
 import { siteConfig } from '~/config/site'
-import { createMediaQuery } from '@solid-primitives/media'
 
 interface Language {
   code: 'en' | 'ar'
@@ -52,11 +51,20 @@ const ShoppingNav: Component = () => {
   const location = useLocation()
   const auth = useAuthState()
   const { t, locale, setLocale } = useI18n()
-  const isLargeScreen = createMediaQuery('(min-width: 768px)')
 
   // Memoized values
   const isRTL = createMemo(() => locale() === 'ar')
-  const isHomePage = createMemo(() => location.pathname === '/')
+
+  // New memo to determine if categories should be shown
+  const shouldShowCategories = createMemo(() => {
+    const path = location.pathname
+    // Hide categories if we're on a product detail page
+    if (path.match(/^\/shopping\/products\/[^/]+$/)) {
+      return false
+    }
+    // Show categories for category pages and general shopping routes
+    return path.startsWith('/shopping')
+  })
 
   const currentCategory = createMemo(() => {
     const path = location.pathname
@@ -218,9 +226,13 @@ const ShoppingNav: Component = () => {
 
   return (
     <Show when={isClient()}>
-      <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
+      <nav
+        class='fixed inset-x-0 z-50'
+        style={{ '--nav-height': shouldShowCategories() ? '7rem' : '4rem' }}
+        dir={isRTL() ? 'rtl' : 'ltr'}
+      >
         <div class='w-full md:container md:mx-auto md:!px-0'>
-        <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md shadow-sm rounded-sm'>
+          <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md shadow-sm rounded-sm'>
             {/* Top Navigation Bar */}
             <div class='flex h-16 items-center justify-between px-4 relative z-30'>
               {/* Logo Section */}
@@ -435,31 +447,35 @@ const ShoppingNav: Component = () => {
               </div>
             </div>
 
-            {/* Categories Bar */}
-            <div class=' relative z-10'>
-              <div class='w-full overflow-x-auto scrollbar-hide'>
-                <div class='flex items-center justify-center min-w-full'>
-                  <div class='inline-flex h-12 items-center gap-2 px-4 w-auto'>
-                    {siteConfig.categories.map((category) => {
-                      const isSelected = currentCategory() === category.slug
-                      return (
-                        <A
-                          href={`/shopping/${category.slug}`}
-                          class={`flex items-center justify-center px-3 py-2 rounded-md transition-colors whitespace-nowrap
-                          w-24 sm:w-32 md:w-40 lg:w-48
-                          ${isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-100 text-gray-700'}`}
-                        >
-                          <div class='inline-flex items-center gap-2'>
-                            <category.icon class='h-5 w-5' />
-                            <span class='text-sm sm:text-base'>{t(`categories.tabNames.${category.slug}`)}</span>
-                          </div>
-                        </A>
-                      )
-                    })}
+            {/* Categories Bar - Now Conditionally Rendered */}
+            <Show when={shouldShowCategories()}>
+              <div class='relative z-10'>
+                <div class='w-full overflow-x-auto scrollbar-hide'>
+                  <div class='flex items-center justify-center min-w-full'>
+                    <div class='inline-flex h-12 items-center gap-2 px-4 w-auto'>
+                      {siteConfig.categories.map((category) => {
+                        const isSelected = currentCategory() === category.slug
+                        return (
+                          <A
+                            href={`/shopping/${category.slug}`}
+                            class={`flex items-center justify-center px-3 py-2 rounded-md transition-colors whitespace-nowrap
+                            w-24 sm:w-32 md:w-40 lg:w-48
+                            ${
+                              isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <div class='inline-flex items-center gap-2'>
+                              <category.icon class='h-5 w-5' />
+                              <span class='text-sm sm:text-base'>{t(`categories.tabNames.${category.slug}`)}</span>
+                            </div>
+                          </A>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Show>
           </div>
         </div>
       </nav>

@@ -1,19 +1,32 @@
 // ~/routes/shopping/products/[productId].tsx
-import { Component, Show, createSignal } from 'solid-js'
+import { Component, Show, createMemo, createSignal } from 'solid-js'
 import { useParams, A } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
 import { Button } from '~/components/ui/button'
 import { FiShoppingCart, FiHeart, FiShare2 } from 'solid-icons/fi'
 import { getProduct } from '~/db/fetchers/productsApi'
 import { createResource } from 'solid-js'
+import { createMediaQuery } from '@solid-primitives/media'
 
 const ProductPage: Component = () => {
   const params = useParams<{ productId: string }>()
   const { t, locale } = useI18n()
   const [selectedImage, setSelectedImage] = createSignal(0)
   const isRTL = () => locale() === 'ar'
-
+  const isLargeScreen = createMediaQuery('(min-width: 768px)')
   const [product] = createResource(() => params.productId, getProduct)
+
+  const formattedProductName = createMemo(() => {
+    const name = product()?.name || ''
+    return !isLargeScreen() ? (name.length > 30 ? name.slice(0, 30) + '...' : name) : name
+  })
+
+  const categoryDisplay = createMemo(() => {
+    if (!product()?.category) return ''
+    return !isLargeScreen()
+      ? t(`categories.tabNames.${product()?.category}`) // Short name for mobile
+      : t(`categories.${product()?.category}`) // Full name for desktop
+  })
 
   const handleAddToCart = () => {
     // TODO: Implement cart functionality
@@ -26,20 +39,23 @@ const ProductPage: Component = () => {
         <div class='bg-white/50 backdrop-blur-sm rounded-lg p-4 lg:p-8'>
           {/* Breadcrumb */}
           <nav class='mb-8' dir={isRTL() ? 'rtl' : 'ltr'}>
-            <ol class='flex items-center gap-2 text-sm'>
-              <li>
-                <A href='/' class='text-gray-500 hover:text-gray-700'>
+            <ol class='flex items-center flex-wrap gap-2 text-sm'>
+              <li class='inline-flex items-center'>
+                <A href='/' class='text-gray-500 hover:text-gray-700 py-1 px-2 -mx-2 rounded-md transition-colors'>
                   {t('nav.home')}
                 </A>
               </li>
               <li class='text-gray-500'>/</li>
-              <li>
-                <A href={`/shopping/${product()?.category}`} class='text-gray-500 hover:text-gray-700'>
-                  {t(`categories.${product()?.category}`)}
+              <li class='inline-flex items-center'>
+                <A
+                  href={`/shopping/${product()?.category}`}
+                  class='text-gray-500 hover:text-gray-700 py-1 px-2 -mx-2 rounded-md transition-colors'
+                >
+                  {categoryDisplay()}
                 </A>
               </li>
               <li class='text-gray-500'>/</li>
-              <li class='text-gray-900 font-medium'>{product()?.name}</li>
+              <li class='text-gray-900 font-medium line-clamp-1'>{formattedProductName()}</li>
             </ol>
           </nav>
 
