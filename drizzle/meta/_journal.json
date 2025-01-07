@@ -71,6 +71,20 @@
       "when": 1734124967684,
       "tag": "0009_concerned_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1735823907172,
+      "tag": "0010_brave_stardust",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1735824620223,
+      "tag": "0011_talented_shadow_king",
+      "breakpoints": true
     }
   ]
 }

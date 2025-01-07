@@ -67,11 +67,12 @@ export const arDict = {
     page: 'صفحة',
     of: 'من',
   },
-  
+
   product: {
     inStock: '{{count}} متوفر في المخزون',
     outOfStock: 'غير متوفر في المخزون',
     addToCart: 'أضف إلى السلة',
+    addedToCart: 'تمت الإضافة للسلة',
     addToWishlist: 'أضف إلى المفضلة',
     share: 'مشاركة المنتج',
     brand: 'العلامة التجارية',

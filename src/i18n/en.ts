@@ -72,6 +72,7 @@ export const enDict = {
     inStock: '{{count}} in stock',
     outOfStock: 'Out of stock',
     addToCart: 'Add to Cart',
+    addedToCart: 'Added to Cart',
     addToWishlist: 'Add to Wishlist',
     share: 'Share Product',
     brand: 'Brand',

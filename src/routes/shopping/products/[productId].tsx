@@ -1,10 +1,12 @@
 // ~/routes/shopping/products/[productId].tsx
 import { Component, Show, createMemo, createSignal } from 'solid-js'
-import { useParams, A } from '@solidjs/router'
+import { useParams, A, useAction } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
 import { Button } from '~/components/ui/button'
 import { FiShoppingCart, FiHeart, FiShare2 } from 'solid-icons/fi'
+import { BsCheck } from 'solid-icons/bs'
 import { getProduct } from '~/db/fetchers/productsApi'
+import { addToCartAction } from '~/db/actions/cart'
 import { createResource } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
 
@@ -12,9 +14,13 @@ const ProductPage: Component = () => {
   const params = useParams<{ productId: string }>()
   const { t, locale } = useI18n()
   const [selectedImage, setSelectedImage] = createSignal(0)
+  const [isAddingToCart, setIsAddingToCart] = createSignal(false)
+  const [showSuccess, setShowSuccess] = createSignal(false)
+
   const isRTL = () => locale() === 'ar'
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
   const [product] = createResource(() => params.productId, getProduct)
+  const addToCart = useAction(addToCartAction)
 
   const formattedProductName = createMemo(() => {
     const name = product()?.name || ''
@@ -28,9 +34,33 @@ const ProductPage: Component = () => {
       : t(`categories.${product()?.category}`) // Full name for desktop
   })
 
-  const handleAddToCart = () => {
-    // TODO: Implement cart functionality
-    console.log('Adding to cart:', product()?.id)
+  const handleAddToCart = async () => {
+    if (isAddingToCart() || !product()) return
+
+    setIsAddingToCart(true)
+
+    try {
+      const formData = new FormData()
+      const productData = {
+        productId: product()!.id.toString(),
+        name: product()!.name,
+        price: product()!.price,
+        image: product()!.image,
+      }
+      formData.append('product', JSON.stringify(productData))
+
+      const result = await addToCart(formData)
+
+      if (result.success) {
+        setShowSuccess(true)
+        // Reset success state after a delay
+        setTimeout(() => {
+          setShowSuccess(false)
+        }, 1500)
+      }
+    } finally {
+      setIsAddingToCart(false)
+    }
   }
 
   return (
@@ -108,9 +138,21 @@ const ProductPage: Component = () => {
               {/* Actions */}
               <div class='space-y-4'>
                 <div class='grid grid-cols-2 gap-4'>
-                  <Button size='lg' variant='pay' onClick={handleAddToCart}>
-                    <FiShoppingCart class='h-5 w-5 me-2' />
-                    {t('product.addToCart')}
+                  <Button
+                    size='lg'
+                    variant='pay'
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart() || !product()?.stock}
+                  >
+                    <Show
+                      when={!isAddingToCart()}
+                      fallback={
+                        <div class='size-5 border-2 border-current border-r-transparent rounded-full animate-spin me-2' />
+                      }
+                    >
+                      {showSuccess() ? <BsCheck class='h-5 w-5 me-2' /> : <FiShoppingCart class='h-5 w-5 me-2' />}
+                    </Show>
+                    {showSuccess() ? t('product.addedToCart') : t('product.addToCart')}
                   </Button>
                   <Button size='lg' variant='outline'>
                     <FiHeart class='h-5 w-5 me-2' fill='red' color='red' />
@@ -144,6 +186,7 @@ const ProductPage: Component = () => {
   )
 }
 
+// ProductSkeleton component remains unchanged
 const ProductSkeleton: Component = () => {
   return (
     <div class='min-h-[calc(100vh-7rem)]'>

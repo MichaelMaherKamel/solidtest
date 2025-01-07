@@ -222,6 +222,37 @@ export const products = pgTable(
   })
 )
 
+/**
+ * Carts table
+ * CartsType
+ */
+
+export interface CartItem {
+  productId: string
+  quantity: number
+  addedAt: string
+  updatedAt: string
+  price: number
+  name: string
+  image: string
+}
+
+export const carts = pgTable(
+  'carts',
+  {
+    cartId: uuid('cartId').defaultRandom().primaryKey(),
+    sessionId: text('sessionId').notNull(),
+    items: jsonb('items').$type<CartItem[]>().default([]).notNull(),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+    lastActive: timestamp('lastActive').defaultNow().notNull(),
+  },
+  (table) => ({
+    sessionIdx: index('cart_session_idx').on(table.sessionId),
+    lastActiveIdx: index('cart_last_active_idx').on(table.lastActive),
+  })
+)
+
 // Type Exports
 /////////////////////////////////////////////
 
@@ -241,3 +272,7 @@ export type Product = typeof products.$inferSelect
 export type NewProduct = typeof products.$inferInsert
 export type ProductCategory = 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies'
 export type ProductColor = ColorVariant['color']
+
+// Cart Types
+export type Cart = typeof carts.$inferSelect
+export type NewCart = typeof carts.$inferInsert

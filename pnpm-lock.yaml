@@ -26,6 +26,9 @@ dependencies:
   '@kobalte/core':
     specifier: ^0.13.7
     version: 0.13.7(solid-js@1.9.3)
+  '@lukeed/uuid':
+    specifier: ^2.0.1
+    version: 2.0.1
   '@solid-mediakit/auth':
     specifier: ^3.1.2
     version: 3.1.2(@auth/core@0.37.4)(@solidjs/meta@0.29.4)(@solidjs/router@0.15.1)(@solidjs/start@1.0.10)(rollup@3.29.5)(solid-js@1.9.3)(vinxi@0.4.3)
@@ -3606,6 +3609,18 @@ packages:
 
   /@kurkle/color@0.3.4:
     resolution: {integrity: sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==}
+    dev: false
+
+  /@lukeed/csprng@1.1.0:
+    resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
+    engines: {node: '>=8'}
+    dev: false
+
+  /@lukeed/uuid@2.0.1:
+    resolution: {integrity: sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w==}
+    engines: {node: '>=8'}
+    dependencies:
+      '@lukeed/csprng': 1.1.0
     dev: false
 
   /@mapbox/node-pre-gyp@1.0.11:
