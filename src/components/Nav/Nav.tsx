@@ -12,8 +12,8 @@ import {
 } from 'solid-js'
 import { Skeleton } from '~/components/ui/skeleton'
 import { A, useLocation, createAsync, useNavigate, useAction } from '@solidjs/router'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
@@ -83,7 +83,6 @@ const Nav: Component = () => {
   const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isCartOpen, setIsCartOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
-  const [isClient, setIsClient] = createSignal(false)
   const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
   const [isClearingCart, setIsClearingCart] = createSignal(false)
 
@@ -138,7 +137,7 @@ const Nav: Component = () => {
 
   // Effects
   onMount(() => {
-    setIsClient(true)
+   
     let scrollRAF: number
 
     const handleScroll = () => {
@@ -301,7 +300,7 @@ const Nav: Component = () => {
   }
 
   return (
-    <Show when={isClient()}>
+    <>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
         <div class='w-full md:container md:mx-auto md:!px-0'>
           <div
@@ -329,22 +328,27 @@ const Nav: Component = () => {
               <div class='flex items-center gap-2'>
                 {/* Cart */}
                 <div class='hidden md:block relative' ref={setCartRef}>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    class={`hover:bg-white/10 ${textColor()}`}
-                    onClick={[handleDropdownClick, 'cart']}
+                  <Show
+                    when={!cartData.loading}
+                    fallback={<div class='w-10 h-10 bg-gray-200/50 rounded-md animate-pulse' />}
                   >
-                    <FiShoppingCart class='h-5 w-5' />
-                    <Show when={cartData()?.items?.length > 0}>
-                      <span
-                        class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
-                        text-[10px] font-medium text-black flex items-center justify-center'
-                      >
-                        {cartData().items.reduce((sum, item) => sum + item.quantity, 0)}
-                      </span>
-                    </Show>
-                  </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      class={`hover:bg-white/10 ${textColor()}`}
+                      onClick={[handleDropdownClick, 'cart']}
+                    >
+                      <FiShoppingCart class='h-5 w-5' />
+                      <Show when={cartData()?.items?.length > 0}>
+                        <span
+                          class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
+          text-[10px] font-medium text-black flex items-center justify-center'
+                        >
+                          {cartData().items.reduce((sum, item) => sum + item.quantity, 0)}
+                        </span>
+                      </Show>
+                    </Button>
+                  </Show>
 
                   {/* Cart Dropdown */}
                   <div class={getDropdownStyles(isCartOpen(), isRTL()) + ' w-80'}>
@@ -701,7 +705,7 @@ const Nav: Component = () => {
           }
         `}
       </style>
-    </Show>
+    </>
   )
 }
 
