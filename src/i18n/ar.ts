@@ -36,6 +36,27 @@ export const arDict = {
     userMenu: 'قائمة المستخدم',
   },
 
+  cart: {
+    title: 'عربة التسوق',
+    empty: 'عربة التسوق فارغة',
+    emptyTitle: 'عربة التسوق فارغة',
+    emptyMessage: 'ابدأ التسوق لإضافة منتجات إلى عربة التسوق',
+    continueShopping: 'مواصلة التسوق',
+    quantity: 'الكمية',
+    total: 'المجموع',
+    items: 'منتجات',
+    subtotal: 'المجموع الفرعي',
+    shipping: 'الشحن',
+    checkout: 'الدفع',
+    remove: 'إزالة',
+    clear: 'إفراغ السلة',
+    increase: 'زيادة الكمية',
+    decrease: 'تقليل الكمية',
+    loading: 'جاري تحديث السلة...',
+    error: 'حدث خطأ أثناء تحديث السلة',
+    confirmClear: 'هل أنت متأكد من إفراغ السلة؟',
+    currency: '{value} جنيه', // Used for price formatting with Egyptian Pound
+  },
   hero: {
     title: 'أهلاً بيك في سوق الرفايع',
     subtitle: 'كل اللي بيتك محتاجه في مكان واحد',

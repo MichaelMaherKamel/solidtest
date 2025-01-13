@@ -1,5 +1,6 @@
 import { Component } from 'solid-js'
 import { ImageGallery } from '~/components/ImageGallery'
+import { CartSheet } from '~/components/CartSheet'
 
 const ImagesPage: Component = () => {
   return (
@@ -10,6 +11,7 @@ const ImagesPage: Component = () => {
       </div>
 
       <ImageGallery />
+      <CartSheet />
     </div>
   )
 }

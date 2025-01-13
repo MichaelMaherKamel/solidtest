@@ -19,7 +19,7 @@ export const getCart = query(async () => {
     }
 
     const [cart] = await db.select().from(carts).where(eq(carts.sessionId, sessionId))
-
+    //console.log('cart', cart)
     return cart || { items: [] }
   } catch (error) {
     console.error('Error fetching cart:', error)

@@ -101,9 +101,12 @@ import { Title } from '@solidjs/meta'
 import { LocalizationButton } from '~/components/LocalizationButton'
 import { useI18n } from '~/contexts/i18n'
 import { Show } from 'solid-js'
+import { getCart } from '~/db/fetchers/cart'
+
 
 export default function TestPage() {
   const { t, dict } = useI18n()
+  const cart = getCart()
 
   return (
     <main class='container mx-auto p-4 space-y-4'>

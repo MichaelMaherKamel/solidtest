@@ -178,7 +178,7 @@ const HomePage: Component = () => {
                   <label class='text-sm font-medium'>{t('form.message')}</label>
                   <TextArea placeholder={t('form.messagePlaceholder')} class='min-h-[150px]' />
                 </div>
-                <Button type='submit' class='w-full'>
+                <Button type='submit' variant='general' class='w-full'>
                   {t('form.submit')}
                 </Button>
               </form>

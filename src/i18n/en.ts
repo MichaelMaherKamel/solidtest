@@ -36,6 +36,28 @@ export const enDict = {
     userMenu: 'User Menu',
   },
 
+  cart: {
+    title: 'Shopping Cart',
+    empty: 'Your cart is empty',
+    emptyTitle: 'Your Cart is Empty',
+    emptyMessage: 'Start shopping to add items to your cart',
+    continueShopping: 'Continue Shopping',
+    quantity: 'Quantity',
+    total: 'Total',
+    items: 'items',
+    subtotal: 'Subtotal',
+    shipping: 'Shipping',
+    checkout: 'Checkout',
+    remove: 'Remove',
+    clear: 'Clear Cart',
+    increase: 'Increase quantity',
+    decrease: 'Decrease quantity',
+    loading: 'Updating cart...',
+    error: 'Error updating cart',
+    confirmClear: 'Are you sure you want to clear your cart?',
+    currency: '${value}', // Used for price formatting
+  },
+
   hero: {
     title: 'Welcome to Souq El Rafay3',
     subtitle: 'Everything your home needs in one place',
