@@ -57,6 +57,42 @@ export const arDict = {
     confirmClear: 'هل أنت متأكد من إفراغ السلة؟',
     currency: '{value} جنيه', // Used for price formatting with Egyptian Pound
   },
+
+  checkout: {
+    errors: {
+      updateQuantity: 'فشل تحديث الكمية',
+      removeItem: 'فشل إزالة المنتج',
+      address: 'فشل حفظ العنوان',
+      noAddress: 'الرجاء تحديد أو إضافة عنوان التوصيل',
+      noPayment: 'الرجاء اختيار طريقة الدفع',
+      general: 'حدث خطأ أثناء إتمام الطلب',
+    },
+    paymentDetails: {
+      cod: 'ادفع عند استلام طلبك',
+      card: 'دفع آمن عبر الإنترنت',
+    },
+    cardPaymentNote: 'سيتم تحويلك إلى بوابة دفع آمنة لإكمال معاملتك',
+    delivery: {
+      estimatedDate: 'التوصيل المتوقع {date}',
+      method: 'طريقة التوصيل',
+      select: 'اختر طريقة التوصيل',
+      standard: 'توصيل قياسي (3-5 أيام)',
+      express: 'توصيل سريع (1-2 يوم)',
+      sameDay: 'توصيل في نفس اليوم',
+      days: '{days} أيام',
+      today: 'اليوم',
+      information: 'معلومات التوصيل',
+      fee: 'رسوم التوصيل',
+    },
+  },
+  address: {
+    namePlaceholder: 'أدخل اسمك الكامل',
+    emailPlaceholder: 'أدخل بريدك الإلكتروني',
+    phonePlaceholder: 'أدخل رقم هاتفك',
+    districtPlaceholder: 'أدخل المنطقة',
+    streetAddressPlaceholder: 'أدخل عنوان الشارع',
+  },
+
   hero: {
     title: 'أهلاً بيك في سوق الرفايع',
     subtitle: 'كل اللي بيتك محتاجه في مكان واحد',

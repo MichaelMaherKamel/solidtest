@@ -1,6 +1,19 @@
 import { AdapterAccountType } from '@auth/core/adapters'
 import { sql } from 'drizzle-orm'
-import { pgTable, uuid, text, real, jsonb, index, timestamp, boolean, integer, primaryKey } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  uuid,
+  text,
+  real,
+  jsonb,
+  index,
+  timestamp,
+  boolean,
+  integer,
+  primaryKey,
+  varchar,
+  pgEnum,
+} from 'drizzle-orm/pg-core'
 
 // Shared timestamp columns for tables that need creation and update dates
 const timestamps = {
@@ -44,6 +57,12 @@ export type ProductFormData = {
   price: number
   colorVariants: ColorVariant[]
 }
+
+// Enums
+/////////////////////////////////////////////
+
+export const cityEnum = pgEnum('city', ['Cairo'])
+export const countryEnum = pgEnum('country', ['Egypt'])
 
 // Authentication & User Management Tables
 /////////////////////////////////////////////
@@ -223,10 +242,37 @@ export const products = pgTable(
 )
 
 /**
- * Carts table
- * CartsType
+ * Addresses table - Manages shipping and billing addresses
+ * Links addresses to users and sessions for guest checkout
  */
+export const addresses = pgTable(
+  'addresses',
+  {
+    addressId: uuid('addressId').defaultRandom().primaryKey(),
+    sessionId: text('sessionId').notNull(),
+    userId: varchar('userId', { length: 255 }),
+    name: varchar('name', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    phone: varchar('phone', { length: 20 }).notNull(),
+    address: text('address').notNull(),
+    buildingNumber: integer('buildingNumber').notNull(),
+    flatNumber: integer('flatNumber').notNull(),
+    city: cityEnum('city').default('Cairo').notNull(),
+    district: varchar('district', { length: 255 }).notNull(),
+    postalCode: integer('postalCode'),
+    country: countryEnum('country').default('Egypt').notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    userIdIdx: index('address_user_id_idx').on(table.userId),
+    sessionIdIdx: index('address_session_id_idx').on(table.sessionId),
+  })
+)
 
+/**
+ * Carts table - Manages shopping cart data
+ * Tracks items, quantities, and session information
+ */
 export interface CartItem {
   productId: string
   quantity: number
@@ -272,6 +318,10 @@ export type Product = typeof products.$inferSelect
 export type NewProduct = typeof products.$inferInsert
 export type ProductCategory = 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies'
 export type ProductColor = ColorVariant['color']
+
+// Address Types
+export type Address = typeof addresses.$inferSelect
+export type NewAddress = typeof addresses.$inferInsert
 
 // Cart Types
 export type Cart = typeof carts.$inferSelect

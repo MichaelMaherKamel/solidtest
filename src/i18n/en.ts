@@ -58,6 +58,42 @@ export const enDict = {
     currency: '${value}', // Used for price formatting
   },
 
+  checkout: {
+    errors: {
+      updateQuantity: 'Failed to update quantity',
+      removeItem: 'Failed to remove item',
+      address: 'Failed to save address',
+      noAddress: 'Please select or add a delivery address',
+      noPayment: 'Please select a payment method',
+      general: 'An error occurred during checkout',
+    },
+    paymentDetails: {
+      cod: 'Pay when your order arrives',
+      card: 'Secure online payment',
+    },
+    cardPaymentNote: 'You will be redirected to a secure payment gateway to complete your transaction',
+    delivery: {
+      estimatedDate: 'Estimated delivery by {date}',
+      method: 'Delivery Method',
+      select: 'Select delivery method',
+      standard: 'Standard Delivery (3-5 days)',
+      express: 'Express Delivery (1-2 days)',
+      sameDay: 'Same Day Delivery',
+      days: '{days} days',
+      today: 'Today',
+      information: 'Delivery Information',
+      fee: 'Delivery Fee'
+    }
+  },
+  
+  address: {
+    namePlaceholder: 'Enter your full name',
+    emailPlaceholder: 'Enter your email',
+    phonePlaceholder: 'Enter your phone number',
+    districtPlaceholder: 'Enter your district',
+    streetAddressPlaceholder: 'Enter your street address'
+  },
+
   hero: {
     title: 'Welcome to Souq El Rafay3',
     subtitle: 'Everything your home needs in one place',
