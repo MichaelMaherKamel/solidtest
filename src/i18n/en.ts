@@ -59,39 +59,60 @@ export const enDict = {
   },
 
   checkout: {
-    errors: {
-      updateQuantity: 'Failed to update quantity',
-      removeItem: 'Failed to remove item',
-      address: 'Failed to save address',
-      noAddress: 'Please select or add a delivery address',
-      noPayment: 'Please select a payment method',
-      general: 'An error occurred during checkout',
+    secureCheckout: 'Secure Checkout',
+    pageHeader: 'Checkout',
+    steps: {
+      cart: 'Cart',
+      shipping: 'Shipping',
+      payment: 'Payment',
+      confirmation: 'Confirmation',
     },
-    paymentDetails: {
-      cod: 'Pay when your order arrives',
-      card: 'Secure online payment',
-    },
-    cardPaymentNote: 'You will be redirected to a secure payment gateway to complete your transaction',
-    delivery: {
-      estimatedDate: 'Estimated delivery by {date}',
-      method: 'Delivery Method',
-      select: 'Select delivery method',
-      standard: 'Standard Delivery (3-5 days)',
-      express: 'Express Delivery (1-2 days)',
-      sameDay: 'Same Day Delivery',
-      days: '{days} days',
-      today: 'Today',
-      information: 'Delivery Information',
-      fee: 'Delivery Fee'
-    }
+    orderSummary: 'Order Summary',
+    continueToShipping: 'Continue to Shipping',
+    continueToPayment: 'Continue to Payment',
+    backToCart: 'Back to Cart',
+    backToShipping: 'Back to Shipping',
+    backToPayment: 'Back to Payment',
+    changePayment: 'Change Payment Method',
+    confirmOrder: 'Confirm Order',
+    paymentMethod: 'Payment Method',
+    cashOnDelivery: 'Cash on Delivery',
+    payByFawry: 'Pay by Fawry',
+    cashOnDeliveryDescription: 'Pay cash when your order arrives',
+    fawryDescription: 'Pay securely using Fawry Pay service',
   },
-  
+
   address: {
-    namePlaceholder: 'Enter your full name',
-    emailPlaceholder: 'Enter your email',
-    phonePlaceholder: 'Enter your phone number',
-    districtPlaceholder: 'Enter your district',
-    streetAddressPlaceholder: 'Enter your street address'
+    title: 'Shipping Address',
+    form: {
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      email: 'Email Address',
+      phone: 'Phone Number',
+      address: 'Street Address',
+      apartment: 'Apartment, Suite, etc. (optional)',
+      city: 'City',
+      state: 'State/Region',
+      zipCode: 'ZIP/Postal Code',
+      country: 'Country',
+    },
+    placeholders: {
+      firstName: 'Enter your first name',
+      lastName: 'Enter your last name',
+      email: 'Enter your email address',
+      phone: 'Enter your phone number',
+      address: 'Enter your street address',
+      apartment: 'Apartment, Suite, Unit, etc.',
+      city: 'Enter your city',
+      state: 'Enter your state/region',
+      zipCode: 'Enter ZIP/postal code',
+    },
+    validation: {
+      required: 'This field is required',
+      invalidEmail: 'Please enter a valid email address',
+      invalidPhone: 'Please enter a valid phone number',
+      invalidZip: 'Please enter a valid postal code',
+    },
   },
 
   hero: {
