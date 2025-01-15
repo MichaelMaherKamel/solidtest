@@ -61,7 +61,28 @@ export type ProductFormData = {
 // Enums
 /////////////////////////////////////////////
 
-export const cityEnum = pgEnum('city', ['Cairo'])
+export const cityEnum = pgEnum('city', [
+  'Cairo',
+  'Alexandria',
+  'Giza',
+  'ShubraElKheima',
+  'PortSaid',
+  'Suez',
+  'Luxor',
+  'Mansoura',
+  'ElMahallaElKubra',
+  'Tanta',
+  'Asyut',
+  'Ismailia',
+  'Faiyum',
+  'Zagazig',
+  'Damietta',
+  'Aswan',
+  'Minya',
+  'Damanhur',
+  'BeniSuef',
+  'Hurghada',
+])
 export const countryEnum = pgEnum('country', ['Egypt'])
 
 // Authentication & User Management Tables
@@ -245,6 +266,7 @@ export const products = pgTable(
  * Addresses table - Manages shipping and billing addresses
  * Links addresses to users and sessions for guest checkout
  */
+
 export const addresses = pgTable(
   'addresses',
   {
@@ -256,6 +278,7 @@ export const addresses = pgTable(
     phone: varchar('phone', { length: 20 }).notNull(),
     address: text('address').notNull(),
     buildingNumber: integer('buildingNumber').notNull(),
+    // To add floorNumber: integer('floorNumber').notNull(),
     flatNumber: integer('flatNumber').notNull(),
     city: cityEnum('city').default('Cairo').notNull(),
     district: varchar('district', { length: 255 }).notNull(),

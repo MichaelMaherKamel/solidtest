@@ -33,6 +33,10 @@ const CheckoutPage: Component = () => {
     if (currentIndex < steps.length - 1) {
       setCompletedSteps((prev) => [...new Set([...prev, currentStepId])])
       setActiveStep(steps[currentIndex + 1].id)
+    } else if (currentStepId === 'payment' && selectedPaymentMethod()) {
+      // If we're on the payment step and have a payment method selected
+      setCompletedSteps((prev) => [...new Set([...prev, currentStepId])])
+      setShowSummary(true) // Show the summary view
     }
   }
 
@@ -49,8 +53,6 @@ const CheckoutPage: Component = () => {
 
   const handlePaymentSelect = (method: string) => {
     setSelectedPaymentMethod(method)
-    setCompletedSteps((prev) => [...new Set([...prev, 'payment'])])
-    setTimeout(() => setShowSummary(true), 300)
   }
 
   const handleBackToSteps = () => {
@@ -83,17 +85,17 @@ const CheckoutPage: Component = () => {
       <Show when={showSummary()}>
         <div
           class={`transition-all duration-500 ease-in-out transform
-            ${showSummary() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+      ${showSummary() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
         >
           <Card class='overflow-hidden shadow-lg'>
             <div class='p-6 space-y-6'>
-              <h2 class='text-xl font-semibold'>{t('cart.orderSummary')}</h2>
+              <h2 class='text-xl font-semibold'>{t('checkout.orderReview.title')}</h2>
 
               {/* Order Items */}
               <div class='space-y-4'>
                 <h3 class='font-medium text-gray-700 flex items-center gap-2'>
                   <FiPackage />
-                  <span>{t('cart.items')}</span>
+                  <span>{t('checkout.orderReview.items')}</span>
                 </h3>
                 <div class='bg-gray-50 rounded-lg p-4 space-y-3'>
                   <div class='flex items-center justify-between'>
@@ -113,7 +115,7 @@ const CheckoutPage: Component = () => {
               <div class='space-y-4'>
                 <h3 class='font-medium text-gray-700 flex items-center gap-2'>
                   <FiMapPin />
-                  <span>{t('checkout.steps.shipping')}</span>
+                  <span>{t('checkout.orderReview.deliveryDetails')}</span>
                 </h3>
                 <div class='bg-gray-50 rounded-lg p-4 space-y-2'>
                   <div class='flex items-center gap-2 text-gray-600'>
@@ -134,16 +136,16 @@ const CheckoutPage: Component = () => {
               {/* Order Total */}
               <div class='space-y-3 pt-3'>
                 <div class='flex justify-between text-sm'>
-                  <span class='text-muted-foreground'>{t('cart.subtotal')}</span>
+                  <span class='text-muted-foreground'>{t('checkout.orderReview.subtotal')}</span>
                   <span>{t('currency', { value: 99.0 })}</span>
                 </div>
                 <div class='flex justify-between text-sm'>
-                  <span class='text-muted-foreground'>{t('cart.shipping')}</span>
+                  <span class='text-muted-foreground'>{t('checkout.orderReview.shippingCost')}</span>
                   <span>{t('currency', { value: 10.0 })}</span>
                 </div>
                 <Separator />
                 <div class='flex justify-between text-lg font-medium'>
-                  <span>{t('cart.total')}</span>
+                  <span>{t('checkout.orderReview.total')}</span>
                   <span>{t('currency', { value: 109.0 })}</span>
                 </div>
               </div>
@@ -161,10 +163,12 @@ const CheckoutPage: Component = () => {
               {/* Action Buttons */}
               <div class='space-y-3 pt-4'>
                 <Button variant='pay' class='w-full transform transition-all duration-300 hover:scale-[1.02]' size='lg'>
-                  {selectedPaymentMethod() === 'cod' ? t('checkout.confirmOrder') : t('checkout.payByFawry')}
+                  {selectedPaymentMethod() === 'cod'
+                    ? t('checkout.orderReview.buttons.confirmCod')
+                    : t('checkout.orderReview.buttons.confirmFawry')}
                 </Button>
                 <Button variant='outline' class='w-full transition-colors duration-300' onClick={handleBackToSteps}>
-                  {t('checkout.changePayment')}
+                  {t('checkout.orderReview.buttons.editOrder')}
                 </Button>
               </div>
             </div>

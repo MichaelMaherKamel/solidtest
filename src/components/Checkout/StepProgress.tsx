@@ -1,9 +1,15 @@
-// StepProgress.tsx
-import { Component, For, Show } from 'solid-js'
-import { FiCheck, FiChevronDown, FiTruck, FiCreditCard, FiArrowLeft } from 'solid-icons/fi'
+// ~/components/Checkout/StepProgress.tsx
+import { Component, For, Show, createSignal, Switch, Match } from 'solid-js'
+import { FiCheck, FiChevronDown, FiTruck, FiCreditCard, FiArrowLeft, FiShoppingCart } from 'solid-icons/fi'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { useI18n } from '~/contexts/i18n'
+import { createAsync, useAction } from '@solidjs/router'
+import { getCart } from '~/db/fetchers/cart'
+import { updateCartItemQuantity, removeCartItem } from '~/db/actions/cart'
+import { Skeleton } from '~/components/ui/skeleton'
+import CheckoutCartItems from './CheckoutCartItems'
+import CheckoutAddress from './CheckoutAddress'
 
 interface StepProgressProps {
   activeStep: string
@@ -18,6 +24,11 @@ interface StepProgressProps {
 
 const StepProgress: Component<StepProgressProps> = (props) => {
   const { t } = useI18n()
+  const cartData = createAsync(() => getCart())
+  const updateQuantity = useAction(updateCartItemQuantity)
+  const removeItem = useAction(removeCartItem)
+
+  const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
 
   const steps = [
     { id: 'cart', title: t('checkout.steps.cart') },
@@ -25,135 +36,74 @@ const StepProgress: Component<StepProgressProps> = (props) => {
     { id: 'payment', title: t('checkout.steps.payment') },
   ]
 
+  // Cart operations
+  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+    try {
+      if (newQuantity <= 0) {
+        await handleRemoveItem(productId)
+        return
+      }
+
+      setItemStates((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], isUpdating: true },
+      }))
+
+      const formData = new FormData()
+      formData.append('productId', productId)
+      formData.append('quantity', newQuantity.toString())
+
+      const result = await updateQuantity(formData)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error)
+      alert(t('cart.error'))
+    } finally {
+      setTimeout(() => {
+        setItemStates((prev) => ({
+          ...prev,
+          [productId]: { ...prev[productId], isUpdating: false },
+        }))
+      }, 300)
+    }
+  }
+
+  const handleRemoveItem = async (productId: string) => {
+    try {
+      setItemStates((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], isRemoving: true },
+      }))
+
+      const formData = new FormData()
+      formData.append('productId', productId)
+
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const result = await removeItem(formData)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Error removing item:', error)
+      alert(t('cart.error'))
+    }
+  }
+
   const renderStepContent = (stepId: string, index: () => number) => {
     if (stepId === 'cart') {
-      return (
-        <div class='space-y-6'>
-          <div class='bg-white rounded-lg p-6'>
-            {/* Cart Items List */}
-            <div class='space-y-4 bg-gray-50'>
-              <div class='flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow'>
-                <div class='flex items-center gap-4'>
-                  <div class='w-16 h-16 bg-gray-100 rounded-md'></div>
-                  <div>
-                    <h3 class='font-medium'>Product Name</h3>
-                    <p class='text-sm text-gray-500'>Quantity: 1</p>
-                  </div>
-                </div>
-                <span class='font-medium'>$99.00</span>
-              </div>
-            </div>
-
-            {/* Cart Actions */}
-            <div class='mt-6 flex flex-col sm:flex-row sm:justify-end gap-2'>
-              <Button
-                variant='pay'
-                class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1'
-                onClick={() => props.onNext(stepId)}
-              >
-                {t('checkout.continueToShipping')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )
+      return <CheckoutCartItems onNext={props.onNext} />
     }
 
     if (stepId === 'shipping') {
-      return (
-        <div class='space-y-6'>
-          <Card class='overflow-hidden'>
-            <div class='p-6 bg-gray-50'>
-              {/* Shipping Form */}
-              <div class='space-y-4'>
-                <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('checkout.firstName')}</label>
-                    <input
-                      type='text'
-                      class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                    />
-                  </div>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('checkout.lastName')}</label>
-                    <input
-                      type='text'
-                      class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                    />
-                  </div>
-                </div>
-
-                <div class='space-y-2'>
-                  <label class='text-sm font-medium'>{t('checkout.address')}</label>
-                  <input
-                    type='text'
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                  />
-                </div>
-
-                <div class='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('checkout.city')}</label>
-                    <input
-                      type='text'
-                      class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                    />
-                  </div>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('checkout.state')}</label>
-                    <input
-                      type='text'
-                      class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                    />
-                  </div>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('checkout.zipCode')}</label>
-                    <input
-                      type='text'
-                      class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                    />
-                  </div>
-                </div>
-
-                <div class='space-y-2'>
-                  <label class='text-sm font-medium'>{t('checkout.phone')}</label>
-                  <input
-                    type='tel'
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                  />
-                </div>
-              </div>
-
-              {/* Navigation Buttons */}
-              <div class='mt-6 flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
-                <Button
-                  variant='ghost'
-                  class='w-full sm:w-auto flex items-center gap-2'
-                  onClick={() => props.onBack(stepId)}
-                >
-                  <FiArrowLeft class='w-4 h-4' />
-                  {t('checkout.backToCart')}
-                </Button>
-
-                <Button
-                  variant='pay'
-                  class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1'
-                  onClick={() => props.onNext(stepId)}
-                >
-                  {t('checkout.continueToPayment')}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )
+      return <CheckoutAddress onNext={props.onNext} onBack={props.onBack} />
     }
 
     if (stepId === 'payment') {
       return (
         <div class='space-y-6'>
           <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            {/* Cash on Delivery Card */}
             <Card
               class={`group cursor-pointer transition-all duration-300 ease-out bg-gray-50 
                 ${
@@ -165,12 +115,11 @@ const StepProgress: Component<StepProgressProps> = (props) => {
             >
               <div class='p-6 flex items-start gap-4'>
                 <div
-                  class={`rounded-full p-3 transition-all duration-300 
-                    ${
-                      props.selectedPaymentMethod === 'cod'
-                        ? 'bg-primary text-white scale-110'
-                        : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                    }`}
+                  class={`rounded-full p-3 transition-all duration-300 ${
+                    props.selectedPaymentMethod === 'cod'
+                      ? 'bg-primary text-white scale-110'
+                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                  }`}
                 >
                   <FiTruck class='w-6 h-6' />
                 </div>
@@ -179,11 +128,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                     <h4 class='font-medium'>{t('checkout.cashOnDelivery')}</h4>
                     <div
                       class={`w-4 h-4 rounded-full border-2 transition-all duration-300 
-                        ${
-                          props.selectedPaymentMethod === 'cod'
-                            ? 'border-primary bg-primary scale-110'
-                            : 'border-gray-300'
-                        }`}
+                      ${props.selectedPaymentMethod === 'cod' ? 'border-primary bg-primary' : 'border-gray-300'}`}
                     />
                   </div>
                   <p class='mt-1 text-sm text-gray-500'>{t('checkout.cashOnDeliveryDescription')}</p>
@@ -191,7 +136,6 @@ const StepProgress: Component<StepProgressProps> = (props) => {
               </div>
             </Card>
 
-            {/* Fawry Payment Card */}
             <Card
               class={`group cursor-pointer transition-all duration-300 ease-out bg-gray-50
                 ${
@@ -204,11 +148,11 @@ const StepProgress: Component<StepProgressProps> = (props) => {
               <div class='p-6 flex items-start gap-4'>
                 <div
                   class={`rounded-full p-3 transition-all duration-300 
-                    ${
-                      props.selectedPaymentMethod === 'fawry'
-                        ? 'bg-primary text-white scale-110'
-                        : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                    }`}
+                  ${
+                    props.selectedPaymentMethod === 'fawry'
+                      ? 'bg-primary text-white scale-110'
+                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                  }`}
                 >
                   <FiCreditCard class='w-6 h-6' />
                 </div>
@@ -217,11 +161,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                     <h4 class='font-medium'>{t('checkout.payByFawry')}</h4>
                     <div
                       class={`w-4 h-4 rounded-full border-2 transition-all duration-300 
-                        ${
-                          props.selectedPaymentMethod === 'fawry'
-                            ? 'border-primary bg-primary scale-110'
-                            : 'border-gray-300'
-                        }`}
+                      ${props.selectedPaymentMethod === 'fawry' ? 'border-primary bg-primary' : 'border-gray-300'}`}
                     />
                   </div>
                   <p class='mt-1 text-sm text-gray-500'>{t('checkout.fawryDescription')}</p>
@@ -230,16 +170,25 @@ const StepProgress: Component<StepProgressProps> = (props) => {
             </Card>
           </div>
 
-          {/* Navigation */}
-          <div class='flex flex-col sm:flex-row justify-between items-center gap-2'>
+          <div class='flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
             <Button
               variant='ghost'
               class='w-full sm:w-auto flex items-center gap-2'
-              onClick={() => props.onBack(stepId)}
+              onClick={() => props.onBack('payment')}
             >
               <FiArrowLeft class='w-4 h-4' />
-              {t('checkout.backToShipping')}
+              {t('checkout.buttons.backToAddress')}
             </Button>
+
+            <Show when={props.selectedPaymentMethod}>
+              <Button
+                variant='pay'
+                class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1'
+                onClick={() => props.onNext('payment')}
+              >
+                {t('checkout.buttons.reviewOrder')}
+              </Button>
+            </Show>
           </div>
         </div>
       )
@@ -275,34 +224,37 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                 <div class='flex items-center gap-3'>
                   <div
                     class={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 
-                      ${
-                        isCompleted()
-                          ? 'bg-green-500 text-white scale-110'
-                          : isActive()
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100'
-                      }`}
+                    ${
+                      isCompleted()
+                        ? 'bg-green-500 text-white scale-110'
+                        : isActive()
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100'
+                    }`}
                   >
                     <Show when={isCompleted()} fallback={<span>{index() + 1}</span>}>
                       <FiCheck class='w-5 h-5' />
                     </Show>
                   </div>
                   <span
-                    class={`font-medium transition-colors duration-300 
-                    ${isActive() ? 'text-primary' : 'text-gray-900'}`}
+                    class={`font-medium transition-colors duration-300 ${
+                      isActive() ? 'text-primary' : 'text-gray-900'
+                    }`}
                   >
                     {step.title}
                   </span>
                 </div>
                 <FiChevronDown
-                  class={`transform transition-all duration-300 
-                    ${isActive() ? 'rotate-180 text-primary' : 'text-gray-400'}`}
+                  class={`transform transition-all duration-300 ${
+                    isActive() ? 'rotate-180 text-primary' : 'text-gray-400'
+                  }`}
                 />
               </button>
 
               <div
-                class={`transition-all duration-500 ease-in-out overflow-hidden
-                  ${isActive() ? 'opacity-100' : 'max-h-0 opacity-0'}`}
+                class={`transition-all duration-500 ease-in-out overflow-hidden ${
+                  isActive() ? 'opacity-100' : 'max-h-0 opacity-0'
+                }`}
               >
                 <div class='px-6 py-4 border-t'>{renderStepContent(step.id, index)}</div>
               </div>

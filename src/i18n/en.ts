@@ -1,3 +1,26 @@
+const cities = {
+  Cairo: 'Cairo',
+  Alexandria: 'Alexandria',
+  Giza: 'Giza',
+  ShubraElKheima: 'Shubra El Kheima',
+  PortSaid: 'Port Said',
+  Suez: 'Suez',
+  Luxor: 'Luxor',
+  Mansoura: 'Mansoura',
+  ElMahallaElKubra: 'El-Mahalla El-Kubra',
+  Tanta: 'Tanta',
+  Asyut: 'Asyut',
+  Ismailia: 'Ismailia',
+  Faiyum: 'Faiyum',
+  Zagazig: 'Zagazig',
+  Damietta: 'Damietta',
+  Aswan: 'Aswan',
+  Minya: 'Minya',
+  Damanhur: 'Damanhur',
+  BeniSuef: 'Beni Suef',
+  Hurghada: 'Hurghada',
+}
+
 export const enDict = {
   common: {
     loading: 'Loading...',
@@ -62,24 +85,45 @@ export const enDict = {
     secureCheckout: 'Secure Checkout',
     pageHeader: 'Checkout',
     steps: {
-      cart: 'Cart',
-      shipping: 'Shipping',
-      payment: 'Payment',
-      confirmation: 'Confirmation',
+      cart: 'Shopping Cart',
+      shipping: 'Delivery Address',
+      payment: 'Payment Method',
+      confirmation: 'Order Confirmation',
     },
-    orderSummary: 'Order Summary',
-    continueToShipping: 'Continue to Shipping',
-    continueToPayment: 'Continue to Payment',
-    backToCart: 'Back to Cart',
-    backToShipping: 'Back to Shipping',
-    backToPayment: 'Back to Payment',
-    changePayment: 'Change Payment Method',
-    confirmOrder: 'Confirm Order',
+    // Navigation buttons
+    buttons: {
+      checkoutAddress: 'Continue to Delivery Address',
+      backToCart: 'Back to Shopping Cart',
+      proceedToPayment: 'Select Payment Method',
+      backToAddress: 'Edit Delivery Details',
+      reviewOrder: 'Review Your Order',
+      editPayment: 'Edit Payment Method',
+    },
+    // Payment section
     paymentMethod: 'Payment Method',
     cashOnDelivery: 'Cash on Delivery',
-    payByFawry: 'Pay by Fawry',
+    payByFawry: 'Pay with Fawry',
     cashOnDeliveryDescription: 'Pay cash when your order arrives',
     fawryDescription: 'Pay securely using Fawry Pay service',
+    // Order review section
+    orderReview: {
+      title: 'Order Review & Confirmation',
+      subtitle: 'Please review your order details',
+      items: 'Items in Your Order',
+      deliveryDetails: 'Delivery Details',
+      subtotal: 'Items Subtotal',
+      shippingCost: 'Delivery Cost',
+      total: 'Order Total',
+      deliveryAddress: 'Delivery Address',
+      contactInfo: 'Contact Information',
+      buttons: {
+        confirmCod: 'Confirm Order & Pay on Delivery',
+        confirmFawry: 'Confirm Order & Pay with Fawry',
+        editOrder: 'Edit Order Details',
+        editDelivery: 'Edit Delivery Address',
+        editPayment: 'Edit Payment Method',
+      },
+    },
   },
 
   address: {
@@ -112,6 +156,11 @@ export const enDict = {
       invalidEmail: 'Please enter a valid email address',
       invalidPhone: 'Please enter a valid phone number',
       invalidZip: 'Please enter a valid postal code',
+    },
+    city: {
+      label: 'City',
+      placeholder: 'Select City',
+      ...cities, // spread the cities translations
     },
   },
 

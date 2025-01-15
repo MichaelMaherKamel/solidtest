@@ -1,3 +1,26 @@
+const cities = {
+  Cairo: 'القاهرة',
+  Alexandria: 'الإسكندرية',
+  Giza: 'الجيزة',
+  ShubraElKheima: 'شبرا الخيمة',
+  PortSaid: 'بورسعيد',
+  Suez: 'السويس',
+  Luxor: 'الأقصر',
+  Mansoura: 'المنصورة',
+  ElMahallaElKubra: 'المحلة الكبرى',
+  Tanta: 'طنطا',
+  Asyut: 'أسيوط',
+  Ismailia: 'الإسماعيلية',
+  Faiyum: 'الفيوم',
+  Zagazig: 'الزقازيق',
+  Damietta: 'دمياط',
+  Aswan: 'أسوان',
+  Minya: 'المنيا',
+  Damanhur: 'دمنهور',
+  BeniSuef: 'بني سويف',
+  Hurghada: 'الغردقة',
+}
+
 export const arDict = {
   common: {
     loading: 'جاري التحميل...',
@@ -63,23 +86,44 @@ export const arDict = {
     pageHeader: 'إتمام الطلب',
     steps: {
       cart: 'عربة التسوق',
-      shipping: 'الشحن',
-      payment: 'الدفع',
-      confirmation: 'التأكيد',
+      shipping: 'عنوان التوصيل',
+      payment: 'طريقة الدفع',
+      confirmation: 'تأكيد الطلب',
     },
-    orderSummary: 'ملخص الطلب',
-    continueToShipping: 'المتابعة إلى الشحن',
-    continueToPayment: 'المتابعة إلى الدفع',
-    backToCart: 'العودة إلى عربة التسوق',
-    backToShipping: 'العودة إلى الشحن',
-    backToPayment: 'العودة إلى الدفع',
-    changePayment: 'تغيير طريقة الدفع',
-    confirmOrder: 'تأكيد الطلب',
+    // أزرار التنقل
+    buttons: {
+      checkoutAddress: 'المتابعة إلى عنوان التوصيل',
+      backToCart: 'الرجوع إلى عربة التسوق',
+      proceedToPayment: 'اختيار طريقة الدفع',
+      backToAddress: 'تعديل تفاصيل التوصيل',
+      reviewOrder: 'مراجعة طلبك',
+      editPayment: 'تعديل طريقة الدفع',
+    },
+    // قسم الدفع
     paymentMethod: 'طريقة الدفع',
     cashOnDelivery: 'الدفع عند الاستلام',
     payByFawry: 'الدفع عبر فوري',
     cashOnDeliveryDescription: 'ادفع نقداً عند استلام طلبك',
     fawryDescription: 'ادفع بأمان باستخدام خدمة فوري',
+    // قسم مراجعة الطلب
+    orderReview: {
+      title: 'مراجعة وتأكيد الطلب',
+      subtitle: 'يرجى مراجعة تفاصيل طلبك',
+      items: 'منتجات طلبك',
+      deliveryDetails: 'تفاصيل التوصيل',
+      subtotal: 'إجمالي المنتجات',
+      shippingCost: 'تكلفة التوصيل',
+      total: 'إجمالي الطلب',
+      deliveryAddress: 'عنوان التوصيل',
+      contactInfo: 'معلومات الاتصال',
+      buttons: {
+        confirmCod: 'تأكيد الطلب والدفع عند الاستلام',
+        confirmFawry: 'تأكيد الطلب والدفع بفوري',
+        editOrder: 'تعديل تفاصيل الطلب',
+        editDelivery: 'تعديل عنوان التوصيل',
+        editPayment: 'تعديل طريقة الدفع',
+      },
+    },
   },
 
   address: {
@@ -112,6 +156,11 @@ export const arDict = {
       invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح',
       invalidPhone: 'يرجى إدخال رقم هاتف صحيح',
       invalidZip: 'يرجى إدخال رمز بريدي صحيح',
+    },
+    city: {
+      label: 'المدينة',
+      placeholder: 'اختر المدينة',
+      ...cities, // spread the cities translations
     },
   },
 
