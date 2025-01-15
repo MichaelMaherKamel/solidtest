@@ -20,9 +20,9 @@ const StepProgress: Component<StepProgressProps> = (props) => {
   const { t } = useI18n()
 
   const steps = [
-    { id: 'cart', title: t('cart.title') },
-    { id: 'shipping', title: t('checkout.delivery.information') },
-    { id: 'payment', title: t('cart.checkout') },
+    { id: 'cart', title: t('checkout.steps.cart') },
+    { id: 'shipping', title: t('checkout.steps.shipping') },
+    { id: 'payment', title: t('checkout.steps.payment') },
   ]
 
   const renderStepContent = (stepId: string, index: () => number) => {

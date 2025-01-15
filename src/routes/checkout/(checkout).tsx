@@ -6,6 +6,7 @@ import { Separator } from '~/components/ui/separator'
 import { useI18n } from '~/contexts/i18n'
 import StepProgress from '~/components/Checkout/StepProgress'
 import { FiPackage, FiMapPin, FiPhone, FiUser } from 'solid-icons/fi'
+import { FaSolidMapPin } from 'solid-icons/fa'
 
 const CheckoutPage: Component = () => {
   const { t } = useI18n()
@@ -112,7 +113,7 @@ const CheckoutPage: Component = () => {
               <div class='space-y-4'>
                 <h3 class='font-medium text-gray-700 flex items-center gap-2'>
                   <FiMapPin />
-                  <span>{t('checkout.delivery.information')}</span>
+                  <span>{t('checkout.steps.shipping')}</span>
                 </h3>
                 <div class='bg-gray-50 rounded-lg p-4 space-y-2'>
                   <div class='flex items-center gap-2 text-gray-600'>
@@ -123,7 +124,10 @@ const CheckoutPage: Component = () => {
                     <FiPhone class='flex-shrink-0' />
                     <span>+20 123 456 7890</span>
                   </div>
-                  <p class='text-gray-600 pl-6'>123 Main St, Cairo, Egypt</p>
+                  <div class='flex items-center gap-2 text-gray-600'>
+                    <FaSolidMapPin class='flex-shrink-0' />
+                    <p class='text-gray-600 pl-6'>123 Main St, Cairo, Egypt</p>
+                  </div>
                 </div>
               </div>
 
@@ -157,7 +161,7 @@ const CheckoutPage: Component = () => {
               {/* Action Buttons */}
               <div class='space-y-3 pt-4'>
                 <Button variant='pay' class='w-full transform transition-all duration-300 hover:scale-[1.02]' size='lg'>
-                  {selectedPaymentMethod() === 'cod' ? t('cart.confirmOrder') : t('checkout.proceedWithFawry')}
+                  {selectedPaymentMethod() === 'cod' ? t('checkout.confirmOrder') : t('checkout.payByFawry')}
                 </Button>
                 <Button variant='outline' class='w-full transition-colors duration-300' onClick={handleBackToSteps}>
                   {t('checkout.changePayment')}
