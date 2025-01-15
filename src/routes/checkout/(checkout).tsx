@@ -126,7 +126,7 @@ const CheckoutPage: Component = () => {
                   </div>
                   <div class='flex items-center gap-2 text-gray-600'>
                     <FaSolidMapPin class='flex-shrink-0' />
-                    <p class='text-gray-600 pl-6'>123 Main St, Cairo, Egypt</p>
+                    <p class='text-gray-600'>123 Main St, Cairo, Egypt</p>
                   </div>
                 </div>
               </div>
