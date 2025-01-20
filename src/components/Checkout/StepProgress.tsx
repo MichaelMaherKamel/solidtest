@@ -1,15 +1,13 @@
 // ~/components/Checkout/StepProgress.tsx
-import { Component, For, Show, createSignal, Switch, Match } from 'solid-js'
-import { FiCheck, FiChevronDown, FiTruck, FiCreditCard, FiArrowLeft, FiShoppingCart } from 'solid-icons/fi'
+import { Component, For, Show, Resource } from 'solid-js'
+import { FiCheck, FiChevronDown, FiArrowLeft, FiArrowRight } from 'solid-icons/fi'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { useI18n } from '~/contexts/i18n'
-import { createAsync, useAction } from '@solidjs/router'
-import { getCart } from '~/db/fetchers/cart'
-import { updateCartItemQuantity, removeCartItem } from '~/db/actions/cart'
-import { Skeleton } from '~/components/ui/skeleton'
 import CheckoutCartItems from './CheckoutCartItems'
 import CheckoutAddress from './CheckoutAddress'
+import { CartItem } from '~/db/schema'
+import { IconCashOnDelivery, IconPayByCard } from '~/components/Icons'
 
 interface StepProgressProps {
   activeStep: string
@@ -20,15 +18,24 @@ interface StepProgressProps {
   onBack: (currentStepId: string) => void
   selectedPaymentMethod: string | null
   onPaymentSelect: (method: string) => void
+  cartData: Resource<
+    | {
+        createdAt: Date
+        updatedAt: Date
+        sessionId: string
+        cartId: string
+        items: CartItem[]
+        lastActive: Date
+      }
+    | { items: never[] }
+    | undefined
+  >
+  addressData: Resource<any>
 }
 
 const StepProgress: Component<StepProgressProps> = (props) => {
-  const { t } = useI18n()
-  const cartData = createAsync(() => getCart())
-  const updateQuantity = useAction(updateCartItemQuantity)
-  const removeItem = useAction(removeCartItem)
-
-  const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
 
   const steps = [
     { id: 'cart', title: t('checkout.steps.cart') },
@@ -36,68 +43,13 @@ const StepProgress: Component<StepProgressProps> = (props) => {
     { id: 'payment', title: t('checkout.steps.payment') },
   ]
 
-  // Cart operations
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
-    try {
-      if (newQuantity <= 0) {
-        await handleRemoveItem(productId)
-        return
-      }
-
-      setItemStates((prev) => ({
-        ...prev,
-        [productId]: { ...prev[productId], isUpdating: true },
-      }))
-
-      const formData = new FormData()
-      formData.append('productId', productId)
-      formData.append('quantity', newQuantity.toString())
-
-      const result = await updateQuantity(formData)
-      if (!result.success) {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      console.error('Error updating quantity:', error)
-      alert(t('cart.error'))
-    } finally {
-      setTimeout(() => {
-        setItemStates((prev) => ({
-          ...prev,
-          [productId]: { ...prev[productId], isUpdating: false },
-        }))
-      }, 300)
-    }
-  }
-
-  const handleRemoveItem = async (productId: string) => {
-    try {
-      setItemStates((prev) => ({
-        ...prev,
-        [productId]: { ...prev[productId], isRemoving: true },
-      }))
-
-      const formData = new FormData()
-      formData.append('productId', productId)
-
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      const result = await removeItem(formData)
-      if (!result.success) {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      console.error('Error removing item:', error)
-      alert(t('cart.error'))
-    }
-  }
-
   const renderStepContent = (stepId: string, index: () => number) => {
     if (stepId === 'cart') {
-      return <CheckoutCartItems onNext={props.onNext} />
+      return <CheckoutCartItems onNext={() => props.onNext('cart')} />
     }
 
     if (stepId === 'shipping') {
-      return <CheckoutAddress onNext={props.onNext} onBack={props.onBack} />
+      return <CheckoutAddress onNext={() => props.onNext('shipping')} onBack={() => props.onBack('shipping')} />
     }
 
     if (stepId === 'payment') {
@@ -105,78 +57,61 @@ const StepProgress: Component<StepProgressProps> = (props) => {
         <div class='space-y-6'>
           <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <Card
-              class={`group cursor-pointer transition-all duration-300 ease-out bg-gray-50 
-                ${
-                  props.selectedPaymentMethod === 'cod'
-                    ? 'ring-2 ring-primary shadow-lg translate-y-0'
-                    : 'hover:-translate-y-1 hover:shadow-md'
-                }`}
+              classList={{
+                'cursor-pointer transition-all duration-300 ease-out hover:shadow-lg bg-gray-50': true,
+                'border-2 border-yellow-400': props.selectedPaymentMethod === 'cod',
+                'border border-gray-200': props.selectedPaymentMethod !== 'cod',
+              }}
               onClick={() => props.onPaymentSelect('cod')}
             >
-              <div class='p-6 flex items-start gap-4'>
-                <div
-                  class={`rounded-full p-3 transition-all duration-300 ${
-                    props.selectedPaymentMethod === 'cod'
-                      ? 'bg-primary text-white scale-110'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                  }`}
-                >
-                  <FiTruck class='w-6 h-6' />
-                </div>
-                <div class='flex-1'>
-                  <div class='flex items-center justify-between'>
-                    <h4 class='font-medium'>{t('checkout.cashOnDelivery')}</h4>
-                    <div
-                      class={`w-4 h-4 rounded-full border-2 transition-all duration-300 
-                      ${props.selectedPaymentMethod === 'cod' ? 'border-primary bg-primary' : 'border-gray-300'}`}
-                    />
+              <div class='p-6'>
+                <div class='flex items-center gap-4 mb-4'>
+                  <div
+                    classList={{
+                      'transition-transform duration-300': true,
+                      'scale-110': props.selectedPaymentMethod === 'cod',
+                    }}
+                  >
+                    <IconCashOnDelivery />
                   </div>
-                  <p class='mt-1 text-sm text-gray-500'>{t('checkout.cashOnDeliveryDescription')}</p>
+                  <h4 class='font-medium flex-1'>{t('checkout.cashOnDelivery')}</h4>
                 </div>
+                <p class='text-sm text-gray-500'>{t('checkout.cashOnDeliveryDescription')}</p>
               </div>
             </Card>
 
             <Card
-              class={`group cursor-pointer transition-all duration-300 ease-out bg-gray-50
-                ${
-                  props.selectedPaymentMethod === 'fawry'
-                    ? 'ring-2 ring-primary shadow-lg translate-y-0'
-                    : 'hover:-translate-y-1 hover:shadow-md'
-                }`}
-              onClick={() => props.onPaymentSelect('fawry')}
+              classList={{
+                'cursor-pointer transition-all duration-300 ease-out hover:shadow-lg bg-gray-50': true,
+                'border-2 border-yellow-400': props.selectedPaymentMethod === 'card',
+                'border border-gray-200': props.selectedPaymentMethod !== 'card',
+              }}
+              onClick={() => props.onPaymentSelect('card')}
             >
-              <div class='p-6 flex items-start gap-4'>
-                <div
-                  class={`rounded-full p-3 transition-all duration-300 
-                  ${
-                    props.selectedPaymentMethod === 'fawry'
-                      ? 'bg-primary text-white scale-110'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                  }`}
-                >
-                  <FiCreditCard class='w-6 h-6' />
-                </div>
-                <div class='flex-1'>
-                  <div class='flex items-center justify-between'>
-                    <h4 class='font-medium'>{t('checkout.payByFawry')}</h4>
-                    <div
-                      class={`w-4 h-4 rounded-full border-2 transition-all duration-300 
-                      ${props.selectedPaymentMethod === 'fawry' ? 'border-primary bg-primary' : 'border-gray-300'}`}
-                    />
+              <div class='p-6'>
+                <div class='flex items-center gap-4 mb-4'>
+                  <div
+                    classList={{
+                      'transition-transform duration-300': true,
+                      'scale-110': props.selectedPaymentMethod === 'card',
+                    }}
+                  >
+                    <IconPayByCard />
                   </div>
-                  <p class='mt-1 text-sm text-gray-500'>{t('checkout.fawryDescription')}</p>
+                  <h4 class='font-medium flex-1'>{t('checkout.payByFawry')}</h4>
                 </div>
+                <p class='text-sm text-gray-500'>{t('checkout.fawryDescription')}</p>
               </div>
             </Card>
           </div>
 
           <div class='flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
             <Button
-              variant='ghost'
+              variant='secondary'
               class='w-full sm:w-auto flex items-center gap-2'
               onClick={() => props.onBack('payment')}
             >
-              <FiArrowLeft class='w-4 h-4' />
+              {isRTL() ? <FiArrowRight class='size-4' /> : <FiArrowLeft class='size-4' />}
               {t('checkout.buttons.backToAddress')}
             </Button>
 
@@ -186,7 +121,10 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                 class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1'
                 onClick={() => props.onNext('payment')}
               >
-                {t('checkout.buttons.reviewOrder')}
+                <div class='flex items-center gap-2'>
+                  {t('checkout.buttons.reviewOrder')}{' '}
+                  {isRTL() ? <FiArrowLeft class='size-4' /> : <FiArrowRight class='size-4' />}
+                </div>
               </Button>
             </Show>
           </div>
@@ -207,14 +145,12 @@ const StepProgress: Component<StepProgressProps> = (props) => {
 
           return (
             <Card
-              class={`overflow-hidden transition-all duration-300 ease-out
-                ${
-                  isActive()
-                    ? 'ring-2 ring-primary shadow-md'
-                    : props.canActivateStep(step.id)
-                    ? 'hover:shadow-sm cursor-pointer'
-                    : 'opacity-60'
-                }`}
+              classList={{
+                'overflow-hidden transition-all duration-300 ease-out': true,
+                'ring-2 ring-primary shadow-md': isActive(),
+                'hover:shadow-sm cursor-pointer': props.canActivateStep(step.id),
+                'opacity-60': !props.canActivateStep(step.id),
+              }}
             >
               <button
                 class='w-full px-6 py-4 flex items-center justify-between'
@@ -223,38 +159,42 @@ const StepProgress: Component<StepProgressProps> = (props) => {
               >
                 <div class='flex items-center gap-3'>
                   <div
-                    class={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 
-                    ${
-                      isCompleted()
-                        ? 'bg-green-500 text-white scale-110'
-                        : isActive()
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100'
-                    }`}
+                    classList={{
+                      'flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300': true,
+                      'bg-green-500 text-white scale-110': isCompleted(),
+                      'bg-primary text-white': isActive() && !isCompleted(),
+                      'bg-gray-100': !isActive() && !isCompleted(),
+                    }}
                   >
                     <Show when={isCompleted()} fallback={<span>{index() + 1}</span>}>
-                      <FiCheck class='w-5 h-5' />
+                      <FiCheck class='size-5' />
                     </Show>
                   </div>
                   <span
-                    class={`font-medium transition-colors duration-300 ${
-                      isActive() ? 'text-primary' : 'text-gray-900'
-                    }`}
+                    classList={{
+                      'font-medium transition-colors duration-300': true,
+                      'text-primary': isActive(),
+                      'text-gray-900': !isActive(),
+                    }}
                   >
                     {step.title}
                   </span>
                 </div>
                 <FiChevronDown
-                  class={`transform transition-all duration-300 ${
-                    isActive() ? 'rotate-180 text-primary' : 'text-gray-400'
-                  }`}
+                  classList={{
+                    'transform transition-transform duration-300': true,
+                    'rotate-180 text-primary': isActive(),
+                    'text-gray-400': !isActive(),
+                  }}
                 />
               </button>
 
               <div
-                class={`transition-all duration-500 ease-in-out overflow-hidden ${
-                  isActive() ? 'opacity-100' : 'max-h-0 opacity-0'
-                }`}
+                classList={{
+                  'transition-all duration-500 ease-in-out overflow-hidden': true,
+                  'opacity-100': isActive(),
+                  'max-h-0 opacity-0': !isActive(),
+                }}
               >
                 <div class='px-6 py-4 border-t'>{renderStepContent(step.id, index)}</div>
               </div>

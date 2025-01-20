@@ -24,6 +24,7 @@ import { useAuthState } from '~/contexts/auth'
 import { siteConfig } from '~/config/site'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
+import { formatCurrency } from '~/lib/utils'
 
 interface Language {
   code: 'en' | 'ar'
@@ -104,6 +105,8 @@ const ShoppingNav: Component = () => {
     return category || siteConfig.categories[0].slug
   })
 
+  //Memos
+
   // User data memo
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
@@ -112,6 +115,24 @@ const ShoppingNav: Component = () => {
     initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
     role: auth.user?.role || 'guest',
   }))
+
+  const cartTotal = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((total, item) => total + item.price * item.quantity, 0)
+  })
+
+  const cartItemsCount = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((sum, item) => sum + item.quantity, 0)
+  })
+
+  const cartItemPrice = (item: CartItem) => {
+    return formatCurrency(item.price * item.quantity)
+  }
 
   // Menu configuration
   const MENU_ITEMS = [
@@ -384,7 +405,7 @@ const ShoppingNav: Component = () => {
                         </svg>
                       </Button>
                     </div>
-                    <span class='text-sm font-medium'>{t('currency', { value: item.price * item.quantity })}</span>
+                    <span class='text-sm font-medium'>{cartItemPrice(item)}</span>
                   </div>
                 </div>
               </div>
@@ -395,11 +416,7 @@ const ShoppingNav: Component = () => {
       <div class='border-t mt-4 pt-4'>
         <div class='flex justify-between items-center mb-4'>
           <span class='font-medium'>{t('cart.total')}</span>
-          <span class='font-medium'>
-            {t('currency', {
-              value: cartData()?.items.reduce((total, item) => total + item.price * item.quantity, 0),
-            })}
-          </span>
+          <span class='font-medium'>{formatCurrency(cartTotal())}</span>
         </div>
         <div class='flex gap-2'>
           <Button
@@ -447,8 +464,11 @@ const ShoppingNav: Component = () => {
                   <Button variant='ghost' size='icon' class='hover:bg-white/10' onClick={handleCartClick}>
                     <FiShoppingCart class='h-5 w-5' />
                     <Show when={cartData()?.items?.length > 0}>
-                      <span class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 text-[10px] font-medium text-black flex items-center justify-center'>
-                        {cartData().items.reduce((sum, item) => sum + item.quantity, 0)}
+                      <span
+                        class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
+    text-[10px] font-medium text-black flex items-center justify-center'
+                      >
+                        {cartItemsCount()}
                       </span>
                     </Show>
                   </Button>

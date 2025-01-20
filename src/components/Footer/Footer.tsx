@@ -1,5 +1,5 @@
 // ~/components/SiteFooter.tsx
-import { Component, createSignal, For, Match, Show, Suspense, Switch } from 'solid-js'
+import { Component, createMemo, createSignal, For, Match, Show, Suspense, Switch } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt } from 'solid-icons/bi'
 import { BiRegularMessageRounded } from 'solid-icons/bi'
@@ -8,7 +8,7 @@ import { FiShoppingCart } from 'solid-icons/fi'
 import { Separator } from '~/components/ui/separator'
 import { Dock, DockIcon } from '~/components/Dock'
 import { buttonVariants } from '~/components/ui/button'
-import { cn } from '~/lib/utils'
+import { cn, formatCurrency } from '~/lib/utils'
 import { createMediaQuery } from '@solid-primitives/media'
 import { UserButton } from '../auth/UserBtn'
 import { LocalizationButton } from '../LocalizationButton'
@@ -19,6 +19,7 @@ import { createAsync, useNavigate, useAction } from '@solidjs/router'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
 import { Skeleton } from '~/components/ui/skeleton'
+import { CartItem } from '~/db/schema'
 
 // Cart Sheet Component
 const CartSheet: Component = () => {
@@ -101,14 +102,36 @@ const CartSheet: Component = () => {
     }
   }
 
+  //Memos
+  const cartTotal = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((total, item) => total + item.price * item.quantity, 0)
+  })
+
+  const cartItemsCount = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((sum, item) => sum + item.quantity, 0)
+  })
+
+  const cartItemPrice = (item: CartItem) => {
+    return formatCurrency(item.price * item.quantity)
+  }
+
   return (
     <Sheet open={isOpen()} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
+      <SheetTrigger>
         <Button variant='ghost' size='icon' class={cn(buttonVariants({ size: 'icon', variant: 'ghost' }), 'relative')}>
           <FiShoppingCart class='h-5 w-5' />
           <Show when={cartData()?.items?.length > 0}>
-            <span class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 text-[10px] font-medium text-black flex items-center justify-center'>
-              {cartData().items.reduce((sum, item) => sum + item.quantity, 0)}
+            <span
+              class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
+    text-[10px] font-medium text-black flex items-center justify-center'
+            >
+              {cartItemsCount()}
             </span>
           </Show>
         </Button>
@@ -122,7 +145,7 @@ const CartSheet: Component = () => {
               {t('cart.title')}
               <Show when={cartData()?.items?.length > 0}>
                 <span class='text-sm font-normal text-muted-foreground'>
-                  ({cartData().items.reduce((sum, item) => sum + item.quantity, 0)} {t('cart.items')})
+                  ({cartItemsCount()} {t('cart.items')})
                 </span>
               </Show>
             </SheetTitle>
@@ -240,7 +263,7 @@ const CartSheet: Component = () => {
                                   </svg>
                                 </Button>
                               </div>
-                              <span class='font-medium'>{t('currency', { value: item.price * item.quantity })}</span>
+                              <span class='font-medium'>{cartItemPrice(item)}</span>
                             </div>
                           </div>
                         </div>
@@ -253,30 +276,19 @@ const CartSheet: Component = () => {
           </div>
 
           {/* Footer */}
+          {/* Footer */}
           <Show when={cartData()?.items?.length > 0}>
             <div class='border-t flex-shrink-0'>
               <div class='p-4 space-y-4'>
                 {/* Price breakdown */}
                 <div class='space-y-3'>
-                  <div class='flex justify-between text-sm'>
-                    <span class='text-muted-foreground'>{t('cart.subtotal')}</span>
-                    <span>
-                      {t('currency', {
-                        value: cartData()?.items.reduce((total, item) => total + item.price * item.quantity, 0),
-                      })}
-                    </span>
+                  <div class='flex justify-between font-medium'>
+                    <span>{t('cart.subtotal')}</span>
+                    <span>{formatCurrency(cartTotal())}</span>
                   </div>
-                  <div class='flex justify-between text-sm'>
-                    <span class='text-muted-foreground'>{t('cart.shipping')}</span>
-                    <span>{t('currency', { value: 50 })}</span>
-                  </div>
-                  <div class='flex justify-between font-medium text-lg pt-2 border-t'>
-                    <span>{t('cart.total')}</span>
-                    <span>
-                      {t('currency', {
-                        value: cartData()?.items.reduce((total, item) => total + item.price * item.quantity, 0) + 50,
-                      })}
-                    </span>
+                  <div class='flex justify-between text-sm text-muted-foreground'>
+                    <span>{t('cart.shipping')}</span>
+                    <span>{t('cart.calculatedAtCheckout')}</span>
                   </div>
                 </div>
 

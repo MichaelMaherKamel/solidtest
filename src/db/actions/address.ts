@@ -87,10 +87,10 @@ export const createAddressAction = action(async (formData: FormData): Promise<Ad
       phone: formData.get('phone')?.toString() || '',
       address: formData.get('address')?.toString() || '',
       buildingNumber: parseInt(formData.get('buildingNumber')?.toString() || '0'),
+      floorNumber: parseInt(formData.get('floorNumber')?.toString() || '0'),
       flatNumber: parseInt(formData.get('flatNumber')?.toString() || '0'),
       city: 'Cairo',
       district: formData.get('district')?.toString() || '',
-      postalCode: parseInt(formData.get('postalCode')?.toString() || '0'),
       country: 'Egypt',
     }
 
@@ -101,6 +101,7 @@ export const createAddressAction = action(async (formData: FormData): Promise<Ad
       !newAddress.phone ||
       !newAddress.address ||
       !newAddress.buildingNumber ||
+      !newAddress.floorNumber ||
       !newAddress.flatNumber ||
       !newAddress.district
     ) {
@@ -139,6 +140,7 @@ export const updateAddressAction = action(async (formData: FormData): Promise<Ad
       phone: formData.get('phone')?.toString(),
       address: formData.get('address')?.toString(),
       buildingNumber: parseInt(formData.get('buildingNumber')?.toString() || '0'),
+      floorNumber: parseInt(formData.get('floorNumber')?.toString() || '0'),
       flatNumber: parseInt(formData.get('flatNumber')?.toString() || '0'),
       district: formData.get('district')?.toString(),
       updatedAt: new Date(),

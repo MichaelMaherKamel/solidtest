@@ -1,5 +1,4 @@
 import { AdapterAccountType } from '@auth/core/adapters'
-import { sql } from 'drizzle-orm'
 import {
   pgTable,
   uuid,
@@ -278,11 +277,11 @@ export const addresses = pgTable(
     phone: varchar('phone', { length: 20 }).notNull(),
     address: text('address').notNull(),
     buildingNumber: integer('buildingNumber').notNull(),
-    // To add floorNumber: integer('floorNumber').notNull(),
+    floorNumber: integer('floorNumber').notNull(),
     flatNumber: integer('flatNumber').notNull(),
     city: cityEnum('city').default('Cairo').notNull(),
     district: varchar('district', { length: 255 }).notNull(),
-    postalCode: integer('postalCode'),
+    // postalCode: integer('postalCode'),
     country: countryEnum('country').default('Egypt').notNull(),
     ...timestamps,
   },

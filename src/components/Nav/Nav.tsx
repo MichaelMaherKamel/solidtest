@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
+import { formatCurrency } from '~/lib/utils'
 
 // Types
 interface Language {
@@ -135,9 +136,22 @@ const Nav: Component = () => {
   // Computed value for whether any dropdown is open
   const isAnyDropdownOpen = createMemo(() => isOpen() || isCartOpen() || isLangOpen() || isUserOpen())
 
+  const cartTotal = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((total, item) => total + item.price * item.quantity, 0)
+  })
+
+  const cartItemsCount = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return 0
+
+    return cart.items.reduce((sum, item) => sum + item.quantity, 0)
+  })
+
   // Effects
   onMount(() => {
-   
     let scrollRAF: number
 
     const handleScroll = () => {
@@ -342,9 +356,9 @@ const Nav: Component = () => {
                       <Show when={cartData()?.items?.length > 0}>
                         <span
                           class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
-          text-[10px] font-medium text-black flex items-center justify-center'
+    text-[10px] font-medium text-black flex items-center justify-center'
                         >
-                          {cartData().items.reduce((sum, item) => sum + item.quantity, 0)}
+                          {cartItemsCount()}
                         </span>
                       </Show>
                     </Button>
@@ -460,7 +474,7 @@ const Nav: Component = () => {
                                           </Button>
                                         </div>
                                         <span class='text-sm font-medium'>
-                                          {t('currency', { value: item.price * item.quantity })}
+                                          {formatCurrency(item.price * item.quantity)}
                                         </span>
                                       </div>
                                     </div>
@@ -472,14 +486,7 @@ const Nav: Component = () => {
                           <div class='border-t mt-4 pt-4'>
                             <div class='flex justify-between items-center mb-4'>
                               <span class='font-medium'>{t('cart.total')}</span>
-                              <span class='font-medium'>
-                                {t('currency', {
-                                  value: cartData()?.items.reduce(
-                                    (total, item) => total + item.price * item.quantity,
-                                    0
-                                  ),
-                                })}
-                              </span>
+                              <span class='font-medium'>{formatCurrency(cartTotal())}</span>
                             </div>
                             <div class='flex gap-2'>
                               <Button

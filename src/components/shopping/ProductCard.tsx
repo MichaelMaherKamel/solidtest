@@ -88,7 +88,7 @@ const ProductCard: Component<ProductCardProps> = (props) => {
           {props.name}
         </h3>
         <div class='flex items-center justify-between'>
-          <span class='text-sm font-bold text-gray-900'>${props.price.toFixed(2)}</span>
+          <span class='text-sm font-bold text-gray-900'>EGP {props.price.toFixed(2)}</span>
           <Button
             onClick={handleAddToCart}
             size='sm'
