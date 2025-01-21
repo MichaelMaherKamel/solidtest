@@ -174,17 +174,18 @@ const ProductColorManager: Component<{
               <ColorCircle color={variant.color} />
               <span class='font-medium'>{t(`product.colors.${variant.color}`)}</span>
               <span class='text-sm text-gray-500' dir={isRTL() ? 'rtl' : 'ltr'}>
-                ({variant.inventory} {t('seller.products.table.color.inStock')})
+                ({variant.inventory})
               </span>
             </div>
 
-            <div class='flex items-center gap-2'>
-              <Button type='button' variant='ghost' onClick={() => setEditingVariant(variant)}>
+            <div class='flex items-center'>
+              <Button type='button' variant='ghost' size={'icon'} onClick={() => setEditingVariant(variant)}>
                 <FiEdit2 class='h-4 w-4' />
               </Button>
               <Button
                 type='button'
                 variant='ghost'
+                size={'icon'}
                 onClick={() => {
                   const newVariants = props.variants.filter((v) => v.colorId !== variant.colorId)
                   props.onUpdate(newVariants)
