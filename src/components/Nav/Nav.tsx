@@ -405,7 +405,12 @@ const Nav: Component = () => {
                                     </div>
                                     <div class='flex-1'>
                                       <div class='flex justify-between items-start'>
-                                        <h4 class='font-medium line-clamp-1'>{item.name}</h4>
+                                        <div>
+                                          <h3 class='font-medium text-sm sm:text-base line-clamp-1'>{item.name}</h3>
+                                          <div class='text-xs sm:text-sm text-gray-500 mt-0.5'>
+                                            {formatCurrency(item.price)}
+                                          </div>
+                                        </div>
                                         <Button
                                           variant='ghost'
                                           onClick={() => handleRemoveItem(item.productId)}
