@@ -10,7 +10,6 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { FiArrowLeft, FiArrowRight, FiShoppingCart } from 'solid-icons/fi'
 import { cn, formatCurrency } from '~/lib/utils'
 import type { CartItem } from '~/db/schema'
-import { isRTL } from '@kobalte/core'
 
 interface Cart {
   createdAt: Date

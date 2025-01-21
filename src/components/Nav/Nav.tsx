@@ -409,7 +409,7 @@ const Nav: Component = () => {
                                         <Button
                                           variant='ghost'
                                           onClick={() => handleRemoveItem(item.productId)}
-                                          class={`text-gray-400 hover:text-red-500 transition-colors
+                                          class={`text-red-500 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors flex-shrink-0
                                             ${itemState().isRemoving ? 'animate-spin' : ''}`}
                                           title={t('cart.remove')}
                                         >

@@ -18,16 +18,17 @@ const COOKIE_OPTIONS = {
   sameSite: 'lax' as const,
 }
 
-async function getAddressIdentifier(): Promise<{ userId: string | null; sessionId: string | null }> {
+async function getAddressIdentifier(): Promise<{ type: 'user' | 'guest'; id: string }> {
   'use server'
   try {
-    // Try to get authenticated user session first
+    // Check for authenticated session first
     const session = await getSession()
+
     if (session?.user?.id) {
-      return { userId: session.user.id, sessionId: null }
+      return { type: 'user', id: session.user.id }
     }
 
-    // Fall back to guest session
+    // Handle guest session
     const event = getRequestEvent()!.nativeEvent
     let sessionId = getCookie(event, ADDRESS_COOKIE)
 
@@ -36,35 +37,10 @@ async function getAddressIdentifier(): Promise<{ userId: string | null; sessionI
       setCookie(event, ADDRESS_COOKIE, sessionId, COOKIE_OPTIONS)
     }
 
-    return { userId: null, sessionId }
+    return { type: 'guest', id: sessionId }
   } catch (error) {
     console.error('Error getting address identifier:', error)
-    return { userId: null, sessionId: null }
-  }
-}
-
-async function migrateGuestAddress(sessionId: string, userId: string) {
-  'use server'
-  try {
-    // Find guest address with null userId
-    const [guestAddress] = await db
-      .select()
-      .from(addresses)
-      .where(and(eq(addresses.sessionId, sessionId), isNull(addresses.userId)))
-
-    if (guestAddress) {
-      // Update the address with the user ID
-      await db
-        .update(addresses)
-        .set({
-          userId,
-          sessionId: '',
-          updatedAt: new Date(),
-        })
-        .where(eq(addresses.addressId, guestAddress.addressId))
-    }
-  } catch (error) {
-    console.error('Error migrating guest address:', error)
+    throw new Error('Failed to get address identifier')
   }
 }
 
@@ -73,15 +49,13 @@ type AddressActionResult = { success: true; address: NewAddress } | { success: f
 export const createAddressAction = action(async (formData: FormData): Promise<AddressActionResult> => {
   'use server'
   try {
-    const { userId, sessionId } = await getAddressIdentifier()
-
-    if (!userId && !sessionId) {
-      return { success: false, error: 'Authentication required' }
-    }
+    const identifier = await getAddressIdentifier()
 
     const newAddress: NewAddress = {
-      sessionId: sessionId || '',
-      userId: userId || null,
+      // For user sessions: empty sessionId, valid userId
+      // For guest sessions: valid sessionId, null userId
+      sessionId: identifier.type === 'guest' ? identifier.id : '',
+      userId: identifier.type === 'user' ? identifier.id : null,
       name: formData.get('name')?.toString() || '',
       email: formData.get('email')?.toString() || '',
       phone: formData.get('phone')?.toString() || '',
@@ -108,11 +82,21 @@ export const createAddressAction = action(async (formData: FormData): Promise<Ad
       return { success: false, error: 'All required fields must be filled' }
     }
 
-    // Delete existing addresses based on user status
-    if (userId) {
-      await db.delete(addresses).where(eq(addresses.userId, userId))
-    } else if (sessionId) {
-      await db.delete(addresses).where(eq(addresses.sessionId, sessionId))
+    // Delete existing address based on strict type separation
+    if (identifier.type === 'user') {
+      await db.delete(addresses).where(
+        and(
+          eq(addresses.userId, identifier.id),
+          isNull(addresses.sessionId) // Ensure we only delete user addresses
+        )
+      )
+    } else {
+      await db.delete(addresses).where(
+        and(
+          eq(addresses.sessionId, identifier.id),
+          isNull(addresses.userId) // Ensure we only delete guest addresses
+        )
+      )
     }
 
     // Create new address
@@ -128,11 +112,7 @@ export const createAddressAction = action(async (formData: FormData): Promise<Ad
 export const updateAddressAction = action(async (formData: FormData): Promise<AddressActionResult> => {
   'use server'
   try {
-    const { userId, sessionId } = await getAddressIdentifier()
-
-    if (!userId && !sessionId) {
-      return { success: false, error: 'Authentication required' }
-    }
+    const identifier = await getAddressIdentifier()
 
     const updateData: Partial<NewAddress> = {
       name: formData.get('name')?.toString(),
@@ -146,8 +126,11 @@ export const updateAddressAction = action(async (formData: FormData): Promise<Ad
       updatedAt: new Date(),
     }
 
-    // Update existing address based on user status
-    const whereClause = userId ? eq(addresses.userId, userId) : eq(addresses.sessionId, sessionId!)
+    // Update with strict type separation
+    const whereClause =
+      identifier.type === 'user'
+        ? and(eq(addresses.userId, identifier.id), isNull(addresses.sessionId))
+        : and(eq(addresses.sessionId, identifier.id), isNull(addresses.userId))
 
     const [updatedAddress] = await db.update(addresses).set(updateData).where(whereClause).returning()
 
@@ -161,3 +144,23 @@ export const updateAddressAction = action(async (formData: FormData): Promise<Ad
     return { success: false, error: 'Failed to update address' }
   }
 })
+
+export async function getAddress() {
+  'use server'
+  try {
+    const identifier = await getAddressIdentifier()
+
+    // Query with strict type separation
+    const whereClause =
+      identifier.type === 'user'
+        ? and(eq(addresses.userId, identifier.id), isNull(addresses.sessionId))
+        : and(eq(addresses.sessionId, identifier.id), isNull(addresses.userId))
+
+    const [address] = await db.select().from(addresses).where(whereClause).limit(1)
+
+    return address || null
+  } catch (error) {
+    console.error('Error fetching address:', error)
+    return null
+  }
+}

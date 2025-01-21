@@ -21,6 +21,29 @@ const cities = {
   Hurghada: 'Hurghada',
 }
 
+const colors = {
+  red: 'Red',
+  blue: 'Blue',
+  green: 'Green',
+  yellow: 'Yellow',
+  orange: 'Orange',
+  purple: 'Purple',
+  pink: 'Pink',
+  white: 'White',
+  black: 'Black',
+  gray: 'Gray',
+  brown: 'Brown',
+  gold: 'Gold',
+  silver: 'Silver',
+  beige: 'Beige',
+  navy: 'Navy',
+  turquoise: 'Turquoise',
+  olive: 'Olive',
+  indigo: 'Indigo',
+  peach: 'Peach',
+  lavender: 'Lavender',
+}
+
 export const enDict = {
   common: {
     loading: 'Loading...',
@@ -216,15 +239,27 @@ export const enDict = {
     brand: 'Brand',
     rating: 'Rating',
     discount: 'OFF',
+    totalInventory: 'Total Inventory',
+    category: 'Category',
+    store: 'Store',
+    availableIn: 'Available in {color}',
+    colors: {
+      title: 'Available Colors',
+      ...colors,
+    },
   },
 
   stores: {
-    kitchen: 'Kitchen Paradise',
+    kitchen: 'Kitchen Supplies',
     kitchenDesc: 'Premium kitchen equipment and accessories',
     bath: 'Bath & Beyond',
     bathDesc: 'Luxury bathroom essentials',
     home: 'Home Comfort',
     homeDesc: 'Everything for your comfortable living',
+    viewStore: 'View Store',
+    storeProducts: 'Store Products',
+    followStore: 'Follow Store',
+    contactStore: 'Contact Store',
   },
 
   form: {
@@ -316,6 +351,7 @@ export const enDict = {
         color: 'Color',
         images: 'Images (Up to 5)',
         setDefault: 'Set as default color',
+        variants: 'variants',
         dropImages: 'Drop images here',
         clickOrDrag: 'Click or drag images',
         imagesUploaded: 'images uploaded',

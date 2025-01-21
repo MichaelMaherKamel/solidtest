@@ -13,9 +13,13 @@ interface MultipleImageUploadProps {
   maxSize?: number
   maxFiles?: number
   defaultValues?: string[]
+  key?: number | string // Add key prop
 }
 
 const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
+  // Create a signal to track the current key
+  const [currentKey, setCurrentKey] = createSignal<number | string | undefined>(props.key)
+
   const [previews, setPreviews] = createSignal<{ url: string; file?: File }[]>(
     props.defaultValues?.map((url) => ({ url })) || []
   )
@@ -24,6 +28,24 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
   const [uploadingIndex, setUploadingIndex] = createSignal<number | null>(null)
   const upload = useAction(supabaseUploadAction)
   let inputRef: HTMLInputElement | undefined
+
+  // Effect to handle key changes
+  createEffect(() => {
+    if (props.key !== undefined && props.key !== currentKey()) {
+      // Reset the component state when key changes
+      setPreviews([])
+      setIsDragActive(false)
+      setClientError('')
+      setUploadingIndex(null)
+      if (inputRef) {
+        inputRef.value = ''
+      }
+      setCurrentKey(props.key)
+
+      // Notify parent of empty state
+      props.onSuccess?.([])
+    }
+  })
 
   createEffect(() => {
     return () => {

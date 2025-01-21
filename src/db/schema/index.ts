@@ -46,7 +46,6 @@ export type ColorVariant = {
     | 'lavender'
   inventory: number
   colorImageUrls: string[]
-  isDefault: boolean
 }
 
 export type ProductFormData = {
@@ -242,6 +241,7 @@ export const products = pgTable(
     storeId: uuid('storeId')
       .notNull()
       .references(() => stores.storeId, { onDelete: 'cascade' }),
+    storeName: text('storeName').notNull(), // Added storeName field
     totalInventory: integer('totalInventory').notNull().default(0),
     colorVariants: jsonb('colorVariants').notNull().$type<ColorVariant[]>().default([]),
     searchVector: text('searchVector'),
@@ -251,6 +251,7 @@ export const products = pgTable(
     nameIdx: index('product_name_idx').on(table.productName),
     categoryIdx: index('category_idx').on(table.category),
     storeIdIdx: index('product_store_id_idx').on(table.storeId),
+    storeNameIdx: index('product_store_name_idx').on(table.storeName), // Added index for storeName
     priceIdx: index('price_idx').on(table.price),
     createdAtIdx: index('created_at_idx').on(table.createdAt),
     categoryStoreIdx: index('category_store_idx').on(table.category, table.storeId, table.createdAt),
@@ -321,6 +322,112 @@ export const carts = pgTable(
   })
 )
 
+/**
+ * Orders table - Manages order information for both authenticated and guest users
+ * Handles multi-vendor orders and tracks order status
+ */
+
+// Order status enum
+export const orderStatusEnum = pgEnum('orderStatus', [
+  'pending', // Initial state when order is created
+  'confirmed', // Order confirmed but not yet shipped
+  'processing', // Order is being prepared by store
+  'shipped', // Order has been shipped
+  'delivered', // Order has been delivered
+  'cancelled', // Order was cancelled
+  'refunded', // Order was refunded
+])
+
+// Payment status enum
+export const paymentStatusEnum = pgEnum('paymentStatus', [
+  'pending', // Payment not yet processed
+  'processing', // Payment is being processed
+  'completed', // Payment successfully completed
+  'failed', // Payment failed
+  'refunded', // Payment was refunded
+])
+
+// Payment method enum
+export const paymentMethodEnum = pgEnum('paymentMethod', [
+  'cash', // Cash on delivery
+  'card', // Credit/Debit card
+])
+
+// Interface for order items
+export interface OrderItem {
+  productId: string
+  storeId: string
+  storeName: string
+  quantity: number
+  price: number
+  name: string
+  color: string
+  image: string
+}
+
+export const orders = pgTable(
+  'orders',
+  {
+    orderId: uuid('orderId').defaultRandom().primaryKey(),
+
+    // User identification (either authenticated or guest)
+    sessionId: text('sessionId').notNull(),
+    userId: text('userId').references(() => users.id, { onDelete: 'set null' }),
+
+    // Order details
+    orderNumber: text('orderNumber').notNull().unique(),
+    items: jsonb('items').$type<OrderItem[]>().notNull(),
+    subtotal: real('subtotal').notNull(),
+    shippingCost: real('shippingCost').notNull(),
+    total: real('total').notNull(),
+
+    // Status tracking
+    orderStatus: orderStatusEnum('orderStatus').default('pending').notNull(),
+    paymentStatus: paymentStatusEnum('paymentStatus').default('pending').notNull(),
+    paymentMethod: paymentMethodEnum('paymentMethod').default('cash').notNull(),
+
+    // Shipping information
+    shippingAddress: jsonb('shippingAddress').notNull(),
+
+    // Store summaries for quick access
+    storeSummaries: jsonb('storeSummaries')
+      .$type<
+        {
+          storeId: string
+          storeName: string
+          itemCount: number
+          subtotal: number
+          status: (typeof orderStatusEnum.enumValues)[number]
+        }[]
+      >()
+      .notNull(),
+
+    // Timestamps
+    ...timestamps,
+
+    // Additional tracking dates
+    confirmedAt: timestamp('confirmedAt'),
+    processedAt: timestamp('processedAt'),
+    shippedAt: timestamp('shippedAt'),
+    deliveredAt: timestamp('deliveredAt'),
+    cancelledAt: timestamp('cancelledAt'),
+    refundedAt: timestamp('refundedAt'),
+  },
+  (table) => ({
+    // Indexes for efficient querying
+    userIdIdx: index('order_user_id_idx').on(table.userId),
+    sessionIdIdx: index('order_session_id_idx').on(table.sessionId),
+    orderNumberIdx: index('order_number_idx').on(table.orderNumber),
+    orderStatusIdx: index('order_status_idx').on(table.orderStatus),
+    paymentStatusIdx: index('payment_status_idx').on(table.paymentStatus),
+    createdAtIdx: index('order_created_at_idx').on(table.createdAt),
+
+    // Compound indexes for common queries
+    userOrderStatusIdx: index('user_order_status_idx').on(table.userId, table.orderStatus, table.createdAt),
+    sessionOrderStatusIdx: index('session_order_status_idx').on(table.sessionId, table.orderStatus, table.createdAt),
+  })
+)
+
 // Type Exports
 /////////////////////////////////////////////
 
@@ -348,3 +455,10 @@ export type NewAddress = typeof addresses.$inferInsert
 // Cart Types
 export type Cart = typeof carts.$inferSelect
 export type NewCart = typeof carts.$inferInsert
+
+// Order Types
+export type Order = typeof orders.$inferSelect
+export type NewOrder = typeof orders.$inferInsert
+export type OrderStatus = (typeof orderStatusEnum.enumValues)[number]
+export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number]
+export type PaymentMethod = (typeof paymentMethodEnum.enumValues)[number]

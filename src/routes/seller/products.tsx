@@ -1,551 +1,99 @@
-import { Component, createSignal, createResource, Suspense, Show, createEffect } from 'solid-js'
-import { useSubmission } from '@solidjs/router'
+import { Component, Show, createSignal, Suspense } from 'solid-js'
 import { Input } from '~/components/ui/input'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { FiSearch, FiPlus, FiEdit2, FiTrash2 } from 'solid-icons/fi'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
-import { Card, CardContent } from '~/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '~/components/ui/dialog'
 import { Skeleton } from '~/components/ui/skeleton'
 import { DataTable } from '~/components/admin/dataTable'
 import TableSkeleton from '~/components/seller/TableSkeleton'
-import MultipleImageUpload from '~/components/MultiImageUpload'
-import { createProductAction, updateProductAction, deleteProductAction } from '~/db/actions/products'
-import type { Product, ProductFormData, ColorVariant } from '~/db/schema'
+import { deleteProductAction } from '~/db/actions/products'
+import type { Product } from '~/db/schema'
 import { useI18n } from '~/contexts/i18n'
-import { TextArea } from '~/components/ui/textarea'
 import { showToast } from '~/components/ui/toast'
-import { FaSolidBoxesStacked } from 'solid-icons/fa'
 import { useSellerContext } from '~/contexts/seller'
+import { FiSearch, FiPlus, FiEdit2, FiTrash2 } from 'solid-icons/fi'
+import { FaSolidBoxesStacked } from 'solid-icons/fa'
+import SellerProductForm from '~/components/seller/SellerProductForm'
+import { Badge } from '~/components/ui/badge'
+import { useAction } from '@solidjs/router'
 
-const ColorEditDialog: Component<{
-  variant: ColorVariant
-  onSave: (updatedVariant: ColorVariant) => void
-  onClose: () => void
-}> = (props) => {
-  const { t } = useI18n()
-  const [editingVariant, setEditingVariant] = createSignal<ColorVariant>({ ...props.variant })
-
-  const handleImageUpload = (urls: string[]) => {
-    setEditingVariant((prev) => ({
-      ...prev,
-      colorImageUrls: urls,
-    }))
-  }
-
-  return (
-    <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
-      <DialogHeader>
-        <DialogTitle>{t('seller.products.colorVariants.edit')}</DialogTitle>
-      </DialogHeader>
-      <div class='space-y-4 pt-4'>
-        <div class='grid grid-cols-2 gap-4'>
-          <div class='space-y-2'>
-            <label class='text-sm font-medium'>{t('seller.products.colorVariants.color')}</label>
-            <Select
-              value={editingVariant().color}
-              onChange={(value: ColorVariant['color'] | null) => {
-                if (value) setEditingVariant((prev) => ({ ...prev, color: value }))
-              }}
-              options={[
-                'red',
-                'blue',
-                'green',
-                'yellow',
-                'orange',
-                'purple',
-                'pink',
-                'white',
-                'black',
-                'gray',
-                'brown',
-                'gold',
-                'silver',
-                'beige',
-                'navy',
-                'turquoise',
-                'olive',
-                'indigo',
-                'peach',
-                'lavender',
-              ]}
-              itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
-            >
-              <SelectTrigger aria-label={t('seller.products.colorVariants.color')} class='w-full'>
-                <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-              </SelectTrigger>
-              <SelectContent />
-            </Select>
-          </div>
-
-          <div class='space-y-2'>
-            <label class='text-sm font-medium'>{t('seller.products.form.labels.inventory')}</label>
-            <Input
-              type='number'
-              value={editingVariant().inventory}
-              onInput={(e) =>
-                setEditingVariant((prev) => ({
-                  ...prev,
-                  inventory: parseInt(e.currentTarget.value),
-                }))
-              }
-              min='0'
-              required
-            />
-          </div>
-        </div>
-
-        <div class='space-y-2'>
-          <label class='text-sm font-medium'>{t('seller.products.colorVariants.images')}</label>
-          <MultipleImageUpload
-            onSuccess={handleImageUpload}
-            maxFiles={5}
-            accept='image/*'
-            maxSize={5 * 1024 * 1024}
-            defaultValues={editingVariant().colorImageUrls}
-          />
-        </div>
-
-        <div class='flex items-center space-x-2'>
-          <input
-            type='checkbox'
-            checked={editingVariant().isDefault}
-            onChange={(e) =>
-              setEditingVariant((prev) => ({
-                ...prev,
-                isDefault: e.currentTarget.checked,
-              }))
-            }
-          />
-          <label class='text-sm'>{t('seller.products.colorVariants.setDefault')}</label>
-        </div>
-
-        <div class='flex justify-end gap-3'>
-          <Button type='button' variant='outline' onClick={props.onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={() => {
-              if (editingVariant().colorImageUrls.length === 0) {
-                showToast({
-                  title: t('common.error'),
-                  description: t('seller.products.form.errors.imageRequired'),
-                  variant: 'destructive',
-                })
-                return
-              }
-              props.onSave(editingVariant())
-            }}
-          >
-            {t('common.save')}
-          </Button>
-        </div>
-      </div>
-    </DialogContent>
-  )
-}
-
-const ProductColorManager: Component<{
-  variants: ColorVariant[]
-  onUpdate: (variants: ColorVariant[]) => void
-}> = (props) => {
-  const { t } = useI18n()
-  const [editingVariant, setEditingVariant] = createSignal<ColorVariant | null>(null)
-
-  return (
-    <div class='space-y-4'>
-      <div class='space-y-2'>
-        {props.variants.map((variant) => (
-          <Card class='border rounded-lg'>
-            <CardContent class='p-4'>
-              <div class='flex items-center justify-between'>
-                <div class='flex items-center space-x-2'>
-                  <div class='w-4 h-4 rounded-full' style={{ background: variant.color }} />
-                  <span>{variant.color}</span>
-                  <span>
-                    ({variant.inventory} {t('seller.products.table.color.inStock')})
-                  </span>
-                  {variant.isDefault && <Badge>{t('seller.products.colorVariants.setDefault')}</Badge>}
-                </div>
-                <div class='flex items-center space-x-2'>
-                  <Button type='button' variant='ghost' onClick={() => setEditingVariant(variant)}>
-                    <FiEdit2 class='h-4 w-4' />
-                  </Button>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    onClick={() => {
-                      const newVariants = props.variants.filter((v) => v.colorId !== variant.colorId)
-                      props.onUpdate(newVariants)
-                    }}
-                  >
-                    <FiTrash2 class='h-4 w-4' />
-                  </Button>
-                </div>
-              </div>
-              <div class='mt-2 grid grid-cols-5 gap-2'>
-                {variant.colorImageUrls.map((url) => (
-                  <img
-                    src={url}
-                    alt={`${t('seller.products.colorVariants.preview')} - ${variant.color}`}
-                    class='w-full aspect-square object-cover rounded-md'
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Show when={editingVariant()}>
-        <Dialog open={Boolean(editingVariant())} onOpenChange={(open) => !open && setEditingVariant(null)}>
-          <ColorEditDialog
-            variant={editingVariant()!}
-            onSave={(updatedVariant) => {
-              const newVariants = props.variants.map((v) => (v.colorId === updatedVariant.colorId ? updatedVariant : v))
-              props.onUpdate(newVariants)
-              setEditingVariant(null)
-            }}
-            onClose={() => setEditingVariant(null)}
-          />
-        </Dialog>
-      </Show>
-    </div>
-  )
-}
-
-const ProductForm: Component<{
-  onSuccess: () => void
-  onClose: () => void
-  storeId: string
-  initialData?: Product
-  mode: 'create' | 'edit'
-}> = (props) => {
-  const { t } = useI18n()
-  const submission = useSubmission(props.mode === 'create' ? createProductAction : updateProductAction)
-  const [formData, setFormData] = createSignal<ProductFormData>({
-    productName: props.initialData?.productName || '',
-    productDescription: props.initialData?.productDescription || '',
-    category: props.initialData?.category || 'kitchensupplies',
-    price: props.initialData?.price || 0,
-    colorVariants: props.initialData?.colorVariants || [],
-  })
-
-  const [currentColorVariant, setCurrentColorVariant] = createSignal<Partial<ColorVariant>>({
-    colorId: crypto.randomUUID(),
-    color: 'red',
-    inventory: 0,
-    colorImageUrls: [],
-    isDefault: false,
-  })
-
-  const resetForm = () => {
-    setFormData({
-      productName: '',
-      productDescription: '',
-      category: 'kitchensupplies',
-      price: 0,
-      colorVariants: [],
-    })
-    submission.clear?.()
-  }
-
-  createEffect(() => {
-    if (submission.result && !submission.pending) {
-      if (submission.result.success) {
-        showToast({
-          title: t('common.success'),
-          description:
-            props.mode === 'create'
-              ? 'Product has been created successfully.'
-              : 'Product has been updated successfully.',
-          variant: 'success',
-        })
-        props.onSuccess()
-        props.onClose()
-        resetForm()
-      } else {
-        showToast({
-          title: t('common.error'),
-          description: submission.result.error || `Failed to ${props.mode} product`,
-          variant: 'destructive',
-        })
-      }
-    }
-  })
-
-  const handleColorImagesUpload = (urls: string[]) => {
-    setCurrentColorVariant((prev) => ({
-      ...prev,
-      colorImageUrls: urls,
-    }))
-  }
-
-  const addColorVariant = () => {
-    const variant = currentColorVariant()
-    if (variant.color && variant.inventory !== undefined && variant.colorImageUrls.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        colorVariants: [...prev.colorVariants, variant as ColorVariant],
-      }))
-      setCurrentColorVariant({
-        colorId: crypto.randomUUID(),
-        color: 'red',
-        inventory: 0,
-        colorImageUrls: [],
-        isDefault: false,
-      })
-    }
-  }
-
-  return (
-    <form action={props.mode === 'create' ? createProductAction : updateProductAction} method='post' class='space-y-6'>
-      {props.mode === 'edit' && <input type='hidden' name='productId' value={props.initialData?.productId} />}
-      <input type='hidden' name='storeId' value={props.storeId} />
-      <input type='hidden' name='colorVariants' value={JSON.stringify(formData().colorVariants)} />
-
-      <div class='space-y-4'>
-        <div class='space-y-2'>
-          <label class='text-sm font-medium'>{t('seller.products.table.name')}</label>
-          <Input
-            name='productName'
-            value={formData().productName}
-            onInput={(e) => setFormData((prev) => ({ ...prev, productName: e.currentTarget.value }))}
-            placeholder='Enter product name'
-            required
-          />
-        </div>
-
-        <div class='space-y-2'>
-          <label class='text-sm font-medium'>{t('seller.products.table.description')}</label>
-          <TextArea
-            name='productDescription'
-            value={formData().productDescription}
-            onInput={(e) => setFormData((prev) => ({ ...prev, productDescription: e.currentTarget.value }))}
-            placeholder='Enter product description'
-            required
-          />
-        </div>
-
-        <div class='space-y-2'>
-          <label class='text-sm font-medium'>{t('seller.products.table.category')}</label>
-          <input type='hidden' name='category' value={formData().category} />
-          <Select
-            value={formData().category}
-            onChange={(value: 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies' | null) => {
-              if (value) setFormData((prev) => ({ ...prev, category: value }))
-            }}
-            options={['kitchensupplies', 'bathroomsupplies', 'homesupplies']}
-            itemComponent={(props) => (
-              <SelectItem item={props.item}>
-                {props.item.rawValue === 'kitchensupplies'
-                  ? t('stores.kitchen')
-                  : props.item.rawValue === 'bathroomsupplies'
-                  ? t('stores.bath')
-                  : t('stores.home')}
-              </SelectItem>
-            )}
-          >
-            <SelectTrigger aria-label='Category' class='w-full'>
-              <SelectValue<string>>
-                {(state) => {
-                  const value = state.selectedOption()
-                  return value === 'kitchensupplies'
-                    ? t('stores.kitchen')
-                    : value === 'bathroomsupplies'
-                    ? t('stores.bath')
-                    : t('stores.home')
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent />
-          </Select>
-        </div>
-
-        <div class='space-y-2'>
-          <label class='text-sm font-medium'>{t('seller.products.table.price')}</label>
-          <Input
-            type='number'
-            name='price'
-            value={formData().price}
-            onInput={(e) => setFormData((prev) => ({ ...prev, price: parseFloat(e.currentTarget.value) }))}
-            placeholder='Enter price'
-            min='0'
-            step='0.01'
-            required
-          />
-        </div>
-
-        <div class='space-y-4'>
-          <label class='text-sm font-medium'>{t('seller.products.colorVariants.title')}</label>
-          <ProductColorManager
-            variants={formData().colorVariants}
-            onUpdate={(newVariants) => setFormData((prev) => ({ ...prev, colorVariants: newVariants }))}
-          />
-
-          <Card class='border rounded-lg'>
-            <CardContent class='p-4'>
-              <div class='space-y-4'>
-                <div class='grid grid-cols-2 gap-4'>
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('seller.products.colorVariants.color')}</label>
-                    <Select
-                      value={currentColorVariant().color}
-                      onChange={(value: ColorVariant['color'] | null) => {
-                        if (value) setCurrentColorVariant((prev) => ({ ...prev, color: value }))
-                      }}
-                      options={[
-                        'red',
-                        'blue',
-                        'green',
-                        'yellow',
-                        'orange',
-                        'purple',
-                        'pink',
-                        'white',
-                        'black',
-                        'gray',
-                        'brown',
-                        'gold',
-                        'silver',
-                        'beige',
-                        'navy',
-                        'turquoise',
-                        'olive',
-                        'indigo',
-                        'peach',
-                        'lavender',
-                      ]}
-                      itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
-                    >
-                      <SelectTrigger aria-label={t('seller.products.colorVariants.color')} class='w-full'>
-                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent />
-                    </Select>
-                  </div>
-
-                  <div class='space-y-2'>
-                    <label class='text-sm font-medium'>{t('seller.products.form.labels.inventory')}</label>
-                    <Input
-                      type='number'
-                      value={currentColorVariant().inventory}
-                      onInput={(e) =>
-                        setCurrentColorVariant((prev) => ({
-                          ...prev,
-                          inventory: parseInt(e.currentTarget.value),
-                        }))
-                      }
-                      min='0'
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class='space-y-2'>
-                  <label class='text-sm font-medium'>{t('seller.products.colorVariants.images')}</label>
-                  <MultipleImageUpload
-                    onSuccess={handleColorImagesUpload}
-                    maxFiles={5}
-                    accept='image/*'
-                    maxSize={5 * 1024 * 1024}
-                  />
-                </div>
-
-                <div class='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    checked={currentColorVariant().isDefault}
-                    onChange={(e) =>
-                      setCurrentColorVariant((prev) => ({
-                        ...prev,
-                        isDefault: e.currentTarget.checked,
-                      }))
-                    }
-                  />
-                  <label class='text-sm'>{t('seller.products.colorVariants.setDefault')}</label>
-                </div>
-
-                <Button
-                  type='button'
-                  onClick={addColorVariant}
-                  disabled={
-                    !currentColorVariant().color ||
-                    currentColorVariant().inventory === undefined ||
-                    currentColorVariant().colorImageUrls.length === 0
-                  }
-                >
-                  {t('seller.products.colorVariants.add')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <div class='flex justify-end gap-3'>
-        <Button type='button' variant='outline' onClick={props.onClose}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          type='submit'
-          variant='general'
-          disabled={
-            submission.pending ||
-            !formData().productName ||
-            !formData().productDescription ||
-            formData().price <= 0 ||
-            formData().colorVariants.length === 0
-          }
-        >
-          {submission.pending
-            ? t(
-                props.mode === 'create'
-                  ? 'seller.products.form.buttons.creating'
-                  : 'seller.products.form.buttons.updating'
-              )
-            : t(
-                props.mode === 'create' ? 'seller.products.form.buttons.create' : 'seller.products.form.buttons.update'
-              )}
-        </Button>
-      </div>
-    </form>
-  )
-}
-
+// Stats Card Components
 const StatsCardSkeleton: Component = () => (
-  <Card class='h-10 w-36 bg-primary/10'>
-    <CardContent class='p-2 flex items-center justify-center gap-2'>
+  <div class='h-10 w-36 bg-primary/10 rounded-lg'>
+    <div class='p-2 flex items-center justify-center gap-2'>
       <Skeleton class='w-4 h-4 rounded-full bg-primary/20' />
       <Skeleton class='h-4 w-14 bg-primary/20' />
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 )
 
 const StatsCard: Component<{ count: number }> = (props) => {
   const { t } = useI18n()
   return (
-    <Card class='h-10 bg-primary/10'>
-      <CardContent class='p-2 flex items-center justify-center gap-2'>
+    <div class='h-10 bg-primary/10 rounded-lg'>
+      <div class='p-2 flex items-center justify-center gap-2'>
         <FaSolidBoxesStacked class='w-4 h-4 text-blue-600' />
         <span class='text-sm font-medium text-primary'>
           {props.count} {props.count === 1 ? t('common.product') : t('common.products')}
         </span>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog: Component<{
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  isDeleting: boolean
+}> = (props) => {
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
+
+  return (
+    <Dialog open={props.isOpen} onOpenChange={props.onClose}>
+      <DialogContent lang={locale()} class='sm:max-w-[425px]'>
+        <DialogHeader lang={locale()}>
+          <DialogTitle lang={locale()} class='text-xl'>
+            {t('seller.products.confirmDelete')}
+          </DialogTitle>
+        </DialogHeader>
+
+        <DialogFooter lang={locale()}>
+          <div class='flex flex-col-reverse sm:flex-row justify-end gap-2 w-full'>
+            <Button variant='outline' onClick={props.onClose} class={isRTL() ? 'sm:ml-2' : 'sm:mr-2'}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={props.onConfirm}
+              disabled={props.isDeleting}
+              class='w-full sm:w-auto'
+            >
+              <Show when={!props.isDeleting} fallback={t('common.saving')}>
+                {t('seller.products.form.buttons.delete')}
+              </Show>
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Main Products Page Component
 const ProductsPage: Component = () => {
-  const { t } = useI18n()
-  const { store, products } = useSellerContext()
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
+  const { store, products, refreshProducts } = useSellerContext()
+  const deleteProduct = useAction(deleteProductAction)
 
   // Local state
   const [search, setSearch] = createSignal('')
   const [isOpen, setIsOpen] = createSignal(false)
-  const [isEditOpen, setIsEditOpen] = createSignal(false)
   const [editProduct, setEditProduct] = createSignal<Product | null>(null)
+  const [productToDelete, setProductToDelete] = createSignal<Product | null>(null)
+  const [isDeleting, setIsDeleting] = createSignal(false)
 
   // Filter products based on search
   const filteredProducts = () => {
@@ -561,27 +109,39 @@ const ProductsPage: Component = () => {
     )
   }
 
-  // Delete handler
+  // Delete handler with automatic refresh
   const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(t('seller.products.confirmDelete'))) return
+    try {
+      setIsDeleting(true)
+      const formData = new FormData()
+      formData.append('productId', product.productId)
 
-    const formData = new FormData()
-    formData.append('productId', product.productId)
+      const result = await deleteProduct(formData)
 
-    const result = await deleteProductAction(formData)
-
-    if (result.success) {
-      showToast({
-        title: t('common.success'),
-        description: t('seller.products.form.success.deleted'),
-        variant: 'success',
-      })
-    } else {
+      if (result.success) {
+        showToast({
+          title: t('common.success'),
+          description: t('seller.products.form.success.deleted'),
+          variant: 'success',
+        })
+        setProductToDelete(null)
+        // Refresh products after successful deletion
+        refreshProducts()
+      } else {
+        showToast({
+          title: t('common.error'),
+          description: result.error || t('seller.products.form.errors.deleteFailed'),
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
       showToast({
         title: t('common.error'),
-        description: result.error || t('seller.products.form.errors.deleteFailed'),
+        description: t('seller.products.form.errors.deleteFailed'),
         variant: 'destructive',
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -620,15 +180,7 @@ const ProductsPage: Component = () => {
       header: t('seller.products.table.category'),
       accessorKey: 'category' as keyof Product,
       minWidth: '150px',
-      cell: (product: Product) => (
-        <Badge variant='outline'>
-          {product.category === 'kitchensupplies'
-            ? t('stores.kitchen')
-            : product.category === 'bathroomsupplies'
-            ? t('stores.bath')
-            : t('stores.home')}
-        </Badge>
-      ),
+      cell: (product: Product) => <Badge variant='outline'>{t(`categories.${product.category}`)}</Badge>,
     },
     {
       header: t('seller.products.table.price'),
@@ -648,7 +200,7 @@ const ProductsPage: Component = () => {
           <div class='flex gap-1 flex-wrap'>
             {product.colorVariants.map((variant) => (
               <Badge variant='outline' class='text-xs'>
-                {variant.color}: {variant.inventory}
+                {t(`product.colors.${variant.color}`)}: {variant.inventory}
               </Badge>
             ))}
           </div>
@@ -661,18 +213,11 @@ const ProductsPage: Component = () => {
       minWidth: '100px',
       cell: (product: Product) => (
         <div class='flex items-center gap-2'>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={() => {
-              setEditProduct(product)
-              setIsEditOpen(true)
-            }}
-          >
+          <Button variant='ghost' size='sm' onClick={() => setEditProduct(product)}>
             <FiEdit2 class='h-4 w-4' />
           </Button>
-          <Button variant='ghost' size='sm' onClick={() => handleDeleteProduct(product)}>
-            <FiTrash2 class='h-4 w-4' />
+          <Button variant='ghost' size='sm' onClick={() => setProductToDelete(product)}>
+            <FiTrash2 class='h-4 w-4 text-red-500' />
           </Button>
         </div>
       ),
@@ -736,62 +281,68 @@ const ProductsPage: Component = () => {
         </div>
       </div>
 
-      {/* Create Dialog */}
-      <Dialog open={isOpen()} onOpenChange={(open) => !open && setIsOpen(false)}>
-        <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
-          <DialogHeader>
-            <DialogTitle>{t('seller.products.addProduct')}</DialogTitle>
-          </DialogHeader>
-          <Show
-            when={store()}
-            fallback={
-              <div class='p-4 text-center'>
-                <Skeleton class='h-4 w-[200px] mx-auto' />
-              </div>
+      {/* Create/Edit Dialog */}
+      <Show when={isOpen() || editProduct()}>
+        <Dialog
+          open={isOpen() || Boolean(editProduct())}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsOpen(false)
+              setEditProduct(null)
             }
+          }}
+        >
+          <DialogContent
+            lang={locale()}
+            class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'
           >
-            <ProductForm
-              mode='create'
-              storeId={store()!.storeId}
-              onSuccess={() => setIsOpen(false)}
-              onClose={() => setIsOpen(false)}
-            />
-          </Show>
-        </DialogContent>
-      </Dialog>
+            <DialogHeader lang={locale()}>
+              <DialogTitle lang={locale()}>
+                {editProduct() ? t('seller.products.form.buttons.edit') : t('seller.products.addProduct')}
+              </DialogTitle>
+            </DialogHeader>
+            <Show
+              when={store()}
+              fallback={
+                <div class='p-4 text-center'>
+                  <Skeleton class='h-4 w-[200px] mx-auto' />
+                </div>
+              }
+            >
+              <SellerProductForm
+                mode={editProduct() ? 'edit' : 'create'}
+                storeId={store()!.storeId}
+                storeName={store()!.storeName}
+                initialData={editProduct() || undefined}
+                onSuccess={() => {
+                  setIsOpen(false)
+                  setEditProduct(null)
+                  // Refresh products after successful creation/edit
+                  refreshProducts()
+                }}
+                onClose={() => {
+                  setIsOpen(false)
+                  setEditProduct(null)
+                }}
+              />
+            </Show>
+          </DialogContent>
+        </Dialog>
+      </Show>
 
-      {/* Edit Dialog */}
-      <Dialog
-        open={isEditOpen()}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsEditOpen(false)
-            setEditProduct(null)
-          }
-        }}
-      >
-        <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
-          <DialogHeader>
-            <DialogTitle>{t('seller.products.form.buttons.edit')}</DialogTitle>
-          </DialogHeader>
-          <Show
-            when={editProduct() && store()}
-            fallback={
-              <div class='p-4 text-center'>
-                <Skeleton class='h-4 w-[200px] mx-auto' />
-              </div>
+      {/* Delete Confirmation Dialog */}
+      <Show when={productToDelete()}>
+        <DeleteConfirmationDialog
+          isOpen={Boolean(productToDelete())}
+          onClose={() => setProductToDelete(null)}
+          onConfirm={() => {
+            if (productToDelete()) {
+              handleDeleteProduct(productToDelete()!)
             }
-          >
-            <ProductForm
-              mode='edit'
-              storeId={store()!.storeId}
-              initialData={editProduct()!}
-              onSuccess={() => setIsEditOpen(false)}
-              onClose={() => setIsEditOpen(false)}
-            />
-          </Show>
-        </DialogContent>
-      </Dialog>
+          }}
+          isDeleting={isDeleting()}
+        />
+      </Show>
     </>
   )
 }

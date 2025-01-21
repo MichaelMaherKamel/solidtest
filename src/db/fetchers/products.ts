@@ -4,7 +4,6 @@ import { products, stores } from '~/db/schema'
 import { query } from '@solidjs/router'
 import type { Product, ColorVariant, ProductCategory } from '~/db/schema'
 
-
 // New function to fetch all products for admin
 export const getAllProducts = query(async () => {
   'use server'
@@ -17,14 +16,14 @@ export const getAllProducts = query(async () => {
         category: products.category,
         price: products.price,
         storeId: products.storeId,
+        storeName: products.storeName,
         totalInventory: products.totalInventory,
         colorVariants: products.colorVariants,
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         searchVector: products.searchVector,
         storeSubscription: stores.subscription,
-        storeName: stores.storeName, // Added for admin view
-        storeOwner: stores.storeOwner, // Added for admin view
+        storeOwner: stores.storeOwner,
       })
       .from(products)
       .leftJoin(stores, eq(products.storeId, stores.storeId))
@@ -56,6 +55,7 @@ export const getProducts = query(async (storeId: string) => {
         category: products.category,
         price: products.price,
         storeId: products.storeId,
+        storeName: products.storeName,
         totalInventory: products.totalInventory,
         colorVariants: products.colorVariants,
         createdAt: products.createdAt,
@@ -75,7 +75,6 @@ export const getProducts = query(async (storeId: string) => {
         END`,
         products.createdAt
       )
-    //await new Promise((resolve) => setTimeout(resolve, 5000)) // Simulate a delay
     return result
   } catch (error) {
     console.error('Error fetching products:', error)
@@ -95,6 +94,7 @@ export const getCategoryProducts = query(async (category: 'kitchensupplies' | 'b
         category: products.category,
         price: products.price,
         storeId: products.storeId,
+        storeName: products.storeName,
         totalInventory: products.totalInventory,
         colorVariants: products.colorVariants,
         createdAt: products.createdAt,
@@ -147,6 +147,7 @@ export const getStoreProductColors = query(async (storeId: string) => {
       .select({
         productId: products.productId,
         productName: products.productName,
+        storeName: products.storeName,
         colorVariants: products.colorVariants,
       })
       .from(products)
@@ -156,6 +157,7 @@ export const getStoreProductColors = query(async (storeId: string) => {
     return result.map((product) => ({
       productId: product.productId,
       productName: product.productName,
+      storeName: product.storeName,
       colors: product.colorVariants as ColorVariant[],
     }))
   } catch (error) {
@@ -176,15 +178,14 @@ export const getProductById = query(async (productId: string) => {
         category: products.category,
         price: products.price,
         storeId: products.storeId,
+        storeName: products.storeName,
         totalInventory: products.totalInventory,
         colorVariants: products.colorVariants,
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         searchVector: products.searchVector,
-        storeSubscription: stores.subscription,
       })
       .from(products)
-      .leftJoin(stores, eq(products.storeId, stores.storeId))
       .where(eq(products.productId, productId))
 
     return result
@@ -193,4 +194,3 @@ export const getProductById = query(async (productId: string) => {
     throw new Error('Failed to fetch product')
   }
 }, 'product')
-

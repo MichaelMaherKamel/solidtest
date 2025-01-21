@@ -21,6 +21,29 @@ const cities = {
   Hurghada: 'الغردقة',
 }
 
+const colors = {
+  red: 'أحمر',
+  blue: 'أزرق',
+  green: 'أخضر',
+  yellow: 'أصفر',
+  orange: 'برتقالي',
+  purple: 'بنفسجي',
+  pink: 'وردي',
+  white: 'أبيض',
+  black: 'أسود',
+  gray: 'رمادي',
+  brown: 'بني',
+  gold: 'ذهبي',
+  silver: 'فضي',
+  beige: 'بيج',
+  navy: 'كحلي',
+  turquoise: 'فيروزي',
+  olive: 'زيتوني',
+  indigo: 'نيلي',
+  peach: 'خوخي',
+  lavender: 'لافندر',
+}
+
 export const arDict = {
   common: {
     loading: 'جاري التحميل...',
@@ -216,6 +239,14 @@ export const arDict = {
     brand: 'العلامة التجارية',
     rating: 'التقييم',
     discount: 'خصم',
+    totalInventory: 'إجمالي المخزون',
+    category: 'الفئة',
+    store: 'المتجر',
+    availableIn: 'متوفر باللون {color}',
+    colors: {
+      title: 'الألوان المتاحة',
+      ...colors,
+    },
   },
 
   stores: {
@@ -225,6 +256,10 @@ export const arDict = {
     bathDesc: 'مستلزمات الحمام الفاخرة',
     home: 'راحة المنزل',
     homeDesc: 'كل ما تحتاجه لحياة مريحة',
+    viewStore: 'عرض المتجر',
+    storeProducts: 'منتجات المتجر',
+    followStore: 'متابعة المتجر',
+    contactStore: 'التواصل مع المتجر',
   },
 
   form: {
@@ -316,6 +351,7 @@ export const arDict = {
         color: 'اللون',
         images: 'الصور (حتى 5)',
         setDefault: 'تعيين كلون اساسى',
+        variants: 'لون',
         dropImages: 'اسحب الصور هنا',
         clickOrDrag: 'انقر أو اسحب الصور',
         imagesUploaded: 'صور تم رفعها',

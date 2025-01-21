@@ -1,4 +1,4 @@
-import { createContext, useContext, ParentComponent } from 'solid-js'
+import { createContext, useContext, ParentComponent, createSignal } from 'solid-js'
 import { createResource, type Resource } from 'solid-js'
 import { getStoreByUserId } from '~/db/fetchers/stores'
 import { getProducts } from '~/db/fetchers/products'
@@ -19,6 +19,7 @@ type SellerContextType = {
   store: Resource<Store | null>
   products: Resource<Product[]>
   isLoading: () => boolean
+  refreshProducts: () => void
 }
 
 const SellerContext = createContext<SellerContextType>()
@@ -27,6 +28,9 @@ export const SellerProvider: ParentComponent = (props) => {
   const auth = useAuth()
   const user = () => auth.session()?.user as AuthUser | undefined
   const userId = () => user()?.id
+
+  // Add refresh trigger signal
+  const [refreshTrigger, setRefreshTrigger] = createSignal(0)
 
   // Store resource
   const [store] = createResource(
@@ -38,18 +42,23 @@ export const SellerProvider: ParentComponent = (props) => {
     { initialValue: null }
   )
 
-  // Products resource that depends on store
+  // Products resource that depends on store and refreshTrigger
   const [products] = createResource(
-    store,
-    async (storeData) => {
-      if (!storeData?.storeId) return []
-      return await getProducts(storeData.storeId)
+    () => ({ storeId: store()?.storeId, trigger: refreshTrigger() }),
+    async ({ storeId }) => {
+      if (!storeId) return []
+      return await getProducts(storeId)
     },
     { initialValue: [] }
   )
 
   // Loading state
   const isLoading = () => store.loading || products.loading
+
+  // Refresh function
+  const refreshProducts = () => {
+    setRefreshTrigger((prev) => prev + 1)
+  }
 
   return (
     <SellerContext.Provider
@@ -58,6 +67,7 @@ export const SellerProvider: ParentComponent = (props) => {
         store,
         products,
         isLoading,
+        refreshProducts,
       }}
     >
       {props.children}

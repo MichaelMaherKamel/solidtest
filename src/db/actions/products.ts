@@ -1,8 +1,8 @@
 import { action } from '@solidjs/router'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '~/db'
-import { products } from '~/db/schema'
-import type { ProductFormData, ColorVariant } from '~/db/schema'
+import { products, stores } from '~/db/schema'
+import type { ColorVariant } from '~/db/schema'
 
 export type ProductActionResult =
   | {
@@ -22,10 +22,11 @@ export const createProductAction = action(async (formData: FormData): Promise<Pr
     const category = formData.get('category')?.toString() as 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies'
     const price = parseFloat(formData.get('price')?.toString() || '0')
     const storeId = formData.get('storeId')?.toString()
+    const storeName = formData.get('storeName')?.toString()
     const colorVariantsStr = formData.get('colorVariants')?.toString()
 
     // Validate required fields
-    if (!productName || !productDescription || !storeId || !category) {
+    if (!productName || !productDescription || !storeId || !category || !storeName) {
       return { success: false, error: 'Required fields are missing' }
     }
 
@@ -51,6 +52,7 @@ export const createProductAction = action(async (formData: FormData): Promise<Pr
         category,
         price,
         storeId,
+        storeName,
         colorVariants,
         totalInventory,
         searchVector,
@@ -72,9 +74,10 @@ export const updateProductAction = action(async (formData: FormData): Promise<Pr
     const productDescription = formData.get('productDescription')?.toString()
     const category = formData.get('category')?.toString() as 'kitchensupplies' | 'bathroomsupplies' | 'homesupplies'
     const price = parseFloat(formData.get('price')?.toString() || '0')
+    const storeName = formData.get('storeName')?.toString()
     const colorVariantsStr = formData.get('colorVariants')?.toString()
 
-    if (!productId || !productName || !productDescription || !category) {
+    if (!productId || !productName || !productDescription || !category || !storeName) {
       return { success: false, error: 'Required fields are missing' }
     }
 
@@ -99,6 +102,7 @@ export const updateProductAction = action(async (formData: FormData): Promise<Pr
         productDescription,
         category,
         price,
+        storeName,
         colorVariants,
         totalInventory,
         searchVector,

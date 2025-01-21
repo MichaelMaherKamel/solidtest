@@ -1,11 +1,12 @@
 // ~/routes/shopping/products/[productId].tsx
-import { Component, Show, createMemo, createSignal } from 'solid-js'
+import { Component, For, Show, createMemo, createSignal } from 'solid-js'
 import { useParams, A, useAction } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
 import { Button } from '~/components/ui/button'
+import { BiSolidStore } from 'solid-icons/bi'
 import { FiShoppingCart, FiHeart, FiShare2 } from 'solid-icons/fi'
 import { BsCheck } from 'solid-icons/bs'
-import { getProduct } from '~/db/fetchers/productsApi'
+import { getProductById } from '~/db/fetchers/products'
 import { addToCartAction } from '~/db/actions/cart'
 import { createResource } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
@@ -13,39 +14,61 @@ import { createMediaQuery } from '@solid-primitives/media'
 const ProductPage: Component = () => {
   const params = useParams<{ productId: string }>()
   const { t, locale } = useI18n()
+  const [selectedColorIndex, setSelectedColorIndex] = createSignal(0)
   const [selectedImage, setSelectedImage] = createSignal(0)
   const [isAddingToCart, setIsAddingToCart] = createSignal(false)
   const [showSuccess, setShowSuccess] = createSignal(false)
 
   const isRTL = () => locale() === 'ar'
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
-  const [product] = createResource(() => params.productId, getProduct)
+  const [product] = createResource(() => params.productId, getProductById)
+
   const addToCart = useAction(addToCartAction)
 
   const formattedProductName = createMemo(() => {
-    const name = product()?.name || ''
+    const name = product()?.productName || ''
     return !isLargeScreen() ? (name.length > 30 ? name.slice(0, 30) + '...' : name) : name
   })
 
   const categoryDisplay = createMemo(() => {
     if (!product()?.category) return ''
-    return !isLargeScreen()
-      ? t(`categories.tabNames.${product()?.category}`) // Short name for mobile
-      : t(`categories.${product()?.category}`) // Full name for desktop
+    return !isLargeScreen() ? t(`categories.tabNames.${product()?.category}`) : t(`categories.${product()?.category}`)
   })
 
+  const currentColorVariant = createMemo(() => {
+    return product()?.colorVariants[selectedColorIndex()]
+  })
+
+  const currentImages = createMemo(() => {
+    return currentColorVariant()?.colorImageUrls || []
+  })
+
+  const availableColors = createMemo(() => {
+    return product()?.colorVariants.filter((variant) => variant.inventory > 0) || []
+  })
+
+  const handleColorSelect = (index: number) => {
+    setSelectedColorIndex(index)
+    setSelectedImage(0)
+  }
+
+  const getColorLabel = (color: string) => {
+    return t(`product.colors.${color}`)
+  }
+
   const handleAddToCart = async () => {
-    if (isAddingToCart() || !product()) return
+    if (isAddingToCart() || !product() || !currentColorVariant()) return
 
     setIsAddingToCart(true)
 
     try {
       const formData = new FormData()
       const productData = {
-        productId: product()!.id.toString(),
-        name: product()!.name,
+        productId: product()!.productId,
+        name: product()!.productName,
         price: product()!.price,
-        image: product()!.image,
+        image: currentImages()[selectedImage()],
+        color: currentColorVariant()!.color,
       }
       formData.append('product', JSON.stringify(productData))
 
@@ -53,7 +76,6 @@ const ProductPage: Component = () => {
 
       if (result.success) {
         setShowSuccess(true)
-        // Reset success state after a delay
         setTimeout(() => {
           setShowSuccess(false)
         }, 1500)
@@ -93,56 +115,105 @@ const ProductPage: Component = () => {
             {/* Image Gallery */}
             <div class='space-y-4'>
               <div class='aspect-square rounded-lg overflow-hidden bg-gray-100'>
-                <img
-                  src={product()?.images[selectedImage()]}
-                  alt={product()?.name}
-                  class='w-full h-full object-cover'
-                />
+                <Show when={currentImages().length > 0}>
+                  <img
+                    src={currentImages()[selectedImage()]}
+                    alt={product()?.productName}
+                    class='w-full h-full object-cover'
+                  />
+                </Show>
               </div>
               <div class='grid grid-cols-4 gap-4'>
-                {product()?.images.map((image, index) => (
-                  <button
-                    onClick={() => setSelectedImage(index)}
-                    class={`aspect-square rounded-md overflow-hidden ${
-                      selectedImage() === index ? 'ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    <img src={image} alt='' class='w-full h-full object-cover' />
-                  </button>
-                ))}
+                <For each={currentImages()}>
+                  {(image, index) => (
+                    <button
+                      onClick={() => setSelectedImage(index())}
+                      class={`aspect-square rounded-md overflow-hidden ${
+                        selectedImage() === index() ? 'ring-2 ring-primary' : ''
+                      }`}
+                    >
+                      <img src={image} alt='' class='w-full h-full object-cover' />
+                    </button>
+                  )}
+                </For>
               </div>
             </div>
 
             {/* Product Info */}
             <div class='space-y-6' dir={isRTL() ? 'rtl' : 'ltr'}>
-              <div>
-                <h1 class='text-3xl font-bold text-gray-900'>{product()?.name}</h1>
-                <p class='mt-4 text-lg text-gray-500'>{product()?.description}</p>
+              {/* Product Title and Description */}
+              <div class='space-y-4'>
+                <h1 class='text-3xl font-bold text-gray-900'>{product()?.productName}</h1>
+                <p class='text-lg text-gray-500'>{product()?.productDescription}</p>
+                {/* Store Information */}
+                <div class='flex items-center gap-2 text-gray-600 pt-2'>
+                  <BiSolidStore class='h-5 w-5' />
+                  <span>{t('product.store')}:</span>
+                  <A
+                    href={`/stores/${product()?.storeId}`}
+                    class='text-primary hover:text-primary-dark transition-colors'
+                  >
+                    {product()?.storeName}
+                  </A>
+                </div>
               </div>
 
-              {/* Price and Stock */}
+              {/* Price and Stock Info */}
               <div class='space-y-2'>
                 <div class='flex items-center gap-4'>
-                  <span class='text-3xl font-bold text-gray-900'>${product()?.price.toFixed(2)}</span>
-                  <Show when={product()?.discountPercentage}>
-                    <span class='text-sm px-2 py-1 bg-red-100 text-red-700 rounded'>
-                      {product()?.discountPercentage}% {t('product.discount')}
-                    </span>
-                  </Show>
+                  <span class='text-3xl font-bold text-gray-900'>
+                    {locale() === 'ar' ? `${product()?.price.toFixed(2)} جنيه` : `EGP ${product()?.price.toFixed(2)}`}
+                  </span>
                 </div>
-                <p class='text-sm text-gray-500'>
-                  {product()?.stock > 0 ? t('product.inStock', { count: product()?.stock }) : t('product.outOfStock')}
-                </p>
+                <div class='space-y-1'>
+                  <p class='text-sm text-gray-500'>
+                    {currentColorVariant()?.inventory
+                      ? t('product.inStock', { count: currentColorVariant()?.inventory })
+                      : t('product.outOfStock')}
+                  </p>
+                  <p class='text-sm text-gray-500'>
+                    {t('product.totalInventory')}: {product()?.totalInventory}
+                  </p>
+                  <p class='text-sm text-gray-500'>
+                    {t('product.category')}: {categoryDisplay()}
+                  </p>
+                </div>
               </div>
 
-              {/* Actions */}
+              {/* Color Selection */}
+              <Show when={availableColors().length > 0}>
+                <div class='space-y-3'>
+                  <h3 class='text-sm font-medium text-gray-900'>{t('product.colors.title')}</h3>
+                  <div class='flex flex-wrap gap-2'>
+                    <For each={product()?.colorVariants}>
+                      {(variant, index) => (
+                        <button
+                          onClick={() => handleColorSelect(index())}
+                          disabled={variant.inventory === 0}
+                          class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            variant.inventory === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                          } ${selectedColorIndex() === index() ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                          title={getColorLabel(variant.color)}
+                        >
+                          <span
+                            class='w-6 h-6 rounded-full border border-gray-200'
+                            style={{ 'background-color': variant.color }}
+                          />
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </Show>
+
+              {/* Action Buttons */}
               <div class='space-y-4'>
                 <div class='grid grid-cols-2 gap-4'>
                   <Button
                     size='lg'
                     variant='pay'
                     onClick={handleAddToCart}
-                    disabled={isAddingToCart() || !product()?.stock}
+                    disabled={isAddingToCart() || !currentColorVariant()?.inventory}
                   >
                     <Show
                       when={!isAddingToCart()}
@@ -164,20 +235,6 @@ const ProductPage: Component = () => {
                   {t('product.share')}
                 </Button>
               </div>
-
-              {/* Additional Info */}
-              <div class='border-t pt-6 space-y-4'>
-                <div class='grid grid-cols-2 gap-4 text-sm'>
-                  <div>
-                    <span class='text-gray-500'>{t('product.brand')}</span>
-                    <p class='font-medium'>{product()?.brand}</p>
-                  </div>
-                  <div>
-                    <span class='text-gray-500'>{t('product.rating')}</span>
-                    <p class='font-medium'>{product()?.rating}/5</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -186,7 +243,6 @@ const ProductPage: Component = () => {
   )
 }
 
-// ProductSkeleton component remains unchanged
 const ProductSkeleton: Component = () => {
   return (
     <div class='min-h-[calc(100vh-7rem)]'>
@@ -204,8 +260,9 @@ const ProductSkeleton: Component = () => {
           </div>
           <div class='space-y-6'>
             <div class='space-y-4'>
-              <div class='h-8 w-3/4 bg-gray-200 rounded animate-pulse' />
-              <div class='h-24 w-full bg-gray-200 rounded animate-pulse' />
+              <div class='h-8 w-3/4 bg-gray-200 rounded animate-pulse' /> {/* Product name */}
+              <div class='h-24 w-full bg-gray-200 rounded animate-pulse' /> {/* Description */}
+              <div class='h-6 w-1/3 bg-gray-200 rounded animate-pulse' /> {/* Store name */}
             </div>
             <div class='space-y-4'>
               <div class='h-12 w-1/3 bg-gray-200 rounded animate-pulse' />

@@ -1,10 +1,10 @@
 // ~/components/shopping/ProductGrid.tsx
 import { Component, For, Show, createSignal, createResource, onMount, onCleanup } from 'solid-js'
-import { ProductCategory } from '~/db/schema'
+import type { ProductCategory } from '~/db/schema'
 import { useI18n } from '~/contexts/i18n'
 import ProductCard from './ProductCard'
 import ProductGridSkeleton from './ProductGridSkeleton'
-import { getProducts } from '~/db/fetchers/productsApi'
+import { getCategoryProducts } from '~/db/fetchers/products' // Updated import
 import { Button } from '~/components/ui/button'
 
 const ITEMS_PER_BATCH = 10
@@ -15,7 +15,8 @@ interface ProductGridProps {
 
 const ProductGrid: Component<ProductGridProps> = (props) => {
   const { t, locale } = useI18n()
-  const [products] = createResource(() => props.category, getProducts)
+  // Updated to use getCategoryProducts
+  const [products] = createResource(() => props.category, getCategoryProducts)
   const [displayedItems, setDisplayedItems] = createSignal<number>(ITEMS_PER_BATCH)
   const [loadingMore, setLoadingMore] = createSignal(false)
   const [observer, setObserver] = createSignal<IntersectionObserver | null>(null)
