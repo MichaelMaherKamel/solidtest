@@ -22,7 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
-import { formatCurrency } from '~/lib/utils'
+import { cn, formatCurrency } from '~/lib/utils'
+import { BiSolidStore } from 'solid-icons/bi'
+import { showToast } from '~/components/ui/toast'
 
 // Types
 interface Language {
@@ -38,6 +40,7 @@ interface CartItem {
   price: number
   quantity: number
   image: string
+  selectedColor: string
 }
 
 type DropdownType = 'menu' | 'lang' | 'user' | 'cart'
@@ -106,6 +109,35 @@ const Nav: Component = () => {
   // Memos
   const isRTL = createMemo(() => locale() === 'ar')
   const isHomePage = createMemo(() => location.pathname === '/')
+
+  // Group cart items by store with proper typing
+  const groupedCartItems = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return []
+
+    const grouped: Record<
+      string,
+      {
+        store: { storeId: string; storeName: string }
+        items: CartItem[]
+      }
+    > = {}
+
+    cart.items.forEach((item) => {
+      if (!grouped[item.storeId]) {
+        grouped[item.storeId] = {
+          store: {
+            storeId: item.storeId,
+            storeName: item.storeName,
+          },
+          items: [],
+        }
+      }
+      grouped[item.storeId].items.push(item)
+    })
+
+    return Object.values(grouped)
+  })
 
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
@@ -232,7 +264,7 @@ const Nav: Component = () => {
     }
   }
 
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, newQuantity: number, selectedColor: string) => {
     try {
       setItemStates((prev) => ({
         ...prev,
@@ -242,12 +274,17 @@ const Nav: Component = () => {
       const formData = new FormData()
       formData.append('productId', productId)
       formData.append('quantity', newQuantity.toString())
+      formData.append('selectedColor', selectedColor) // Include selectedColor
 
       const result = await updateQuantity(formData)
       if (!result.success) throw new Error(result.error)
     } catch (error) {
       console.error('Error updating quantity:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     } finally {
       setTimeout(() => {
         setItemStates((prev) => ({
@@ -258,7 +295,7 @@ const Nav: Component = () => {
     }
   }
 
-  const handleRemoveItem = async (productId: string) => {
+  const handleRemoveItem = async (productId: string, selectedColor: string) => {
     try {
       setItemStates((prev) => ({
         ...prev,
@@ -267,13 +304,18 @@ const Nav: Component = () => {
 
       const formData = new FormData()
       formData.append('productId', productId)
+      formData.append('selectedColor', selectedColor) // Include selectedColor
 
       await new Promise((resolve) => setTimeout(resolve, 300))
       const result = await removeItem(formData)
       if (!result.success) throw new Error(result.error)
     } catch (error) {
       console.error('Error removing item:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -285,7 +327,11 @@ const Nav: Component = () => {
       if (!result.success) throw new Error(result.error)
     } catch (error) {
       console.error('Error clearing cart:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     } finally {
       setIsClearingCart(false)
     }
@@ -297,7 +343,11 @@ const Nav: Component = () => {
       await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
-      alert(t('auth.signOutError'))
+      showToast({
+        title: t('auth.error'),
+        description: t('auth.signOutError'),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -311,6 +361,12 @@ const Nav: Component = () => {
   const getLoginUrl = () => {
     const currentPath = location.pathname || '/'
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
+  }
+
+  // Get available text for a color
+  const getColor = (colorName: string) => {
+    const colorTranslation = t(`product.colors.${colorName}`)
+    return locale() === 'ar' ? `${colorTranslation}` : `${colorTranslation}`
   }
 
   return (
@@ -366,146 +422,207 @@ const Nav: Component = () => {
 
                   {/* Cart Dropdown */}
                   <div class={getDropdownStyles(isCartOpen(), isRTL()) + ' w-80'}>
-                    <div class='p-4'>
-                      <h3 class='text-lg font-medium mb-4'>{t('cart.title')}</h3>
-                      <Switch fallback={<div class='text-sm text-gray-500 text-center py-4'>{t('cart.empty')}</div>}>
+                    <div class='p-2'>
+                      <div class='flex items-center justify-between border-b pb-2'>
+                        <h3 class='text-base font-semibold'>
+                          {t('cart.title')}
+                          <Show when={cartItemsCount() > 0}>
+                            <span class='text-sm font-normal text-muted-foreground ml-1'>
+                              ({cartItemsCount()} {t('cart.items')})
+                            </span>
+                          </Show>
+                        </h3>
+                      </div>
+
+                      <Switch
+                        fallback={
+                          <div class='flex flex-col items-center justify-center pt-6 text-center'>
+                            <FiShoppingCart class='h-8 w-8 text-muted-foreground mb-2' />
+                            <p class='text-base font-medium mb-1'>{t('cart.emptyTitle')}</p>
+                            <p class='text-sm text-muted-foreground mb-3'>{t('cart.emptyMessage')}</p>
+                          </div>
+                        }
+                      >
                         <Match when={cartData.loading}>
-                          <div class='space-y-4'>
-                            <Skeleton class='h-20 w-full' />
-                            <Skeleton class='h-20 w-full' />
+                          <div class='space-y-2 py-2'>
+                            <Skeleton class='h-16 w-full' />
+                            <Skeleton class='h-16 w-full' />
+                            <Skeleton class='h-16 w-full' />
                           </div>
                         </Match>
                         <Match when={cartData()?.items?.length > 0}>
-                          <div class='space-y-4 max-h-[60vh] overflow-auto'>
-                            <For each={cartData().items}>
-                              {(item) => {
-                                const itemState = () =>
-                                  itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
-
-                                return (
-                                  <div
-                                    class={`flex gap-4 py-2 relative group transition-all duration-300
-                                      ${
-                                        itemState().isRemoving
-                                          ? 'opacity-0 transform translate-x-full'
-                                          : 'opacity-100 transform translate-x-0'
-                                      }
-                                      ${
-                                        isClearingCart()
-                                          ? 'opacity-0 transform scale-95'
-                                          : 'opacity-100 transform scale-100'
-                                      }`}
-                                  >
-                                    <div class='w-16 h-16 bg-gray-100 rounded'>
-                                      <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        class='w-full h-full object-cover rounded'
-                                      />
-                                    </div>
-                                    <div class='flex-1'>
-                                      <div class='flex justify-between items-start'>
-                                        <div>
-                                          <h3 class='font-medium text-sm sm:text-base line-clamp-1'>{item.name}</h3>
-                                          <div class='text-xs sm:text-sm text-gray-500 mt-0.5'>
-                                            {formatCurrency(item.price)}
-                                          </div>
-                                        </div>
-                                        <Button
-                                          variant='ghost'
-                                          onClick={() => handleRemoveItem(item.productId)}
-                                          class={`text-red-500 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors flex-shrink-0
-                                            ${itemState().isRemoving ? 'animate-spin' : ''}`}
-                                          title={t('cart.remove')}
-                                        >
-                                          <svg
-                                            xmlns='http://www.w3.org/2000/svg'
-                                            class='h-4 w-4'
-                                            viewBox='0 0 20 20'
-                                            fill='currentColor'
-                                          >
-                                            <path
-                                              fill-rule='evenodd'
-                                              d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
-                                              clip-rule='evenodd'
-                                            />
-                                          </svg>
-                                        </Button>
-                                      </div>
-                                      <div class='flex items-center mt-2 space-x-2 rtl:space-x-reverse'>
-                                        <div
-                                          class={`flex items-center border rounded-md transition-transform duration-200 
-                                            ${itemState().isUpdating ? 'scale-110' : 'scale-100'}`}
-                                        >
-                                          <Button
-                                            variant='ghost'
-                                            onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                                            disabled={item.quantity <= 1}
-                                            class='px-2 py-1 hover:bg-gray-100 disabled:opacity-50'
-                                            title={t('cart.decrease')}
-                                          >
-                                            <svg
-                                              xmlns='http://www.w3.org/2000/svg'
-                                              class='h-4 w-4'
-                                              viewBox='0 0 20 20'
-                                              fill='currentColor'
-                                            >
-                                              <path
-                                                fill-rule='evenodd'
-                                                d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
-                                                clip-rule='evenodd'
-                                              />
-                                            </svg>
-                                          </Button>
-                                          <span class='px-2 py-1 min-w-[2rem] text-center'>{item.quantity}</span>
-                                          <Button
-                                            variant='ghost'
-                                            onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                                            class='px-2 py-1 hover:bg-gray-100'
-                                            title={t('cart.increase')}
-                                          >
-                                            <svg
-                                              xmlns='http://www.w3.org/2000/svg'
-                                              class='h-4 w-4'
-                                              viewBox='0 0 20 20'
-                                              fill='currentColor'
-                                            >
-                                              <path
-                                                fill-rule='evenodd'
-                                                d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
-                                                clip-rule='evenodd'
-                                              />
-                                            </svg>
-                                          </Button>
-                                        </div>
-                                        <span class='text-sm font-medium'>
-                                          {formatCurrency(item.price * item.quantity)}
-                                        </span>
-                                      </div>
-                                    </div>
+                          <div class='max-h-[60vh] overflow-auto py-2 space-y-2'>
+                            <For each={groupedCartItems()}>
+                              {({ store, items }) => (
+                                <div class='bg-card rounded-lg overflow-hidden border'>
+                                  {/* Store Header */}
+                                  <div class='bg-primary/5 px-2 py-1.5 flex items-center gap-1.5'>
+                                    <BiSolidStore class='h-3 w-3' />
+                                    <span class='text-xs font-medium truncate'>{store.storeName}</span>
                                   </div>
-                                )
-                              }}
+
+                                  {/* Store Items */}
+                                  <div class='divide-y divide-border'>
+                                    <For each={items}>
+                                      {(item) => {
+                                        const itemState = () =>
+                                          itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
+                                        return (
+                                          <div
+                                            class={cn(
+                                              'p-2 transition-all duration-300',
+                                              itemState().isRemoving && 'opacity-0 translate-x-full',
+                                              isClearingCart() && 'opacity-0 scale-95'
+                                            )}
+                                          >
+                                            <div class='flex gap-2'>
+                                              {/* Image container */}
+                                              <div class='w-14 flex-shrink-0'>
+                                                <div class='aspect-square w-full relative'>
+                                                  <img
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    class='absolute inset-0 w-full h-full object-cover rounded'
+                                                  />
+                                                </div>
+                                              </div>
+                                              {/* Content container */}
+                                              <div class='flex-1 min-w-0 flex flex-col justify-between'>
+                                                <div class='flex justify-between items-start gap-1'>
+                                                  <div>
+                                                    <h3 class='font-medium text-xs line-clamp-1'>
+                                                      {item.name} ({getColor(item.selectedColor)})
+                                                    </h3>
+                                                    <div class='text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1'>
+                                                      <span>{formatCurrency(item.price)}</span>
+                                                    </div>
+                                                  </div>
+                                                  <Button
+                                                    variant='ghost'
+                                                    size='icon'
+                                                    onClick={() => handleRemoveItem(item.productId, item.selectedColor)}
+                                                    class={cn(
+                                                      'text-destructive h-5 w-5 -mr-1',
+                                                      itemState().isRemoving && 'animate-spin'
+                                                    )}
+                                                    title={t('cart.remove')}
+                                                  >
+                                                    <svg
+                                                      xmlns='http://www.w3.org/2000/svg'
+                                                      class='h-3 w-3'
+                                                      viewBox='0 0 20 20'
+                                                      fill='currentColor'
+                                                    >
+                                                      <path
+                                                        fill-rule='evenodd'
+                                                        d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+                                                        clip-rule='evenodd'
+                                                      />
+                                                    </svg>
+                                                  </Button>
+                                                </div>
+                                                <div class='flex items-center justify-between mt-1'>
+                                                  <div
+                                                    class={cn(
+                                                      'flex items-center border rounded',
+                                                      itemState().isUpdating &&
+                                                        'scale-110 transition-transform duration-200'
+                                                    )}
+                                                  >
+                                                    <Button
+                                                      variant='ghost'
+                                                      size='icon'
+                                                      onClick={() =>
+                                                        handleUpdateQuantity(
+                                                          item.productId,
+                                                          item.quantity - 1,
+                                                          item.selectedColor
+                                                        )
+                                                      }
+                                                      disabled={item.quantity <= 1}
+                                                      class='h-5 w-5 hover:bg-secondary/20'
+                                                      title={t('cart.decrease')}
+                                                    >
+                                                      <svg
+                                                        xmlns='http://www.w3.org/2000/svg'
+                                                        class='h-2.5 w-2.5'
+                                                        viewBox='0 0 20 20'
+                                                        fill='currentColor'
+                                                      >
+                                                        <path
+                                                          fill-rule='evenodd'
+                                                          d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
+                                                          clip-rule='evenodd'
+                                                        />
+                                                      </svg>
+                                                    </Button>
+                                                    <span class='w-5 text-center text-xs'>{item.quantity}</span>
+                                                    <Button
+                                                      variant='ghost'
+                                                      size='icon'
+                                                      onClick={() =>
+                                                        handleUpdateQuantity(
+                                                          item.productId,
+                                                          item.quantity + 1,
+                                                          item.selectedColor
+                                                        )
+                                                      }
+                                                      class='h-5 w-5 hover:bg-secondary/20'
+                                                      title={t('cart.increase')}
+                                                    >
+                                                      <svg
+                                                        xmlns='http://www.w3.org/2000/svg'
+                                                        class='h-2.5 w-2.5'
+                                                        viewBox='0 0 20 20'
+                                                        fill='currentColor'
+                                                      >
+                                                        <path
+                                                          fill-rule='evenodd'
+                                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                                                          clip-rule='evenodd'
+                                                        />
+                                                      </svg>
+                                                    </Button>
+                                                  </div>
+                                                  <span class='font-medium text-xs'>
+                                                    {formatCurrency(item.price * item.quantity)}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )
+                                      }}
+                                    </For>
+                                  </div>
+                                </div>
+                              )}
                             </For>
                           </div>
-                          <div class='border-t mt-4 pt-4'>
-                            <div class='flex justify-between items-center mb-4'>
-                              <span class='font-medium'>{t('cart.total')}</span>
-                              <span class='font-medium'>{formatCurrency(cartTotal())}</span>
+
+                          <div class='border-t mt-2 pt-2 space-y-2'>
+                            {/* Price breakdown */}
+                            <div class='space-y-1.5'>
+                              <div class='flex justify-between text-sm font-medium'>
+                                <span>{t('cart.subtotal')}</span>
+                                <span>{formatCurrency(cartTotal())}</span>
+                              </div>
                             </div>
-                            <div class='flex gap-2'>
+
+                            {/* Action buttons */}
+                            <div class='grid grid-cols-2 gap-2'>
                               <Button
                                 variant='destructive'
-                                class={`flex-1 transition-transform duration-200 ${
-                                  isClearingCart() ? 'scale-95' : 'scale-100'
-                                }`}
+                                size='sm'
+                                class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
                                 onClick={handleClearCart}
                               >
                                 {t('cart.clear')}
                               </Button>
                               <Button
                                 variant='pay'
-                                class='flex-1'
+                                size='sm'
+                                class='w-full'
                                 onClick={() => {
                                   setIsCartOpen(false)
                                   navigate('/checkout')

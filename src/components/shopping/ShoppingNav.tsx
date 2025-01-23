@@ -1,4 +1,3 @@
-// ~/components/ShoppingNav.tsx
 import {
   Component,
   createSignal,
@@ -12,7 +11,7 @@ import {
   For,
 } from 'solid-js'
 import { Skeleton } from '~/components/ui/skeleton'
-import { A, useLocation, createAsync, useNavigate, useAction } from '@solidjs/router'
+import { A, createAsync, useAction, useLocation, useNavigate } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { useI18n } from '~/contexts/i18n'
@@ -24,21 +23,16 @@ import { useAuthState } from '~/contexts/auth'
 import { siteConfig } from '~/config/site'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
-import { formatCurrency } from '~/lib/utils'
+import { CartItem } from '~/db/schema'
+import { cn, formatCurrency } from '~/lib/utils'
+import { BiSolidStore } from 'solid-icons/bi'
+import { showToast } from '~/components/ui/toast'
 
 interface Language {
   code: 'en' | 'ar'
   name: string
   nativeName: string
   direction: 'ltr' | 'rtl'
-}
-
-interface CartItem {
-  productId: string
-  name: string
-  price: number
-  quantity: number
-  image: string
 }
 
 type DropdownType = 'menu' | 'lang' | 'user' | 'cart'
@@ -104,8 +98,6 @@ const ShoppingNav: Component = () => {
     const category = path.split('/').pop()
     return category || siteConfig.categories[0].slug
   })
-
-  //Memos
 
   // User data memo
   const userData = createMemo(() => ({
@@ -209,7 +201,7 @@ const ShoppingNav: Component = () => {
   })
 
   // Cart handlers
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, newQuantity: number, selectedColor: string) => {
     try {
       setItemStates((prev) => ({
         ...prev,
@@ -219,6 +211,7 @@ const ShoppingNav: Component = () => {
       const formData = new FormData()
       formData.append('productId', productId)
       formData.append('quantity', newQuantity.toString())
+      formData.append('selectedColor', selectedColor) // Include selectedColor
 
       const result = await updateQuantity(formData)
       if (!result.success) {
@@ -226,7 +219,11 @@ const ShoppingNav: Component = () => {
       }
     } catch (error) {
       console.error('Error updating quantity:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     } finally {
       setTimeout(() => {
         setItemStates((prev) => ({
@@ -237,7 +234,7 @@ const ShoppingNav: Component = () => {
     }
   }
 
-  const handleRemoveItem = async (productId: string) => {
+  const handleRemoveItem = async (productId: string, selectedColor: string) => {
     try {
       setItemStates((prev) => ({
         ...prev,
@@ -246,6 +243,7 @@ const ShoppingNav: Component = () => {
 
       const formData = new FormData()
       formData.append('productId', productId)
+      formData.append('selectedColor', selectedColor) // Include selectedColor
 
       await new Promise((resolve) => setTimeout(resolve, 300))
       const result = await removeItem(formData)
@@ -254,7 +252,11 @@ const ShoppingNav: Component = () => {
       }
     } catch (error) {
       console.error('Error removing item:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -268,7 +270,11 @@ const ShoppingNav: Component = () => {
       }
     } catch (error) {
       console.error('Error clearing cart:', error)
-      alert(t('cart.error'))
+      showToast({
+        title: t('cart.errorTitle'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     } finally {
       setIsClearingCart(false)
     }
@@ -312,7 +318,11 @@ const ShoppingNav: Component = () => {
       await auth.signOut()
     } catch (error) {
       console.error('Error signing out:', error)
-      alert(t('auth.signOutError'))
+      showToast({
+        title: t('auth.error'),
+        description: t('auth.signOutError'),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -328,110 +338,247 @@ const ShoppingNav: Component = () => {
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
-  // Cart Content Component
+  // Memos
+  const groupedCartItems = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return []
+
+    const grouped: Record<
+      string,
+      {
+        store: { storeId: string; storeName: string }
+        items: CartItem[]
+      }
+    > = {}
+
+    cart.items.forEach((item) => {
+      if (!grouped[item.storeId]) {
+        grouped[item.storeId] = {
+          store: {
+            storeId: item.storeId,
+            storeName: item.storeName,
+          },
+          items: [],
+        }
+      }
+      grouped[item.storeId].items.push(item)
+    })
+
+    return Object.values(grouped)
+  })
+
+  // Get available text for a color
+  const getColor = (colorName: string) => {
+    const colorTranslation = t(`product.colors.${colorName}`)
+    return locale() === 'ar' ? `${colorTranslation}` : `${colorTranslation}`
+  }
+
+  // Updated Cart Content Component for ShoppingNav
   const CartContent = (
-    <Show when={cartData()?.items?.length > 0}>
-      <div class='space-y-4 max-h-[60vh] overflow-auto'>
-        <For each={cartData()?.items}>
-          {(item) => {
-            const itemState = () => itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
-            return (
-              <div
-                class={`flex gap-4 py-2 relative group transition-all duration-300
-                  ${
-                    itemState().isRemoving
-                      ? 'opacity-0 transform translate-x-full'
-                      : 'opacity-100 transform translate-x-0'
-                  }
-                  ${isClearingCart() ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}
-                `}
-              >
-                <div class='w-16 h-16 bg-gray-100 rounded'>
-                  <img src={item.image} alt={item.name} class='w-full h-full object-cover rounded' />
-                </div>
-                <div class='flex-1'>
-                  <div class='flex justify-between items-start'>
-                    <h4 class='font-medium line-clamp-1'>{item.name}</h4>
-                    <Button
-                      variant={'ghost'}
-                      onClick={() => handleRemoveItem(item.productId)}
-                      class={`text-gray-400 hover:text-red-500 transition-colors
-                        ${itemState().isRemoving ? 'animate-spin' : ''}
-                      `}
-                      title={t('cart.remove')}
-                    >
-                      <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4' viewBox='0 0 20 20' fill='currentColor'>
-                        <path
-                          fill-rule='evenodd'
-                          d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
-                          clip-rule='evenodd'
-                        />
-                      </svg>
-                    </Button>
+    <div class='p-2'>
+      <div class='flex items-center justify-between border-b pb-2'>
+        <h3 class='text-base font-semibold'>
+          {t('cart.title')}
+          <Show when={cartItemsCount() > 0}>
+            <span class='text-sm font-normal text-muted-foreground ml-1'>
+              ({cartItemsCount()} {t('cart.items')})
+            </span>
+          </Show>
+        </h3>
+      </div>
+
+      <Switch>
+        <Match when={cartData.loading}>
+          <div class='space-y-2 py-2'>
+            <Skeleton class='h-16 w-full' />
+            <Skeleton class='h-16 w-full' />
+            <Skeleton class='h-16 w-full' />
+          </div>
+        </Match>
+        <Match when={cartData()?.items?.length === 0}>
+          <div class='flex flex-col items-center justify-center pt-6 text-center'>
+            <FiShoppingCart class='h-8 w-8 text-muted-foreground mb-2' />
+            <p class='text-base font-medium mb-1'>{t('cart.emptyTitle')}</p>
+            <p class='text-sm text-muted-foreground mb-3'>{t('cart.emptyMessage')}</p>
+          </div>
+        </Match>
+        <Match when={cartData()?.items?.length > 0}>
+          <div class='max-h-[60vh] overflow-auto py-2 space-y-2'>
+            <For each={groupedCartItems()}>
+              {({ store, items }) => (
+                <div class='bg-card rounded-lg overflow-hidden border'>
+                  {/* Store Header */}
+                  <div class='bg-primary/5 px-2 py-1.5 flex items-center gap-1.5'>
+                    <BiSolidStore class='h-3 w-3' />
+                    <span class='text-xs font-medium truncate'>{store.storeName}</span>
                   </div>
-                  <div class='flex items-center mt-2 space-x-2 rtl:space-x-reverse'>
-                    <div
-                      class={`flex items-center border rounded-md transition-transform duration-200 
-                      ${itemState().isUpdating ? 'scale-110' : 'scale-100'}`}
-                    >
-                      <Button
-                        variant={'ghost'}
-                        onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        class='px-2 py-1 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
-                        title={t('cart.decrease')}
-                      >
-                        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4' viewBox='0 0 20 20' fill='currentColor'>
-                          <path
-                            fill-rule='evenodd'
-                            d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
-                            clip-rule='evenodd'
-                          />
-                        </svg>
-                      </Button>
-                      <span class='px-2 py-1 min-w-[2rem] text-center'>{item.quantity}</span>
-                      <Button
-                        variant={'ghost'}
-                        onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                        class='px-2 py-1 hover:bg-gray-100'
-                        title={t('cart.increase')}
-                      >
-                        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4' viewBox='0 0 20 20' fill='currentColor'>
-                          <path
-                            fill-rule='evenodd'
-                            d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
-                            clip-rule='evenodd'
-                          />
-                        </svg>
-                      </Button>
-                    </div>
-                    <span class='text-sm font-medium'>{cartItemPrice(item)}</span>
+
+                  {/* Store Items */}
+                  <div class='divide-y divide-border'>
+                    <For each={items}>
+                      {(item) => {
+                        const itemState = () => itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
+                        return (
+                          <div
+                            class={cn(
+                              'p-2 transition-all duration-300',
+                              itemState().isRemoving && 'opacity-0 translate-x-full',
+                              isClearingCart() && 'opacity-0 scale-95'
+                            )}
+                          >
+                            <div class='flex gap-2'>
+                              {/* Image container */}
+                              <div class='w-14 flex-shrink-0'>
+                                <div class='aspect-square w-full relative'>
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    class='absolute inset-0 w-full h-full object-cover rounded'
+                                  />
+                                </div>
+                              </div>
+                              {/* Content container */}
+                              <div class='flex-1 min-w-0 flex flex-col justify-between'>
+                                <div class='flex justify-between items-start gap-1'>
+                                  <div>
+                                    <h3 class='font-medium text-xs line-clamp-1'>
+                                      {item.name} ({getColor(item.selectedColor)})
+                                    </h3>
+                                    <div class='text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1'>
+                                      <span>{formatCurrency(item.price)}</span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant='ghost'
+                                    size='icon'
+                                    onClick={() => handleRemoveItem(item.productId, item.selectedColor)}
+                                    class={cn(
+                                      'text-destructive h-5 w-5 -mr-1',
+                                      itemState().isRemoving && 'animate-spin'
+                                    )}
+                                    title={t('cart.remove')}
+                                  >
+                                    <svg
+                                      xmlns='http://www.w3.org/2000/svg'
+                                      class='h-3 w-3'
+                                      viewBox='0 0 20 20'
+                                      fill='currentColor'
+                                    >
+                                      <path
+                                        fill-rule='evenodd'
+                                        d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+                                        clip-rule='evenodd'
+                                      />
+                                    </svg>
+                                  </Button>
+                                </div>
+                                <div class='flex items-center justify-between mt-1'>
+                                  <div
+                                    class={cn(
+                                      'flex items-center border rounded',
+                                      itemState().isUpdating && 'scale-110 transition-transform duration-200'
+                                    )}
+                                  >
+                                    <Button
+                                      variant='ghost'
+                                      size='icon'
+                                      onClick={() =>
+                                        handleUpdateQuantity(item.productId, item.quantity - 1, item.selectedColor)
+                                      }
+                                      disabled={item.quantity <= 1}
+                                      class='h-5 w-5 hover:bg-secondary/20'
+                                      title={t('cart.decrease')}
+                                    >
+                                      <svg
+                                        xmlns='http://www.w3.org/2000/svg'
+                                        class='h-2.5 w-2.5'
+                                        viewBox='0 0 20 20'
+                                        fill='currentColor'
+                                      >
+                                        <path
+                                          fill-rule='evenodd'
+                                          d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
+                                          clip-rule='evenodd'
+                                        />
+                                      </svg>
+                                    </Button>
+                                    <span class='w-5 text-center text-xs'>{item.quantity}</span>
+                                    <Button
+                                      variant='ghost'
+                                      size='icon'
+                                      onClick={() =>
+                                        handleUpdateQuantity(item.productId, item.quantity + 1, item.selectedColor)
+                                      }
+                                      class='h-5 w-5 hover:bg-secondary/20'
+                                      title={t('cart.increase')}
+                                    >
+                                      <svg
+                                        xmlns='http://www.w3.org/2000/svg'
+                                        class='h-2.5 w-2.5'
+                                        viewBox='0 0 20 20'
+                                        fill='currentColor'
+                                      >
+                                        <path
+                                          fill-rule='evenodd'
+                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                                          clip-rule='evenodd'
+                                        />
+                                      </svg>
+                                    </Button>
+                                  </div>
+                                  <span class='font-medium text-xs'>{formatCurrency(item.price * item.quantity)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }}
+                    </For>
                   </div>
                 </div>
+              )}
+            </For>
+          </div>
+
+          <div class='border-t mt-2 pt-2 space-y-2'>
+            {/* Price breakdown */}
+            <div class='space-y-1.5'>
+              <div class='flex justify-between text-sm font-medium'>
+                <span>{t('cart.subtotal')}</span>
+                <span>{formatCurrency(cartTotal())}</span>
               </div>
-            )
-          }}
-        </For>
-      </div>
-      <div class='border-t mt-4 pt-4'>
-        <div class='flex justify-between items-center mb-4'>
-          <span class='font-medium'>{t('cart.total')}</span>
-          <span class='font-medium'>{formatCurrency(cartTotal())}</span>
-        </div>
-        <div class='flex gap-2'>
-          <Button
-            variant={'destructive'}
-            class={`flex-1 transition-transform duration-200 ${isClearingCart() ? 'scale-95' : 'scale-100'}`}
-            onClick={handleClearCart}
-          >
-            {t('cart.clear')}
-          </Button>
-          <Button variant={'pay'} onclick={() => navigate('/checkout')} class='flex-1'>
-            {t('cart.checkout')}
-          </Button>
-        </div>
-      </div>
-    </Show>
+              <div class='flex justify-between text-xs text-muted-foreground'>
+                <span>{t('cart.shipping')}</span>
+                <span>{t('cart.calculatedAtCheckout')}</span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div class='grid grid-cols-2 gap-2'>
+              <Button
+                variant='destructive'
+                size='sm'
+                class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
+                onClick={handleClearCart}
+              >
+                {t('cart.clear')}
+              </Button>
+              <Button
+                variant='pay'
+                size='sm'
+                class='w-full'
+                onClick={() => {
+                  setIsCartOpen(false)
+                  navigate('/checkout')
+                }}
+              >
+                {t('cart.checkout')}
+              </Button>
+            </div>
+          </div>
+        </Match>
+      </Switch>
+    </div>
   )
 
   return (
@@ -483,19 +630,7 @@ const ShoppingNav: Component = () => {
                         : 'opacity-0 transform scale-95 pointer-events-none'
                     }`}
                   >
-                    <div class='p-4'>
-                      <h3 class='text-lg font-medium mb-4'>{t('cart.title')}</h3>
-                      <Switch fallback={<div class='text-sm text-gray-500 text-center py-4'>{t('cart.empty')}</div>}>
-                        <Match when={cartData.loading}>
-                          <div class='space-y-4'>
-                            <Skeleton class='h-20 w-full' />
-                            <Skeleton class='h-20 w-full' />
-                          </div>
-                        </Match>
-                        {/* Cart Content Component */}
-                        <Match when={cartData()?.items?.length > 0}>{CartContent}</Match>
-                      </Switch>
-                    </div>
+                    {CartContent}
                   </div>
                 </div>
 

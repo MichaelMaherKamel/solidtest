@@ -1,4 +1,3 @@
-// ~/routes/shopping/products/[productId].tsx
 import { Component, For, Show, createMemo, createSignal } from 'solid-js'
 import { useParams, A, useAction } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
@@ -68,9 +67,12 @@ const ProductPage: Component = () => {
         name: product()!.productName,
         price: product()!.price,
         image: currentImages()[selectedImage()],
-        color: currentColorVariant()!.color,
+        storeId: product()!.storeId,
+        storeName: product()!.storeName,
+        selectedColor: currentColorVariant()!.color, // Use the selected color
       }
       formData.append('product', JSON.stringify(productData))
+      formData.append('selectedColor', productData.selectedColor) // Pass the selected color
 
       const result = await addToCart(formData)
 
@@ -218,7 +220,7 @@ const ProductPage: Component = () => {
                     <Show
                       when={!isAddingToCart()}
                       fallback={
-                        <div class='size-5 border-2 border-current border-r-transparent rounded-full animate-spin me-2' />
+                        <div class='size-5 border-2 border-current border-r-transparent rounded-full animate-pulse me-2' />
                       }
                     >
                       {showSuccess() ? <BsCheck class='h-5 w-5 me-2' /> : <FiShoppingCart class='h-5 w-5 me-2' />}

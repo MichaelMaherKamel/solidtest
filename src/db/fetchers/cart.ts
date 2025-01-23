@@ -1,6 +1,5 @@
-// ~/db/fetchers/cart.ts
 import { query } from '@solidjs/router'
-import { sql, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '~/db'
 import { carts, type Cart } from '~/db/schema'
 import { getCookie } from 'vinxi/http'
@@ -8,19 +7,18 @@ import { getRequestEvent } from 'solid-js/web'
 
 type CartResponse = Cart | { items: never[] }
 
-export const getCart = query(async () => {
+export const getCart = query(async (): Promise<CartResponse> => {
   'use server'
   try {
     const event = getRequestEvent()!.nativeEvent
     const sessionId = getCookie(event, 'cart-session')
 
     if (!sessionId) {
-      return { items: [] }
+      return { items: [] } // Return empty cart if no session ID is found
     }
 
     const [cart] = await db.select().from(carts).where(eq(carts.sessionId, sessionId))
-    //console.log('cart', cart)
-    return cart || { items: [] }
+    return cart || { items: [] } // Return empty cart if no cart is found
   } catch (error) {
     console.error('Error fetching cart:', error)
     throw new Error('Failed to fetch cart')

@@ -304,6 +304,9 @@ export interface CartItem {
   price: number
   name: string
   image: string
+  storeId: string
+  storeName: string
+  selectedColor: string
 }
 
 export const carts = pgTable(

@@ -58,6 +58,7 @@ export const arDict = {
     success: 'نجاح',
     loadMore: 'تحميل المزيد',
     noProductsFound: 'لا توجد منتجات في هذه الفئة',
+    goToHome: 'العودة إلى الصفحة الرئيسية',
   },
 
   auth: {
@@ -103,7 +104,9 @@ export const arDict = {
     error: 'حدث خطأ أثناء تحديث السلة',
     confirmClear: 'هل أنت متأكد من إفراغ السلة؟',
     calculatedAtCheckout: 'يتم حسابها عند الدفع',
-    currency: '{value} جنيه', // Used for price formatting with Egyptian Pound
+    currency: '{value} جنيه',
+    color: 'اللون: {color}',
+    errorMsg: 'عذراً، حدث خطأ. الرجاء المحاولة مرة أخرى.',
   },
 
   checkout: {
@@ -291,6 +294,7 @@ export const arDict = {
       settings: 'الإعدادات',
       unauthorized: 'يجب أن تكون بائعاً للوصول إلى هذه الصفحة',
       noProducts: 'لا توجد منتجات',
+      noStore: 'لم يتم العثور على متجر. يرجى التواصل مع المسؤول لإنشاء متجر.',
     },
 
     sidebar: {

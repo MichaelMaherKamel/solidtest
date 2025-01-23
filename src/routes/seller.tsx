@@ -13,7 +13,7 @@ import { Separator } from '~/components/ui/separator'
 import { SellerSidebar } from '~/components/seller/sellerSidebar'
 import TableSkeleton from '~/components/seller/TableSkeleton'
 import { useI18n } from '~/contexts/i18n'
-import { SellerProvider } from '~/contexts/seller'
+import { SellerProvider, useSellerContext } from '~/contexts/seller'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { Alert, AlertDescription } from '~/components/ui/alerts'
 
@@ -103,6 +103,7 @@ const SellerContentWrapper: ParentComponent = (props) => {
   const isRTL = () => locale() === 'ar'
   const { setOpenMobile } = useSidebar()
   const isMobile = createMediaQuery('(max-width: 767px)')
+  const { store } = useSellerContext()
 
   const getCurrentPageKey = () => {
     const path = location.pathname
@@ -146,7 +147,28 @@ const SellerContentWrapper: ParentComponent = (props) => {
           </div>
         </header>
         <div class='flex-1 overflow-y-auto relative'>
-          <Suspense fallback={<TableSkeleton />}>{props.children}</Suspense>
+          <Show
+            when={store()}
+            fallback={
+              <div class='p-6 flex items-center justify-center'>
+                <Alert variant='destructive' class='max-w-md'>
+                  <AlertDescription class='text-center'>
+                    {t('seller.layout.noStore')} {/* Use translation key here */}
+                  </AlertDescription>
+                  <div class='p-6 text-center'>
+                    <A
+                      href='/'
+                      class='inline-block bg-red-500 text-white font-semibold px-4 py-2 rounded hover:bg-red-600 transition-colors duration-300'
+                    >
+                      {t('common.goToHome')} {/* Use translation key here */}
+                    </A>
+                  </div>
+                </Alert>
+              </div>
+            }
+          >
+            <Suspense fallback={<TableSkeleton />}>{props.children}</Suspense>
+          </Show>
         </div>
       </SidebarInset>
     </div>
@@ -155,7 +177,7 @@ const SellerContentWrapper: ParentComponent = (props) => {
 
 // Root Layout Component
 export default function SellerLayout(props: RouteSectionProps) {
-  const { locale } = useI18n()
+  const { t, locale } = useI18n()
   const isRTL = () => locale() === 'ar'
   const auth = useAuth()
   const user = () => auth.session()?.user
@@ -171,13 +193,13 @@ export default function SellerLayout(props: RouteSectionProps) {
       fallback={
         <div class='p-6 flex items-center justify-center'>
           <Alert variant='destructive' class='max-w-md'>
-            <AlertDescription class='text-center'>You must be a seller to access this page.</AlertDescription>
+            <AlertDescription class='text-center'>{t('seller.layout.noStore')}</AlertDescription>
             <div class='p-6 text-center'>
               <A
                 href='/'
                 class='inline-block bg-red-500 text-white font-semibold px-4 py-2 rounded hover:bg-red-600 transition-colors duration-300'
               >
-                Go to Home Page
+                {t('common.goToHome')} {/* Assuming you have a translation for "Go to Home Page" */}
               </A>
             </div>
           </Alert>

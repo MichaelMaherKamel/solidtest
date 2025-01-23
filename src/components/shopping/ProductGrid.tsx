@@ -72,7 +72,22 @@ const ProductGrid: Component<ProductGridProps> = (props) => {
           fallback={<div class='col-span-full text-center py-8 text-gray-500'>{t('common.noProductsFound')}</div>}
         >
           <div class='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 auto-rows-auto'>
-            <For each={visibleProducts()}>{(product) => <ProductCard {...product} />}</For>
+            <For each={visibleProducts()}>
+              {(product) => (
+                <ProductCard
+                  productId={product.productId}
+                  productName={product.productName}
+                  price={product.price}
+                  productDescription={product.productDescription}
+                  category={product.category}
+                  colorVariants={product.colorVariants}
+                  totalInventory={product.totalInventory}
+                  storeId={product.storeId}
+                  storeName={product.storeName}
+                  storeSubscription={product.storeSubscription}
+                />
+              )}
+            </For>
           </div>
 
           <Show when={hasMoreItems()}>

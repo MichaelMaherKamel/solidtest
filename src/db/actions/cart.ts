@@ -1,4 +1,3 @@
-// ~/db/actions/cart.ts
 import { action } from '@solidjs/router'
 import { eq } from 'drizzle-orm'
 import { db } from '~/db'
@@ -9,22 +8,45 @@ import { v4 as secure } from '@lukeed/uuid/secure'
 
 const CART_COOKIE = 'cart-session'
 
+// Dynamically determine if the request is over HTTPS
+function isSecureRequest(event: any): boolean {
+  if (!event || !event.node || !event.node.req) {
+    // Default to false if the event or request object is missing
+    return false
+  }
+  const protocol = event.node.req.headers['x-forwarded-proto'] || event.node.req.protocol
+  return protocol === 'https'
+}
+
+// Helper function to safely get the request event
+function getSafeRequestEvent() {
+  const event = getRequestEvent()
+  if (!event) {
+    throw new Error('Request event is not available')
+  }
+  return event.nativeEvent
+}
+
+// Define COOKIE_OPTIONS without calling getSafeRequestEvent() at the module level
 const COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 30, // 30 days
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
   path: '/',
   sameSite: 'lax' as const,
 }
 
 async function getCartSession(): Promise<string> {
   'use server'
-  const event = getRequestEvent()!.nativeEvent
+  const event = getSafeRequestEvent()
   let sessionId = getCookie(event, CART_COOKIE)
 
   if (!sessionId) {
     sessionId = secure()
-    setCookie(event, CART_COOKIE, sessionId, COOKIE_OPTIONS)
+    // Set the secure flag dynamically based on the request protocol
+    setCookie(event, CART_COOKIE, sessionId, {
+      ...COOKIE_OPTIONS,
+      secure: isSecureRequest(event),
+    })
   }
 
   return sessionId
@@ -37,6 +59,7 @@ export const addToCartAction = action(async (formData: FormData): Promise<CartAc
   try {
     const sessionId = await getCartSession()
     const productData = formData.get('product')?.toString()
+    const selectedColor = formData.get('selectedColor')?.toString()
 
     if (!productData) {
       return { success: false, error: 'Product data is required' }
@@ -47,7 +70,9 @@ export const addToCartAction = action(async (formData: FormData): Promise<CartAc
 
     if (existingCart) {
       const currentItems = existingCart.items
-      const existingItemIndex = currentItems.findIndex((item: CartItem) => item.productId === product.productId)
+      const existingItemIndex = currentItems.findIndex(
+        (item: CartItem) => item.productId === product.productId && item.selectedColor === selectedColor
+      )
 
       let updatedItems: CartItem[]
       if (existingItemIndex >= 0) {
@@ -68,6 +93,7 @@ export const addToCartAction = action(async (formData: FormData): Promise<CartAc
           {
             ...product,
             quantity: 1,
+            selectedColor, // Use the selected color
             addedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -95,6 +121,7 @@ export const addToCartAction = action(async (formData: FormData): Promise<CartAc
             {
               ...product,
               quantity: 1,
+              selectedColor, // Use the selected color
               addedAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
@@ -109,16 +136,16 @@ export const addToCartAction = action(async (formData: FormData): Promise<CartAc
     return { success: false, error: 'Failed to add item to cart' }
   }
 })
-
 export const updateCartItemQuantity = action(async (formData: FormData): Promise<CartActionResult> => {
   'use server'
   try {
     const sessionId = await getCartSession()
     const productId = formData.get('productId')?.toString()
     const quantity = parseInt(formData.get('quantity')?.toString() || '0')
+    const selectedColor = formData.get('selectedColor')?.toString() // Get selected color
 
-    if (!productId) {
-      return { success: false, error: 'Product ID is required' }
+    if (!productId || !selectedColor) {
+      return { success: false, error: 'Product ID and selected color are required' }
     }
 
     const [cart] = await db.select().from(carts).where(eq(carts.sessionId, sessionId))
@@ -130,11 +157,13 @@ export const updateCartItemQuantity = action(async (formData: FormData): Promise
     let updatedItems: CartItem[]
     if (quantity <= 0) {
       // Remove item if quantity is 0 or negative
-      updatedItems = cart.items.filter((item: CartItem) => item.productId !== productId)
+      updatedItems = cart.items.filter(
+        (item: CartItem) => item.productId !== productId || item.selectedColor !== selectedColor
+      )
     } else {
       // Update quantity
       updatedItems = cart.items.map((item: CartItem) =>
-        item.productId === productId
+        item.productId === productId && item.selectedColor === selectedColor
           ? {
               ...item,
               quantity,
@@ -166,9 +195,10 @@ export const removeCartItem = action(async (formData: FormData): Promise<CartAct
   try {
     const sessionId = await getCartSession()
     const productId = formData.get('productId')?.toString()
+    const selectedColor = formData.get('selectedColor')?.toString() // Get selected color
 
-    if (!productId) {
-      return { success: false, error: 'Product ID is required' }
+    if (!productId || !selectedColor) {
+      return { success: false, error: 'Product ID and selected color are required' }
     }
 
     const [cart] = await db.select().from(carts).where(eq(carts.sessionId, sessionId))
@@ -177,7 +207,9 @@ export const removeCartItem = action(async (formData: FormData): Promise<CartAct
       return { success: false, error: 'Cart not found' }
     }
 
-    const updatedItems = cart.items.filter((item: CartItem) => item.productId !== productId)
+    const updatedItems = cart.items.filter(
+      (item: CartItem) => item.productId !== productId || item.selectedColor !== selectedColor
+    )
 
     const [updatedCart] = await db
       .update(carts)
@@ -220,5 +252,22 @@ export const clearCart = action(async (): Promise<CartActionResult> => {
   } catch (error) {
     console.error('Error clearing cart:', error)
     return { success: false, error: 'Failed to clear cart' }
+  }
+})
+
+export const getCart = action(async (): Promise<CartActionResult> => {
+  'use server'
+  try {
+    const sessionId = await getCartSession()
+    const [cart] = await db.select().from(carts).where(eq(carts.sessionId, sessionId))
+
+    if (!cart) {
+      return { success: true, items: [] } // Return empty cart if not found
+    }
+
+    return { success: true, items: cart.items }
+  } catch (error) {
+    console.error('Error fetching cart:', error)
+    return { success: false, error: 'Failed to fetch cart' }
   }
 })

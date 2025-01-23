@@ -1,4 +1,4 @@
-import { Component, For, Show } from 'solid-js'
+import { Component, For, Show, createMemo } from 'solid-js'
 import { Separator } from '~/components/ui/separator'
 import { useI18n } from '~/contexts/i18n'
 import { FiPackage, FiMapPin, FiPhone, FiUser, FiEdit2 } from 'solid-icons/fi'
@@ -8,6 +8,7 @@ import type { CartItem, Address } from '~/db/schema'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { IconPayByCard, IconCashOnDelivery } from '../Icons'
+import { BiSolidStore } from 'solid-icons/bi'
 
 interface CheckoutSummaryItemsProps {
   items: CartItem[]
@@ -19,7 +20,8 @@ interface CheckoutSummaryItemsProps {
 }
 
 const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
 
   const totals = () => {
     if (!props.items || !props.address) return { subtotal: 0, shipping: 0, total: 0 }
@@ -30,6 +32,32 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
     if (!props.address?.city) return null
     return getDeliveryEstimate(props.address.city)
   }
+
+  // Group items by store
+  const groupedItems = createMemo(() => {
+    const grouped: Record<
+      string,
+      {
+        store: { storeId: string; storeName: string }
+        items: CartItem[]
+      }
+    > = {}
+
+    props.items.forEach((item) => {
+      if (!grouped[item.storeId]) {
+        grouped[item.storeId] = {
+          store: {
+            storeId: item.storeId,
+            storeName: item.storeName,
+          },
+          items: [],
+        }
+      }
+      grouped[item.storeId].items.push(item)
+    })
+
+    return Object.values(grouped)
+  })
 
   return (
     <Card class='overflow-hidden shadow-lg'>
@@ -60,40 +88,54 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
               when={props.items?.length > 0}
               fallback={<div class='text-gray-500 text-center py-2'>{t('cart.empty')}</div>}
             >
-              <For each={props.items}>
-                {(item) => (
-                  <div class='flex items-start sm:items-center justify-between gap-2'>
-                    <div class='flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0'>
-                      <div class='w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0'>
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          class='w-full h-full object-cover'
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder-product.png'
-                          }}
-                        />
-                      </div>
-                      <div class='min-w-0 flex-1'>
-                        <p class='font-medium text-sm sm:text-base truncate'>{item.name}</p>
-                        <div class='flex items-center justify-between sm:justify-start gap-4'>
-                          <p class='text-xs sm:text-sm text-gray-500'>
-                            {t('checkout.quantity')}: {item.quantity}
-                          </p>
-                          <div class='sm:hidden text-right text-xs'>
-                            <span class='font-medium'>{formatCurrency(item.price * item.quantity)}</span>
+              <For each={groupedItems()}>
+                {({ store, items }) => (
+                  <Card class='overflow-hidden'>
+                    <div class='bg-primary/5 p-3 flex items-center gap-2'>
+                      <BiSolidStore class='h-4 w-4' />
+                      <span class='font-semibold'>{store.storeName}</span>
+                    </div>
+                    <div class='divide-y'>
+                      <For each={items}>
+                        {(item) => (
+                          <div class='p-3'>
+                            <div class='flex items-start sm:items-center justify-between gap-2'>
+                              <div class='flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0'>
+                                <div class='w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0'>
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    class='w-full h-full object-cover'
+                                    onError={(e) => {
+                                      e.currentTarget.src = '/placeholder-product.png'
+                                    }}
+                                  />
+                                </div>
+                                <div class='min-w-0 flex-1'>
+                                  <p class='font-medium text-sm sm:text-base truncate'>{item.name}</p>
+                                  <div class='flex items-center justify-between sm:justify-start gap-4'>
+                                    <p class='text-xs sm:text-sm text-gray-500'>
+                                      {t('checkout.quantity')}: {item.quantity}
+                                    </p>
+                                    <div class='sm:hidden text-right text-xs'>
+                                      <span class='font-medium'>{formatCurrency(item.price * item.quantity)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Price section - hidden on mobile, shown on desktop */}
+                              <div class='hidden sm:block text-end flex-shrink-0'>
+                                <p class='text-sm text-gray-500'>
+                                  {item.quantity} × {formatCurrency(item.price)}
+                                </p>
+                                <p class='font-medium text-base'>{formatCurrency(item.price * item.quantity)}</p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        )}
+                      </For>
                     </div>
-                    {/* Price section - hidden on mobile, shown on desktop */}
-                    <div class='hidden sm:block text-right flex-shrink-0'>
-                      <p class='font-medium text-base'>{formatCurrency(item.price * item.quantity)}</p>
-                      <p class='text-sm text-gray-500'>
-                        {item.quantity} × {formatCurrency(item.price)}
-                      </p>
-                    </div>
-                  </div>
+                  </Card>
                 )}
               </For>
 

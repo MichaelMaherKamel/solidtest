@@ -1,4 +1,3 @@
-// ~/db/actions/address.ts
 import { action } from '@solidjs/router'
 import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '~/db'
@@ -10,12 +9,10 @@ import { getSession } from '~/db/actions/auth'
 
 const ADDRESS_COOKIE = 'address-session'
 
-const COOKIE_OPTIONS = {
-  maxAge: 60 * 60 * 24 * 30, // 30 days
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  path: '/',
-  sameSite: 'lax' as const,
+// Dynamically determine if the request is over HTTPS
+function isSecureRequest(event: any): boolean {
+  const protocol = event.node.req.headers['x-forwarded-proto'] || event.node.req.protocol
+  return protocol === 'https'
 }
 
 async function getAddressIdentifier(): Promise<{ type: 'user' | 'guest'; id: string }> {
@@ -34,7 +31,13 @@ async function getAddressIdentifier(): Promise<{ type: 'user' | 'guest'; id: str
 
     if (!sessionId) {
       sessionId = secure()
-      setCookie(event, ADDRESS_COOKIE, sessionId, COOKIE_OPTIONS)
+      setCookie(event, ADDRESS_COOKIE, sessionId, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        httpOnly: true,
+        secure: isSecureRequest(event), // Set dynamically based on the request protocol
+        path: '/',
+        sameSite: 'lax',
+      })
     }
 
     return { type: 'guest', id: sessionId }

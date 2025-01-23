@@ -1,4 +1,3 @@
-// ~/components/shopping/ProductCard.tsx
 import { Component, createSignal, For } from 'solid-js'
 import { A, useAction } from '@solidjs/router'
 import { FiShoppingCart } from 'solid-icons/fi'
@@ -17,6 +16,7 @@ interface ProductCardProps {
   colorVariants: ColorVariant[]
   totalInventory: number
   storeId: string
+  storeName: string
   storeSubscription: StoreSubscription | null
 }
 
@@ -71,9 +71,12 @@ const ProductCard: Component<ProductCardProps> = (props) => {
       name: props.productName,
       price: props.price,
       image: imageUrl(),
-      color: props.colorVariants[0]?.color,
+      storeId: props.storeId,
+      storeName: props.storeName, 
+      selectedColor: availableColors()[0].color, 
     }
     formData.append('product', JSON.stringify(productData))
+    formData.append('selectedColor', productData.selectedColor) 
 
     try {
       const result = await addToCart(formData)

@@ -58,6 +58,7 @@ export const enDict = {
     success: 'Success',
     loadMore: 'Load More',
     noProductsFound: 'No products found in this category',
+    goToHome: 'Go to Home Page',
   },
 
   auth: {
@@ -103,7 +104,9 @@ export const enDict = {
     error: 'Error updating cart',
     confirmClear: 'Are you sure you want to clear your cart?',
     calculatedAtCheckout: 'Calculated at checkout',
-    currency: '${value}', // Used for price formatting
+    currency: '${value}',
+    color: 'Color: {color}',
+    errorMsg: 'Sorry, an error occurred. Please try again.',
   },
 
   checkout: {
@@ -291,6 +294,7 @@ export const enDict = {
       settings: 'Settings',
       unauthorized: 'You must be a seller to access this page',
       noProducts: 'No products found',
+      noStore: 'No store found. Please contact the admin to create a store.',
     },
 
     sidebar: {

@@ -10,6 +10,8 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { FiArrowLeft, FiArrowRight, FiShoppingCart } from 'solid-icons/fi'
 import { cn, formatCurrency } from '~/lib/utils'
 import type { CartItem } from '~/db/schema'
+import { BiSolidStore } from 'solid-icons/bi'
+import { Card } from '~/components/ui/card'
 
 interface Cart {
   createdAt: Date
@@ -34,10 +36,39 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
 
   const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
 
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+  // Group cart items by store
+  const groupedCartItems = createMemo(() => {
+    const cart = cartData()
+    if (!cart?.items) return []
+
+    const grouped: Record<
+      string,
+      {
+        store: { storeId: string; storeName: string }
+        items: CartItem[]
+      }
+    > = {}
+
+    cart.items.forEach((item) => {
+      if (!grouped[item.storeId]) {
+        grouped[item.storeId] = {
+          store: {
+            storeId: item.storeId,
+            storeName: item.storeName,
+          },
+          items: [],
+        }
+      }
+      grouped[item.storeId].items.push(item)
+    })
+
+    return Object.values(grouped)
+  })
+
+  const handleUpdateQuantity = async (productId: string, newQuantity: number, selectedColor: string) => {
     try {
       if (newQuantity <= 0) {
-        await handleRemoveItem(productId)
+        await handleRemoveItem(productId, selectedColor)
         return
       }
 
@@ -49,6 +80,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
       const formData = new FormData()
       formData.append('productId', productId)
       formData.append('quantity', newQuantity.toString())
+      formData.append('selectedColor', selectedColor)
 
       const result = await updateQuantity(formData)
       if (!result.success) {
@@ -67,7 +99,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
     }
   }
 
-  const handleRemoveItem = async (productId: string) => {
+  const handleRemoveItem = async (productId: string, selectedColor: string) => {
     try {
       setItemStates((prev) => ({
         ...prev,
@@ -76,6 +108,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
 
       const formData = new FormData()
       formData.append('productId', productId)
+      formData.append('selectedColor', selectedColor)
 
       await new Promise((resolve) => setTimeout(resolve, 300))
       const result = await removeItem(formData)
@@ -98,6 +131,11 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
     return formatCurrency(item.price * item.quantity)
   }
 
+  const getColor = (colorName: string) => {
+    const colorTranslation = t(`product.colors.${colorName}`)
+    return locale() === 'ar' ? `اللون: ${colorTranslation}` : `Color: ${colorTranslation}`
+  }
+
   return (
     <div class='space-y-6'>
       <Switch
@@ -110,7 +148,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
               href='/shopping'
               class={cn(
                 buttonVariants({
-                  variant: 'secondary', // or any other variant you prefer
+                  variant: 'secondary',
                   size: 'lg',
                 })
               )}
@@ -129,119 +167,137 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
         </Match>
         <Match when={cartData()?.items?.length > 0}>
           <div class='bg-white rounded-lg p-4 sm:p-6'>
-            <div class='space-y-4'>
-              <For each={cartData()?.items}>
-                {(item) => {
-                  const itemState = () => itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
-
-                  return (
-                    <div
-                      class={`flex flex-col gap-3 p-3 sm:p-4 border rounded-lg relative transition-all duration-300
-                      ${itemState().isRemoving ? 'opacity-0 transform translate-x-full' : 'opacity-100 translate-x-0'}`}
-                    >
-                      {/* First row: Image, Name, Price, Remove button */}
-                      <div class='flex items-center gap-3'>
-                        {/* Image */}
-                        <div class='w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0'>
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            class='w-full h-full object-cover'
-                            loading='lazy'
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder-product.png'
-                            }}
-                          />
-                        </div>
-
-                        {/* Name and Price */}
-                        <div class='flex-1 min-w-0'>
-                          <div class='flex items-start justify-between gap-2'>
-                            <div>
-                              <h3 class='font-medium text-sm sm:text-base line-clamp-1'>{item.name}</h3>
-                              <div class='text-xs sm:text-sm text-gray-500 mt-0.5'>{formatCurrency(item.price)}</div>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveItem(item.productId)}
-                              class={`text-red-500 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors flex-shrink-0
-                              ${itemState().isRemoving ? 'animate-spin' : ''}`}
-                              aria-label={t('cart.removeItem')}
-                            >
-                              <svg
-                                xmlns='http://www.w3.org/2000/svg'
-                                class='h-4 w-4'
-                                viewBox='0 0 20 20'
-                                fill='currentColor'
-                              >
-                                <path
-                                  fill-rule='evenodd'
-                                  d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
-                                  clip-rule='evenodd'
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Second row: Quantity controls and Total */}
-                      <div class='flex items-center justify-between gap-2 pt-1'>
-                        <div
-                          class={`flex items-center border rounded-md ${
-                            itemState().isUpdating ? 'scale-110' : 'scale-100'
-                          } transition-transform duration-200`}
-                        >
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            class='h-7 w-7 p-0'
-                            onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            aria-label={t('cart.decreaseQuantity')}
-                          >
-                            <svg
-                              xmlns='http://www.w3.org/2000/svg'
-                              class='h-3 w-3'
-                              viewBox='0 0 20 20'
-                              fill='currentColor'
-                            >
-                              <path
-                                fill-rule='evenodd'
-                                d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
-                                clip-rule='evenodd'
-                              />
-                            </svg>
-                          </Button>
-                          <span class='w-8 text-center text-sm'>{item.quantity}</span>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            class='h-7 w-7 p-0'
-                            onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                            aria-label={t('cart.increaseQuantity')}
-                          >
-                            <svg
-                              xmlns='http://www.w3.org/2000/svg'
-                              class='h-3 w-3'
-                              viewBox='0 0 20 20'
-                              fill='currentColor'
-                            >
-                              <path
-                                fill-rule='evenodd'
-                                d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
-                                clip-rule='evenodd'
-                              />
-                            </svg>
-                          </Button>
-                        </div>
-                        <div class='flex items-center gap-2'>
-                          <span class='text-xs text-gray-500'>{t('cart.total')}:</span>
-                          <span class='font-medium text-sm sm:text-base'>{cartItemPrice(item)}</span>
-                        </div>
-                      </div>
+            <div class='space-y-6'>
+              <For each={groupedCartItems()}>
+                {({ store, items }) => (
+                  <Card class='overflow-hidden'>
+                    <div class='bg-primary/5 p-3 flex items-center gap-2'>
+                      <BiSolidStore class='h-4 w-4' />
+                      <span class='font-semibold'>{store.storeName}</span>
                     </div>
-                  )
-                }}
+                    <div class='divide-y'>
+                      <For each={items}>
+                        {(item) => {
+                          const itemState = () =>
+                            itemStates()[item.productId] || { isUpdating: false, isRemoving: false }
+
+                          return (
+                            <div
+                              class={`p-3 transition-all duration-300 ${
+                                itemState().isRemoving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
+                              }`}
+                            >
+                              <div class='flex gap-3'>
+                                <div class='w-24 flex-shrink-0'>
+                                  <div class='aspect-square w-full relative'>
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      class='absolute inset-0 w-full h-full object-cover rounded-md'
+                                      loading='lazy'
+                                      onError={(e) => {
+                                        e.currentTarget.src = '/placeholder-product.png'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <div class='flex-1 min-w-0 flex flex-col'>
+                                  <div class='flex justify-between items-start flex-1'>
+                                    <div>
+                                      <h3 class='font-medium text-sm line-clamp-1'>{item.name}</h3>
+                                      <div class='text-xs text-muted-foreground mt-0.5'>
+                                        {getColor(item.selectedColor)}
+                                      </div>
+                                      <div class='text-xs text-muted-foreground mt-0.5'>
+                                        {formatCurrency(item.price)}
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant='ghost'
+                                      size='icon'
+                                      onClick={() => handleRemoveItem(item.productId, item.selectedColor)}
+                                      class={cn('text-destructive', itemState().isRemoving && 'animate-spin')}
+                                      title={t('cart.remove')}
+                                    >
+                                      <svg
+                                        xmlns='http://www.w3.org/2000/svg'
+                                        class='h-4 w-4'
+                                        viewBox='0 0 20 20'
+                                        fill='currentColor'
+                                      >
+                                        <path
+                                          fill-rule='evenodd'
+                                          d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+                                          clip-rule='evenodd'
+                                        />
+                                      </svg>
+                                    </Button>
+                                  </div>
+                                  <div class='flex items-center justify-between mt-2'>
+                                    <div
+                                      class={cn(
+                                        'flex items-center border rounded-md',
+                                        itemState().isUpdating && 'scale-110 transition-transform duration-200'
+                                      )}
+                                    >
+                                      <Button
+                                        variant='ghost'
+                                        size='icon'
+                                        class='h-7 w-7 hover:bg-secondary/20'
+                                        onClick={() =>
+                                          handleUpdateQuantity(item.productId, item.quantity - 1, item.selectedColor)
+                                        }
+                                        disabled={item.quantity <= 1}
+                                        title={t('cart.decrease')}
+                                      >
+                                        <svg
+                                          xmlns='http://www.w3.org/2000/svg'
+                                          class='h-4 w-4'
+                                          viewBox='0 0 20 20'
+                                          fill='currentColor'
+                                        >
+                                          <path
+                                            fill-rule='evenodd'
+                                            d='M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
+                                            clip-rule='evenodd'
+                                          />
+                                        </svg>
+                                      </Button>
+                                      <span class='w-7 text-center'>{item.quantity}</span>
+                                      <Button
+                                        variant='ghost'
+                                        size='icon'
+                                        class='h-7 w-7 hover:bg-secondary/20'
+                                        onClick={() =>
+                                          handleUpdateQuantity(item.productId, item.quantity + 1, item.selectedColor)
+                                        }
+                                        title={t('cart.increase')}
+                                      >
+                                        <svg
+                                          xmlns='http://www.w3.org/2000/svg'
+                                          class='h-4 w-4'
+                                          viewBox='0 0 20 20'
+                                          fill='currentColor'
+                                        >
+                                          <path
+                                            fill-rule='evenodd'
+                                            d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                                            clip-rule='evenodd'
+                                          />
+                                        </svg>
+                                      </Button>
+                                    </div>
+                                    <span class='font-medium text-sm'>{cartItemPrice(item)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        }}
+                      </For>
+                    </div>
+                  </Card>
+                )}
               </For>
             </div>
 
