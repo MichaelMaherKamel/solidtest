@@ -1,5 +1,4 @@
-import { Component, For, Show, createMemo } from 'solid-js'
-import { Separator } from '~/components/ui/separator'
+import { Component, For, Show, createMemo, createSignal } from 'solid-js'
 import { useI18n } from '~/contexts/i18n'
 import { FiPackage, FiMapPin, FiPhone, FiUser, FiEdit2 } from 'solid-icons/fi'
 import { FaSolidMapPin } from 'solid-icons/fa'
@@ -9,6 +8,10 @@ import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { IconPayByCard, IconCashOnDelivery } from '../Icons'
 import { BiSolidStore } from 'solid-icons/bi'
+import { createOrderAction } from '~/db/actions/order'
+import { useAction } from '@solidjs/router'
+import { Separator } from '../ui/separator'
+import { showToast } from '~/components/ui/toast'
 
 interface CheckoutSummaryItemsProps {
   items: CartItem[]
@@ -22,16 +25,27 @@ interface CheckoutSummaryItemsProps {
 const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
   const { t, locale } = useI18n()
   const isRTL = () => locale() === 'ar'
+  const createOrder = useAction(createOrderAction)
 
-  const totals = () => {
+  const [isPlacingOrder, setIsPlacingOrder] = createSignal(false)
+  const [orderError, setOrderError] = createSignal('')
+
+  // Generate a unique order number
+  const generateOrderNumber = () => {
+    const timestamp = Date.now().toString(36)
+    const random = Math.random().toString(36).substring(2, 8)
+    return `ORDER-${timestamp}-${random}`.toUpperCase()
+  }
+
+  const totals = createMemo(() => {
     if (!props.items || !props.address) return { subtotal: 0, shipping: 0, total: 0 }
     return calculateCartTotals(props.items, props.address.city)
-  }
+  })
 
-  const deliveryInfo = () => {
+  const deliveryInfo = createMemo(() => {
     if (!props.address?.city) return null
     return getDeliveryEstimate(props.address.city)
-  }
+  })
 
   // Group items by store
   const groupedItems = createMemo(() => {
@@ -58,6 +72,59 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
 
     return Object.values(grouped)
   })
+
+  // Handle order confirmation
+  const handleConfirmOrder = async () => {
+    if (!props.items?.length || !props.address) {
+      setOrderError(t('order.invalidData'))
+      return
+    }
+
+    setIsPlacingOrder(true)
+    setOrderError('')
+
+    try {
+      const orderData = {
+        orderNumber: generateOrderNumber(),
+        items: props.items.map((item) => ({
+          productId: item.productId,
+          storeId: item.storeId,
+          storeName: item.storeName,
+          quantity: item.quantity,
+          price: item.price,
+          name: item.name,
+          selectedColor: item.selectedColor,
+          image: item.image,
+        })),
+        subtotal: totals().subtotal,
+        shippingCost: totals().shipping,
+        total: totals().total,
+        paymentMethod: props.selectedPaymentMethod || 'cash',
+        shippingAddress: props.address,
+        storeSummaries: groupedItems().map((group) => ({
+          storeId: group.store.storeId,
+          storeName: group.store.storeName,
+          itemCount: group.items.length,
+          subtotal: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+          status: 'pending',
+        })),
+      }
+
+      const result = await createOrder(orderData)
+
+      if (result.success) {
+        // Call the onConfirmOrder callback
+        props.onConfirmOrder?.()
+      } else {
+        setOrderError(result.error || t('order.error'))
+      }
+    } catch (error) {
+      console.error('Error placing order:', error)
+      setOrderError(t('order.error'))
+    } finally {
+      setIsPlacingOrder(false)
+    }
+  }
 
   return (
     <Card class='overflow-hidden shadow-lg'>
@@ -205,7 +272,7 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
           <div class='flex items-center justify-between'>
             <div class='flex items-center gap-2 text-gray-600 text-sm sm:text-base'>
               <Show
-                when={props.selectedPaymentMethod === 'cod'}
+                when={props.selectedPaymentMethod === 'cash'}
                 fallback={<IconPayByCard class='flex-shrink-0 size-5 sm:size-6' />}
               >
                 <IconCashOnDelivery class='flex-shrink-0 size-5 sm:size-6' />
@@ -213,7 +280,7 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
               <span>{t('checkout.paymentMethod')}</span>
             </div>
             <span class='font-medium text-sm sm:text-base'>
-              {props.selectedPaymentMethod === 'cod' ? t('checkout.cashOnDelivery') : t('checkout.payByFawry')}
+              {props.selectedPaymentMethod === 'cash' ? t('checkout.cashOnDelivery') : t('checkout.payByFawry')}
             </span>
           </div>
         </div>
@@ -224,12 +291,19 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
             variant='pay'
             class='w-full transform transition-all duration-300 hover:scale-[1.02] text-sm sm:text-base'
             size='lg'
-            onClick={() => props.onConfirmOrder?.()}
+            onClick={handleConfirmOrder}
+            disabled={isPlacingOrder()}
           >
-            {props.selectedPaymentMethod === 'cod'
+            {isPlacingOrder()
+              ? t('common.loading') // Use the common.loading translation key
+              : props.selectedPaymentMethod === 'cash'
               ? t('checkout.orderReview.buttons.confirmCod')
               : t('checkout.orderReview.buttons.confirmFawry')}
           </Button>
+
+          <Show when={orderError()}>
+            <p class='text-red-500 text-sm mt-2'>{orderError()}</p>
+          </Show>
         </div>
       </div>
     </Card>

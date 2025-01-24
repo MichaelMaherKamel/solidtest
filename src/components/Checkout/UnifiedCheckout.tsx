@@ -1,35 +1,20 @@
-// ~/components/Checkout/UnifiedCheckout.tsx
-import { Component, createSignal, createMemo, createEffect, Show, type Resource } from 'solid-js'
-import { createAsync } from '@solidjs/router'
+import { Component, createSignal, createMemo, Show, createResource } from 'solid-js'
 import { getCart } from '~/db/fetchers/cart'
 import { getAddress } from '~/db/fetchers/address'
 import StepProgress from './StepProgress'
 import CheckoutSummaryItems from './CheckoutSummaryItems'
-import type { CartItem, Address } from '~/db/schema'
-
-interface Cart {
-  createdAt: Date
-  updatedAt: Date
-  sessionId: string
-  cartId: string
-  items: CartItem[]
-  lastActive: Date
-}
+import { showToast } from '~/components/ui/toast'
+import { useNavigate } from '@solidjs/router'
+import { useI18n } from '~/contexts/i18n'
 
 const UnifiedCheckout: Component = () => {
-  /* To simulate a delay to check the loading state*/
-  //const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-  // const cartData = createAsync(async () => {
-  //   await delay(5000)
-  //   return getCart()
-  // }) as Resource<Cart | { items: never[] } | undefined>
-
-  const cartData = createAsync(() => getCart()) as Resource<Cart | { items: never[] } | undefined>
-
-  const addressData = createAsync(() => getAddress()) as Resource<Address | undefined>
+  const [cartResource] = createResource(() => getCart())
+  const [addressResource] = createResource(() => getAddress())
+  const { t } = useI18n()
+  const navigate = useNavigate()
 
   const [activeStep, setActiveStep] = createSignal('cart')
-  const [completedSteps, setCompletedSteps] = createSignal<string[]>([''])
+  const [completedSteps, setCompletedSteps] = createSignal<string[]>([])
   const [selectedPaymentMethod, setSelectedPaymentMethod] = createSignal<string | null>(null)
   const [showSummary, setShowSummary] = createSignal(false)
 
@@ -39,31 +24,24 @@ const UnifiedCheckout: Component = () => {
     { id: 'payment', title: 'cart.checkout' },
   ]
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-  }
-
-  createEffect(() => {
-    if (activeStep()) {
-      scrollToTop()
-    }
+  const isLoading = createMemo(() => {
+    return cartResource.loading || addressResource.loading
   })
 
-  const isLoading = createMemo(() => {
-    try {
-      return cartData.state === 'pending' || !cartData() || !addressData()
-    } catch {
-      return true
-    }
+  const cartItems = createMemo(() => {
+    const cart = cartResource()
+    return cart && 'items' in cart ? cart.items : []
+  })
+
+  const shippingAddress = createMemo(() => {
+    return addressResource()
   })
 
   const canActivateStep = (stepId: string) => {
-    const stepIndex = steps.findIndex((step) => step.id === stepId)
-    const previousSteps = steps.slice(0, stepIndex).map((step) => step.id)
-    return previousSteps.every((step) => completedSteps().includes(step))
+    if (stepId === 'cart') return true
+    if (stepId === 'shipping') return completedSteps().includes('cart')
+    if (stepId === 'payment') return completedSteps().includes('shipping')
+    return false
   }
 
   const handleNext = (currentStepId: string) => {
@@ -71,11 +49,9 @@ const UnifiedCheckout: Component = () => {
     if (currentIndex < steps.length - 1) {
       setCompletedSteps((prev) => [...new Set([...prev, currentStepId])])
       setActiveStep(steps[currentIndex + 1].id)
-      scrollToTop()
     } else if (currentStepId === 'payment' && selectedPaymentMethod()) {
       setCompletedSteps((prev) => [...new Set([...prev, currentStepId])])
       setShowSummary(true)
-      scrollToTop()
     }
   }
 
@@ -87,7 +63,6 @@ const UnifiedCheckout: Component = () => {
       if (currentStepId === 'payment') {
         setSelectedPaymentMethod(null)
       }
-      scrollToTop()
     }
   }
 
@@ -98,35 +73,45 @@ const UnifiedCheckout: Component = () => {
   const handleBackToSteps = () => {
     setShowSummary(false)
     setActiveStep('payment')
-    scrollToTop()
   }
 
   const handleConfirmOrder = async () => {
-    console.log('Order confirmed:', {
-      cart: cartData(),
-      address: addressData(),
-      paymentMethod: selectedPaymentMethod(),
-    })
+    try {
+      // Show success toast
+      showToast({
+        variant: 'success',
+        title: t('checkout.order.success.title'),
+        description: t('checkout.order.success.description'),
+      })
+
+      // Navigate to the orders page
+      navigate('/orders')
+    } catch (error) {
+      console.error('Error confirming order:', error)
+      showToast({
+        variant: 'error',
+        title: t('checkout.order.error.title'),
+        description: t('checkout.order.error.description'),
+      })
+    }
   }
 
   return (
     <div class='relative max-w-4xl mx-auto'>
-      <Show
-        when={!showSummary()}
-        fallback={
-          <div class='transition-all duration-500 ease-in-out transform'>
+      <Show when={!isLoading()} fallback={<div class='flex justify-center items-center p-8'>Loading...</div>}>
+        <Show
+          when={!showSummary()}
+          fallback={
             <CheckoutSummaryItems
-              items={cartData()?.items ?? []}
-              address={addressData()}
+              items={cartItems()}
+              address={shippingAddress()}
               selectedPaymentMethod={selectedPaymentMethod()}
               isLoading={isLoading()}
               onEditOrder={handleBackToSteps}
               onConfirmOrder={handleConfirmOrder}
             />
-          </div>
-        }
-      >
-        <div class='transition-all duration-500 ease-in-out'>
+          }
+        >
           <StepProgress
             activeStep={activeStep()}
             completedSteps={completedSteps()}
@@ -136,10 +121,10 @@ const UnifiedCheckout: Component = () => {
             onBack={handleStepBack}
             selectedPaymentMethod={selectedPaymentMethod()}
             onPaymentSelect={handlePaymentSelect}
-            cartData={cartData}
-            addressData={addressData}
+            cartData={cartResource}
+            addressData={addressResource}
           />
-        </div>
+        </Show>
       </Show>
     </div>
   )

@@ -120,7 +120,6 @@ export const enDict = {
       payment: 'Payment Method',
       confirmation: 'Order Confirmation',
     },
-    // Navigation buttons
     buttons: {
       checkoutAddress: 'Continue to Delivery Address',
       backToCart: 'Back to Shopping Cart',
@@ -129,13 +128,11 @@ export const enDict = {
       reviewOrder: 'Review Your Order',
       editPayment: 'Edit Payment Method',
     },
-    // Payment section
     paymentMethod: 'Payment Method',
     cashOnDelivery: 'Cash on Delivery',
     payByFawry: 'Pay with Fawry',
     cashOnDeliveryDescription: 'Pay cash when your order arrives',
     fawryDescription: 'Pay securely using Fawry Pay service',
-    // Order review section
     orderReview: {
       title: 'Order Review & Confirmation',
       subtitle: 'Please review your order details',
@@ -154,8 +151,17 @@ export const enDict = {
         editPayment: 'Edit Payment Method',
       },
     },
+    order: {
+      success: {
+        title: 'Order Placed',
+        description: 'Your order has been placed successfully.',
+      },
+      error: {
+        title: 'Order Failed',
+        description: 'There was an error placing your order. Please try again.',
+      },
+    },
   },
-
   address: {
     title: 'Shipping Address',
     notFound: 'No delivery address found',

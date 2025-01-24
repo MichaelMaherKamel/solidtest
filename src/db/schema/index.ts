@@ -364,7 +364,7 @@ export interface OrderItem {
   quantity: number
   price: number
   name: string
-  color: string
+  selectedColor: string
   image: string
 }
 

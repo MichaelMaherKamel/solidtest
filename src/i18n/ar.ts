@@ -120,7 +120,6 @@ export const arDict = {
       payment: 'طريقة الدفع',
       confirmation: 'تأكيد الطلب',
     },
-    // أزرار التنقل
     buttons: {
       checkoutAddress: 'المتابعة إلى عنوان التوصيل',
       backToCart: 'الرجوع إلى عربة التسوق',
@@ -129,13 +128,11 @@ export const arDict = {
       reviewOrder: 'مراجعة طلبك',
       editPayment: 'تعديل طريقة الدفع',
     },
-    // قسم الدفع
     paymentMethod: 'طريقة الدفع',
     cashOnDelivery: 'الدفع عند الاستلام',
     payByFawry: 'الدفع عبر فوري',
     cashOnDeliveryDescription: 'ادفع نقداً عند استلام طلبك',
     fawryDescription: 'ادفع بأمان باستخدام خدمة فوري',
-    // قسم مراجعة الطلب
     orderReview: {
       title: 'مراجعة وتأكيد الطلب',
       subtitle: 'يرجى مراجعة تفاصيل طلبك',
@@ -154,8 +151,17 @@ export const arDict = {
         editPayment: 'تعديل طريقة الدفع',
       },
     },
+    order: {
+      success: {
+        title: 'تم تقديم الطلب',
+        description: 'تم تقديم طلبك بنجاح.',
+      },
+      error: {
+        title: 'فشل الطلب',
+        description: 'حدث خطأ أثناء تقديم طلبك. يرجى المحاولة مرة أخرى.',
+      },
+    },
   },
-
   address: {
     title: 'عنوان الشحن',
     notFound: 'لم يتم العثور على عنوان التوصيل',

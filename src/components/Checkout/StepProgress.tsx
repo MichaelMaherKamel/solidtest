@@ -59,17 +59,17 @@ const StepProgress: Component<StepProgressProps> = (props) => {
             <Card
               classList={{
                 'cursor-pointer transition-all duration-300 ease-out hover:shadow-lg bg-gray-50': true,
-                'border-2 border-yellow-400': props.selectedPaymentMethod === 'cod',
-                'border border-gray-200': props.selectedPaymentMethod !== 'cod',
+                'border-2 border-yellow-400': props.selectedPaymentMethod === 'cash',
+                'border border-gray-200': props.selectedPaymentMethod !== 'cash',
               }}
-              onClick={() => props.onPaymentSelect('cod')}
+              onClick={() => props.onPaymentSelect('cash')}
             >
               <div class='p-6'>
                 <div class='flex items-center gap-4 mb-4'>
                   <div
                     classList={{
                       'transition-transform duration-300': true,
-                      'scale-110': props.selectedPaymentMethod === 'cod',
+                      'scale-110': props.selectedPaymentMethod === 'cash',
                     }}
                   >
                     <IconCashOnDelivery />
@@ -122,7 +122,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                 onClick={() => props.onNext('payment')}
               >
                 <div class='flex items-center gap-2'>
-                  {t('checkout.buttons.reviewOrder')}{' '}
+                  {t('checkout.buttons.reviewOrder')}
                   {isRTL() ? <FiArrowLeft class='size-4' /> : <FiArrowRight class='size-4' />}
                 </div>
               </Button>

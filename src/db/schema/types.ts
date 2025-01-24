@@ -1,6 +1,6 @@
 // ~/db/schema/types.ts
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm'
-import { stores, products, cityEnum } from '.'
+import { stores, products, cityEnum, orders, orderStatusEnum, paymentStatusEnum, paymentMethodEnum } from '.'
 
 // Store Types
 export type Store = InferSelectModel<typeof stores>
@@ -9,6 +9,41 @@ export type NewStore = InferInsertModel<typeof stores>
 // Product Types
 export type Product = InferSelectModel<typeof products>
 export type NewProduct = InferInsertModel<typeof products>
+
+// Order Types
+export type Order = InferSelectModel<typeof orders>
+export type NewOrder = InferInsertModel<typeof orders>
+
+// Order Status Types
+export type OrderStatus = (typeof orderStatusEnum.enumValues)[number]
+export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number]
+export type PaymentMethod = (typeof paymentMethodEnum.enumValues)[number]
+
+// Order Item Interface
+export interface OrderItem {
+  productId: string
+  storeId: string
+  storeName: string
+  quantity: number
+  price: number
+  name: string
+  selectedColor: string
+  image: string
+}
+
+// Cart Item Interface
+export interface CartItem {
+  productId: string
+  quantity: number
+  addedAt: string
+  updatedAt: string
+  price: number
+  name: string
+  image: string
+  storeId: string
+  storeName: string
+  selectedColor: string
+}
 
 // Color Variant Type
 export type ColorVariant = {
