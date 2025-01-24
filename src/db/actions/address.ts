@@ -153,15 +153,28 @@ export async function getAddress() {
   try {
     const identifier = await getAddressIdentifier()
 
-    // Query with strict type separation
-    const whereClause =
-      identifier.type === 'user'
-        ? and(eq(addresses.userId, identifier.id), isNull(addresses.sessionId))
-        : and(eq(addresses.sessionId, identifier.id), isNull(addresses.userId))
+    // If the user is authenticated, fetch the address associated with their userId
+    if (identifier.type === 'user') {
+      const [address] = await db
+        .select()
+        .from(addresses)
+        .where(and(eq(addresses.userId, identifier.id), isNull(addresses.sessionId)))
+        .limit(1)
+      return address || null
+    }
 
-    const [address] = await db.select().from(addresses).where(whereClause).limit(1)
+    // If the user is a guest, fetch the address associated with their sessionId
+    if (identifier.type === 'guest') {
+      const [address] = await db
+        .select()
+        .from(addresses)
+        .where(and(eq(addresses.sessionId, identifier.id), isNull(addresses.userId)))
+        .limit(1)
+      return address || null
+    }
 
-    return address || null
+    // If neither authenticated nor guest, return null
+    return null
   } catch (error) {
     console.error('Error fetching address:', error)
     return null

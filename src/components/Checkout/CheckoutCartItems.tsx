@@ -1,4 +1,3 @@
-// ~/components/Checkout/CheckoutCartItems.tsx
 import { A } from '@solidjs/router'
 import { Component, createSignal, For, Match, Switch, createMemo, type Resource } from 'solid-js'
 import { Button, buttonVariants } from '~/components/ui/button'
@@ -36,7 +35,6 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
 
   const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
 
-  // Group cart items by store
   const groupedCartItems = createMemo(() => {
     const cart = cartData()
     if (!cart?.items) return []
@@ -137,11 +135,11 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
   }
 
   return (
-    <div class='space-y-6'>
+    <div class='space-y-3'>
       <Switch
         fallback={
-          <div class='flex flex-col items-center justify-center py-8 text-center'>
-            <FiShoppingCart class='h-12 w-12 text-muted-foreground mb-4' />
+          <div class='flex flex-col items-center justify-center py-6 text-center'>
+            <FiShoppingCart class='h-10 w-10 text-muted-foreground mb-3' />
             <p class='text-lg font-medium mb-2'>{t('cart.emptyTitle')}</p>
             <p class='text-sm text-muted-foreground mb-2'>{t('cart.emptyMessage')}</p>
             <A
@@ -159,23 +157,23 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
         }
       >
         <Match when={cartData.state === 'pending'}>
-          <div class='space-y-4'>
+          <div class='space-y-3'>
             <Skeleton class='h-24 w-full' />
             <Skeleton class='h-24 w-full' />
             <Skeleton class='h-24 w-full' />
           </div>
         </Match>
         <Match when={cartData()?.items?.length > 0}>
-          <div class='bg-white rounded-lg p-4 sm:p-6'>
-            <div class='space-y-6'>
+          <div class='bg-white rounded-lg p-2 sm:p-4'>
+            <div class='space-y-2 sm:space-y-4'>
               <For each={groupedCartItems()}>
                 {({ store, items }) => (
-                  <Card class='overflow-hidden'>
-                    <div class='bg-primary/5 p-3 flex items-center gap-2'>
-                      <BiSolidStore class='h-4 w-4' />
-                      <span class='font-semibold'>{store.storeName}</span>
+                  <div class='bg-card rounded-lg overflow-hidden border'>
+                    <div class='bg-primary/5 px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2'>
+                      <BiSolidStore class='h-3 w-3 sm:h-4 sm:w-4' />
+                      <span class='text-xs sm:text-sm font-medium truncate'>{store.storeName}</span>
                     </div>
-                    <div class='divide-y'>
+                    <div class='divide-y divide-border'>
                       <For each={items}>
                         {(item) => {
                           const itemState = () =>
@@ -183,17 +181,18 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
 
                           return (
                             <div
-                              class={`p-3 transition-all duration-300 ${
-                                itemState().isRemoving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
-                              }`}
+                              class={cn(
+                                'p-2 sm:p-3 transition-all duration-300',
+                                itemState().isRemoving && 'opacity-0 translate-x-full'
+                              )}
                             >
-                              <div class='flex gap-3'>
-                                <div class='w-24 flex-shrink-0'>
+                              <div class='flex gap-2 sm:gap-3'>
+                                <div class='w-14 sm:w-24 flex-shrink-0'>
                                   <div class='aspect-square w-full relative'>
                                     <img
                                       src={item.image}
                                       alt={item.name}
-                                      class='absolute inset-0 w-full h-full object-cover rounded-md'
+                                      class='absolute inset-0 w-full h-full object-cover rounded'
                                       loading='lazy'
                                       onError={(e) => {
                                         e.currentTarget.src = '/placeholder-product.png'
@@ -201,14 +200,13 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                     />
                                   </div>
                                 </div>
-                                <div class='flex-1 min-w-0 flex flex-col'>
-                                  <div class='flex justify-between items-start flex-1'>
+                                <div class='flex-1 min-w-0 flex flex-col justify-between'>
+                                  <div class='flex justify-between items-start gap-1'>
                                     <div>
-                                      <h3 class='font-medium text-sm line-clamp-1'>{item.name}</h3>
-                                      <div class='text-xs text-muted-foreground mt-0.5'>
-                                        {getColor(item.selectedColor)}
-                                      </div>
-                                      <div class='text-xs text-muted-foreground mt-0.5'>
+                                      <h3 class='font-medium text-xs sm:text-sm line-clamp-1'>
+                                        {item.name} ({getColor(item.selectedColor)})
+                                      </h3>
+                                      <div class='text-[10px] sm:text-xs text-muted-foreground mt-0.5'>
                                         {formatCurrency(item.price)}
                                       </div>
                                     </div>
@@ -216,12 +214,15 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                       variant='ghost'
                                       size='icon'
                                       onClick={() => handleRemoveItem(item.productId, item.selectedColor)}
-                                      class={cn('text-destructive', itemState().isRemoving && 'animate-spin')}
+                                      class={cn(
+                                        'text-destructive h-5 w-5 sm:h-8 sm:w-8 -mr-1',
+                                        itemState().isRemoving && 'animate-spin'
+                                      )}
                                       title={t('cart.remove')}
                                     >
                                       <svg
                                         xmlns='http://www.w3.org/2000/svg'
-                                        class='h-4 w-4'
+                                        class='h-3 w-3 sm:h-4 sm:w-4'
                                         viewBox='0 0 20 20'
                                         fill='currentColor'
                                       >
@@ -233,17 +234,17 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                       </svg>
                                     </Button>
                                   </div>
-                                  <div class='flex items-center justify-between mt-2'>
+                                  <div class='flex items-center justify-between mt-1 sm:mt-2'>
                                     <div
                                       class={cn(
-                                        'flex items-center border rounded-md',
-                                        itemState().isUpdating && 'scale-110 transition-transform duration-200'
+                                        'flex items-center border rounded',
+                                        itemState().isUpdating && 'scale-105 transition-transform duration-200'
                                       )}
                                     >
                                       <Button
                                         variant='ghost'
                                         size='icon'
-                                        class='h-7 w-7 hover:bg-secondary/20'
+                                        class='h-5 w-5 sm:h-7 sm:w-7 hover:bg-secondary/20'
                                         onClick={() =>
                                           handleUpdateQuantity(item.productId, item.quantity - 1, item.selectedColor)
                                         }
@@ -252,7 +253,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                       >
                                         <svg
                                           xmlns='http://www.w3.org/2000/svg'
-                                          class='h-4 w-4'
+                                          class='h-2.5 w-2.5 sm:h-4 sm:w-4'
                                           viewBox='0 0 20 20'
                                           fill='currentColor'
                                         >
@@ -263,11 +264,11 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                           />
                                         </svg>
                                       </Button>
-                                      <span class='w-7 text-center'>{item.quantity}</span>
+                                      <span class='w-5 sm:w-7 text-center text-xs sm:text-sm'>{item.quantity}</span>
                                       <Button
                                         variant='ghost'
                                         size='icon'
-                                        class='h-7 w-7 hover:bg-secondary/20'
+                                        class='h-5 w-5 sm:h-7 sm:w-7 hover:bg-secondary/20'
                                         onClick={() =>
                                           handleUpdateQuantity(item.productId, item.quantity + 1, item.selectedColor)
                                         }
@@ -275,7 +276,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                       >
                                         <svg
                                           xmlns='http://www.w3.org/2000/svg'
-                                          class='h-4 w-4'
+                                          class='h-2.5 w-2.5 sm:h-4 sm:w-4'
                                           viewBox='0 0 20 20'
                                           fill='currentColor'
                                         >
@@ -287,7 +288,7 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                                         </svg>
                                       </Button>
                                     </div>
-                                    <span class='font-medium text-sm'>{cartItemPrice(item)}</span>
+                                    <span class='font-medium text-xs sm:text-sm'>{cartItemPrice(item)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -296,13 +297,13 @@ const CheckoutCartItems: Component<CheckoutCartItemsProps> = (props) => {
                         }}
                       </For>
                     </div>
-                  </Card>
+                  </div>
                 )}
               </For>
             </div>
 
-            <div class='mt-4 sm:mt-6 border-t pt-4'>
-              <div class='space-y-3'>
+            <div class='mt-4 border-t pt-4'>
+              <div class='space-y-2'>
                 <div class='flex justify-between font-medium'>
                   <span class='text-sm sm:text-base'>{t('cart.subtotal')}</span>
                   <span class='text-sm sm:text-base'>{formatCurrency(cartTotal())}</span>

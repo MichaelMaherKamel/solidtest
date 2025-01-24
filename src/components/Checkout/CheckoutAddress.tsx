@@ -1,4 +1,4 @@
-import { Component, Show, createSignal } from 'solid-js'
+import { Component, Show, createSignal, onMount } from 'solid-js'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { useI18n } from '~/contexts/i18n'
@@ -50,6 +50,15 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
     district: '',
   })
 
+  // Initialize form with address data when it changes
+  onMount(() => {
+    const address = addressData()
+    if (address) {
+      initForm(address)
+    }
+  })
+
+  // Populate form with address data
   const initForm = (address: Address | null) => {
     if (address) {
       setFormData({
@@ -66,6 +75,7 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
     }
   }
 
+  // Handle form submission
   const handleSubmit = async (e: Event) => {
     e.preventDefault()
     setFormError('')
@@ -90,6 +100,7 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
     }
   }
 
+  // Handle edit button click
   const handleEdit = () => {
     const address = addressData()
     if (address) {
