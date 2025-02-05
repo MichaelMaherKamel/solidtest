@@ -4,7 +4,7 @@ import type { ProductCategory } from '~/db/schema'
 import { useI18n } from '~/contexts/i18n'
 import ProductCard from './ProductCard'
 import ProductGridSkeleton from './ProductGridSkeleton'
-import { getCategoryProducts } from '~/db/fetchers/products' // Updated import
+import { getCategoryProducts } from '~/db/fetchers/products'
 import { Button } from '~/components/ui/button'
 
 const ITEMS_PER_BATCH = 10

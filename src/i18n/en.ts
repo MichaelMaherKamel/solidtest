@@ -243,6 +243,10 @@ export const enDict = {
     outOfStock: 'Out of stock',
     addToCart: 'Add to Cart',
     addedToCart: 'Added to Cart',
+    adjustedCart: {
+      line1: 'Only {{max}} available. You have {{existing}} in cart',
+      line2: 'Added {{added}}',
+    },
     addToWishlist: 'Add to Wishlist',
     share: 'Share Product',
     brand: 'Brand',
@@ -449,6 +453,51 @@ export const enDict = {
       },
       save: 'Save Changes',
       cancel: 'Cancel',
+    },
+  },
+
+  order: {
+    details: {
+      title: 'Order Details',
+      orderNumber: 'Order Number',
+    },
+    number: 'Order Number',
+    items: {
+      title: 'Order Items',
+    },
+    notFound: {
+      title: 'Order Not Found',
+      description: "We couldn't find the order you're looking for...",
+      viewAllOrders: 'View All Orders',
+    },
+    status: {
+      pending: 'Pending',
+      processing: 'Processing',
+      confirmed: 'Confirmed',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled',
+      refunded: 'Refunded',
+    },
+    search: {
+      title: 'Track Your Order',
+      orderNumber: 'Order Number',
+      placeholder: 'Enter your order number',
+      search: 'Search Order',
+      searching: 'Searching...',
+      enterOrderNumber: 'Please enter an order number',
+      notFound: 'No order found with this number',
+      error: 'An error occurred while searching for the order',
+      description: 'Enter your order number to track your order status',
+    },
+  },
+  payment: {
+    status: {
+      pending: 'Payment Pending',
+      processing: 'Processing Payment',
+      completed: 'Payment Completed',
+      failed: 'Payment Failed',
+      refunded: 'Payment Refunded',
     },
   },
 }

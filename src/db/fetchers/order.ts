@@ -1,5 +1,5 @@
 import { db } from '~/db'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, like } from 'drizzle-orm'
 import { orders, type Order, type OrderItem } from '~/db/schema'
 import { getCookie, setCookie } from 'vinxi/http'
 import { getRequestEvent } from 'solid-js/web'
@@ -75,6 +75,26 @@ export async function getOrderById(orderId: string) {
     return order || null
   } catch (error) {
     console.error('Error fetching order by ID:', error)
+    return null
+  }
+}
+
+// Fetch an order by order number
+export async function getOrderByOrderNumber(orderNumber: string) {
+  'use server'
+  try {
+    const identifier = await getOrderIdentifier()
+
+    const whereClause =
+      identifier.type === 'user'
+        ? and(eq(orders.userId, identifier.id), like(orders.orderNumber, `%${orderNumber}%`))
+        : and(eq(orders.sessionId, identifier.id), like(orders.orderNumber, `%${orderNumber}%`))
+
+    const [order] = await db.select().from(orders).where(whereClause).limit(1)
+
+    return order || null
+  } catch (error) {
+    console.error('Error fetching order by order number:', error)
     return null
   }
 }

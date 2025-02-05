@@ -243,6 +243,10 @@ export const arDict = {
     outOfStock: 'غير متوفر في المخزون',
     addToCart: 'أضف إلى السلة',
     addedToCart: 'تمت الإضافة للسلة',
+    adjustedCart: {
+      line1: 'فقط {{max}} متوفر. لديك {{existing}} في السلة',
+      line2: 'تم إضافة {{added}}',
+    },
     addToWishlist: 'أضف إلى المفضلة',
     share: 'مشاركة المنتج',
     brand: 'العلامة التجارية',
@@ -449,6 +453,51 @@ export const arDict = {
       },
       save: 'حفظ التغييرات',
       cancel: 'إلغاء',
+    },
+  },
+
+  order: {
+    details: {
+      title: 'تفاصيل الطلب',
+      orderNumber: 'رقم الطلب',
+    },
+    number: 'رقم الطلب',
+    items: {
+      title: 'محتويات الطلب',
+    },
+    notFound: {
+      title: 'لم يتم العثور على الطلب',
+      description: 'لم نتمكن من العثور على الطلب الذي تبحث عنه...',
+      viewAllOrders: 'عرض جميع الطلبات',
+    },
+    status: {
+      pending: 'قيد الانتظار',
+      processing: 'قيد المعالجة',
+      confirmed: 'تم التأكيد',
+      shipped: 'تم الشحن',
+      delivered: 'تم التسليم',
+      cancelled: 'ملغي',
+      refunded: 'تم الاسترجاع',
+    },
+    search: {
+      title: 'تتبع طلبك',
+      orderNumber: 'رقم الطلب',
+      placeholder: 'أدخل رقم الطلب',
+      search: 'البحث عن الطلب',
+      searching: 'جاري البحث...',
+      enterOrderNumber: 'الرجاء إدخال رقم الطلب',
+      notFound: 'لم يتم العثور على طلب بهذا الرقم',
+      error: 'حدث خطأ أثناء البحث عن الطلب',
+      description: 'أدخل رقم الطلب لتتبع حالة طلبك',
+    },
+  },
+  payment: {
+    status: {
+      pending: 'في انتظار الدفع',
+      processing: 'جاري معالجة الدفع',
+      completed: 'تم الدفع',
+      failed: 'فشل الدفع',
+      refunded: 'تم استرجاع المبلغ',
     },
   },
 }

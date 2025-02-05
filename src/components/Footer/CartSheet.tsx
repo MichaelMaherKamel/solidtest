@@ -360,13 +360,6 @@ const CartSheet: Component = () => {
 
                 <div class='grid grid-cols-2 gap-3'>
                   <Button
-                    variant='destructive'
-                    class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
-                    onClick={handleClearCart}
-                  >
-                    {t('cart.clear')}
-                  </Button>
-                  <Button
                     variant='pay'
                     class='w-full'
                     onClick={() => {
@@ -375,6 +368,13 @@ const CartSheet: Component = () => {
                     }}
                   >
                     {t('cart.checkout')}
+                  </Button>
+                  <Button
+                    variant='destructive'
+                    class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
+                    onClick={handleClearCart}
+                  >
+                    {t('cart.clear')}
                   </Button>
                 </div>
               </div>

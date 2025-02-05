@@ -11,7 +11,9 @@ import { BiSolidStore } from 'solid-icons/bi'
 import { createOrderAction } from '~/db/actions/order'
 import { useAction } from '@solidjs/router'
 import { Separator } from '../ui/separator'
-import { showToast } from '~/components/ui/toast'
+import { deleteCart } from '~/db/actions/cart'
+import { updateInventoryAfterOrderAction } from '~/db/actions/products'
+import { createFawryChargeRequest } from '~/db/actions/fawry'
 
 interface CheckoutSummaryItemsProps {
   items: CartItem[]
@@ -19,22 +21,22 @@ interface CheckoutSummaryItemsProps {
   selectedPaymentMethod: string | null
   isLoading?: boolean
   onEditOrder?: () => void
-  onConfirmOrder?: () => void
+  onConfirmOrder?: (orderId: string) => void
 }
 
 const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
-  const { t, locale } = useI18n()
-  const isRTL = () => locale() === 'ar'
+  const { t } = useI18n()
   const createOrder = useAction(createOrderAction)
+  const clearCartAction = useAction(deleteCart)
+  const updateInventory = useAction(updateInventoryAfterOrderAction)
 
   const [isPlacingOrder, setIsPlacingOrder] = createSignal(false)
   const [orderError, setOrderError] = createSignal('')
 
-  // Generate a unique order number
   const generateOrderNumber = () => {
     const timestamp = Date.now().toString(36)
     const random = Math.random().toString(36).substring(2, 8)
-    return `ORDER-${timestamp}-${random}`.toUpperCase()
+    return `${timestamp}-${random}`.toUpperCase()
   }
 
   const totals = createMemo(() => {
@@ -47,7 +49,6 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
     return getDeliveryEstimate(props.address.city)
   })
 
-  // Group items by store
   const groupedItems = createMemo(() => {
     const grouped: Record<
       string,
@@ -73,7 +74,42 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
     return Object.values(grouped)
   })
 
-  // Handle order confirmation
+  const handleFawryCheckout = async (orderId: string) => {
+    const fawryResult = await createFawryChargeRequest(orderId)
+
+    if (!fawryResult.success) {
+      setOrderError(t('payment.fawryError'))
+      return
+    }
+
+    const loadFawryScripts = () => {
+      return new Promise<void>((resolve) => {
+        const script = document.createElement('script')
+        script.src = 'https://atfawry.fawrystaging.com/atfawry/plugin/init.js'
+        script.onload = () => resolve()
+        document.head.appendChild(script)
+
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://atfawry.fawrystaging.com/atfawry/plugin/FawryPayPlugin.css'
+        document.head.appendChild(link)
+      })
+    }
+
+    try {
+      await loadFawryScripts()
+
+      window.FawryPay.checkout({
+        ...fawryResult.chargeRequest,
+        paymentMethod: 'CARD',
+        mode: 'POPUP',
+      })
+    } catch (error) {
+      console.error('Fawry checkout error:', error)
+      setOrderError(t('payment.checkoutError'))
+    }
+  }
+
   const handleConfirmOrder = async () => {
     if (!props.items?.length || !props.address) {
       setOrderError(t('order.invalidData'))
@@ -113,8 +149,29 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
       const result = await createOrder(orderData)
 
       if (result.success) {
-        // Call the onConfirmOrder callback
-        props.onConfirmOrder?.()
+        try {
+          // Handle Fawry payment flow
+          if (props.selectedPaymentMethod === 'fawry') {
+            await handleFawryCheckout(result.orderId)
+          }
+
+          // Update inventory
+          const inventoryResult = await updateInventory(orderData.items)
+          if (!inventoryResult.success) {
+            console.error('Failed to update inventory:', inventoryResult.error)
+          }
+
+          // Clear cart
+          const clearResult = await clearCartAction()
+          if (!clearResult.success) {
+            console.error('Failed to clear cart:', clearResult.error)
+          }
+
+          // Proceed with order confirmation
+          props.onConfirmOrder?.(result.orderId)
+        } catch (error) {
+          console.error('Error in post-order processing:', error)
+        }
       } else {
         setOrderError(result.error || t('order.error'))
       }

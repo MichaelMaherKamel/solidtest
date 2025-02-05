@@ -97,36 +97,48 @@
 
 // export default UploadTestPage
 
-import { Title } from '@solidjs/meta'
-import { LocalizationButton } from '~/components/LocalizationButton'
-import { useI18n } from '~/contexts/i18n'
-import { Show } from 'solid-js'
-import { getCart } from '~/db/fetchers/cart'
+// import { Title } from '@solidjs/meta'
+// import { LocalizationButton } from '~/components/LocalizationButton'
+// import { useI18n } from '~/contexts/i18n'
+// import { Show } from 'solid-js'
+// import { getCart } from '~/db/fetchers/cart'
 
+// export default function TestPage() {
+//   const { t, dict } = useI18n()
+//   const cart = getCart()
 
-export default function TestPage() {
-  const { t, dict } = useI18n()
-  const cart = getCart()
+//   return (
+//     <main class='container mx-auto p-4 space-y-4'>
+//       <Title>Test Page</Title>
 
+//       <div class='flex justify-end'>
+//         <LocalizationButton />
+//       </div>
+
+//       <Show when={dict()} fallback={<div>Loading...</div>}>
+//         <div class='space-y-4'>
+//           <h1 class='text-3xl font-bold'>{t('nav.home')}</h1>
+
+//           <div class='grid gap-4'>
+//             <button class='px-4 py-2 border rounded'>{t('auth.login')}</button>
+//             <button class='px-4 py-2 border rounded'>{t('auth.signup')}</button>
+//             <p>{t('common.loading')}</p>
+//           </div>
+//         </div>
+//       </Show>
+//     </main>
+//   )
+// }
+
+import FawryCheckout from "~/components/FawryPayComponent"
+
+const CheckoutPage = () => {
   return (
-    <main class='container mx-auto p-4 space-y-4'>
-      <Title>Test Page</Title>
-
-      <div class='flex justify-end'>
-        <LocalizationButton />
-      </div>
-
-      <Show when={dict()} fallback={<div>Loading...</div>}>
-        <div class='space-y-4'>
-          <h1 class='text-3xl font-bold'>{t('nav.home')}</h1>
-
-          <div class='grid gap-4'>
-            <button class='px-4 py-2 border rounded'>{t('auth.login')}</button>
-            <button class='px-4 py-2 border rounded'>{t('auth.signup')}</button>
-            <p>{t('common.loading')}</p>
-          </div>
-        </div>
-      </Show>
-    </main>
+    <div>
+      <h1>FawryPay Checkout</h1>
+      <FawryCheckout />
+    </div>
   )
 }
+
+export default CheckoutPage

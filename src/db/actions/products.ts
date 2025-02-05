@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '~/db'
 import { products, stores } from '~/db/schema'
 import type { ColorVariant } from '~/db/schema'
+import { OrderItem } from '../schema/types'
 
 export type ProductActionResult =
   | {
@@ -13,6 +14,12 @@ export type ProductActionResult =
       success: false
       error: string
     }
+
+type UpdateInventoryResult = {
+  success: boolean
+  error?: string
+  updatedProducts?: (typeof products.$inferSelect)[]
+}
 
 export const createProductAction = action(async (formData: FormData): Promise<ProductActionResult> => {
   'use server'
@@ -134,3 +141,64 @@ export const deleteProductAction = action(async (formData: FormData): Promise<Pr
     return { success: false, error: 'Failed to delete product' }
   }
 })
+
+export const updateInventoryAfterOrderAction = action(
+  async (orderItems: OrderItem[]): Promise<UpdateInventoryResult> => {
+    'use server'
+    try {
+      const updatedProducts = []
+
+      // Process each order item
+      for (const item of orderItems) {
+        // Get the current product
+        const [currentProduct] = await db.select().from(products).where(eq(products.productId, item.productId))
+
+        if (!currentProduct) {
+          console.error(`Product not found: ${item.productId}`)
+          continue
+        }
+
+        // Update the color variant inventory
+        const updatedColorVariants = currentProduct.colorVariants.map((variant: ColorVariant) => {
+          if (variant.color === item.selectedColor) {
+            // Ensure inventory doesn't go below 0
+            const newInventory = Math.max(0, variant.inventory - item.quantity)
+            if (newInventory !== variant.inventory - item.quantity) {
+              console.warn(
+                `Insufficient inventory for product ${item.productId}, color ${item.selectedColor}. Adjusting quantity.`
+              )
+            }
+            return { ...variant, inventory: newInventory }
+          }
+          return variant
+        })
+
+        // Calculate new total inventory
+        const newTotalInventory = updatedColorVariants.reduce((sum, variant) => sum + variant.inventory, 0)
+
+        // Update the product
+        const [updatedProduct] = await db
+          .update(products)
+          .set({
+            colorVariants: updatedColorVariants,
+            totalInventory: newTotalInventory,
+          })
+          .where(eq(products.productId, item.productId))
+          .returning()
+
+        updatedProducts.push(updatedProduct)
+      }
+
+      return {
+        success: true,
+        updatedProducts,
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error)
+      return {
+        success: false,
+        error: 'Failed to update product inventory',
+      }
+    }
+  }
+)

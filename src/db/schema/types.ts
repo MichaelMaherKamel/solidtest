@@ -10,10 +10,6 @@ export type NewStore = InferInsertModel<typeof stores>
 export type Product = InferSelectModel<typeof products>
 export type NewProduct = InferInsertModel<typeof products>
 
-// Order Types
-export type Order = InferSelectModel<typeof orders>
-export type NewOrder = InferInsertModel<typeof orders>
-
 // Order Status Types
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number]
 export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number]
@@ -124,3 +120,23 @@ export const DELIVERY_ESTIMATES: Record<ShippingZone, DeliveryEstimate> = {
   DELTA: { minDays: 3, maxDays: 4, rate: BASE_SHIPPING_RATES.DELTA_ZONE },
   OTHER: { minDays: 4, maxDays: 5, rate: BASE_SHIPPING_RATES.OTHER_ZONE },
 } as const
+
+// ~/db/schema/types.ts
+export interface ShippingAddress {
+  name: string
+  email: string
+  phone: string
+  address: string
+  buildingNumber: number
+  floorNumber?: number
+  flatNumber: number
+  city: City
+  district: string
+  country: 'Egypt'
+}
+
+// ~/db/schema/types.ts
+export type Order = InferSelectModel<typeof orders> & {
+  shippingAddress: ShippingAddress
+}
+

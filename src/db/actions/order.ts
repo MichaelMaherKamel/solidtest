@@ -1,5 +1,5 @@
 import { action } from '@solidjs/router'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { db } from '~/db'
 import { orders, type Order, type NewOrder, type OrderItem } from '~/db/schema'
 import { getCookie, setCookie } from 'vinxi/http'
@@ -40,7 +40,7 @@ async function getOrderIdentifier(): Promise<{ type: 'user' | 'guest'; id: strin
   }
 }
 
-type OrderActionResult = { success: true; order: Order } | { success: false; error: string }
+type OrderActionResult = { success: true; order: Order; orderId: string } | { success: false; error: string }
 
 // Create a new order
 export const createOrderAction = action(async (orderData: NewOrder): Promise<OrderActionResult> => {
@@ -65,7 +65,7 @@ export const createOrderAction = action(async (orderData: NewOrder): Promise<Ord
 
     const [createdOrder] = await db.insert(orders).values(newOrder).returning()
 
-    return { success: true, order: createdOrder }
+    return { success: true, order: createdOrder, orderId: createdOrder.orderId }
   } catch (error) {
     console.error('Error creating order:', error)
     return { success: false, error: 'Failed to create order' }
@@ -90,7 +90,8 @@ export const updateOrderAction = action(
         return { success: false, error: 'Order not found' }
       }
 
-      return { success: true, order: updatedOrder }
+      // Return the updated order along with the orderId
+      return { success: true, order: updatedOrder, orderId: updatedOrder.orderId }
     } catch (error) {
       console.error('Error updating order:', error)
       return { success: false, error: 'Failed to update order' }

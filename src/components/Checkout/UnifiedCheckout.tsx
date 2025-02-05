@@ -75,7 +75,7 @@ const UnifiedCheckout: Component = () => {
     setActiveStep('payment')
   }
 
-  const handleConfirmOrder = async () => {
+  const handleConfirmOrder = async (orderId: string) => {
     try {
       // Show success toast
       showToast({
@@ -84,8 +84,8 @@ const UnifiedCheckout: Component = () => {
         description: t('checkout.order.success.description'),
       })
 
-      // Navigate to the orders page
-      navigate('/orders')
+      // Navigate to the order details page using the orderId
+      navigate(`/orders/${orderId}`) // Redirect to the order details page
     } catch (error) {
       console.error('Error confirming order:', error)
       showToast({

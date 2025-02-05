@@ -307,6 +307,7 @@ export interface CartItem {
   storeId: string
   storeName: string
   selectedColor: string
+  inventory: number
 }
 
 export const carts = pgTable(

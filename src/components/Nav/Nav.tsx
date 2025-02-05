@@ -264,21 +264,67 @@ const Nav: Component = () => {
     }
   }
 
+  // Update the handleUpdateQuantity function in Nav.tsx
   const handleUpdateQuantity = async (productId: string, newQuantity: number, selectedColor: string) => {
     try {
+      // Set the item state to "isUpdating"
       setItemStates((prev) => ({
         ...prev,
         [productId]: { ...prev[productId], isUpdating: true },
       }))
 
+      // Prepare the form data to send to the backend
       const formData = new FormData()
       formData.append('productId', productId)
       formData.append('quantity', newQuantity.toString())
-      formData.append('selectedColor', selectedColor) // Include selectedColor
+      formData.append('selectedColor', selectedColor)
+      formData.append('locale', locale() || 'en') // Use the `locale` variable from `useI18n`
 
+      // Call the backend API to update the quantity
       const result = await updateQuantity(formData)
-      if (!result.success) throw new Error(result.error)
+      console.log('Update quantity result:', result) // Debug log
+
+      // Handle errors from the backend
+      if (!result.success) {
+        showToast({
+          title: t('common.error'),
+          description: result.error || t('cart.errorMsg'),
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Handle inventory limit cases
+      if (result.adjusted) {
+        const maxAllowed = result.max
+        const currentInCart = result.existing
+
+        if (result.added && result.added > 0) {
+          // Partial update case
+          showToast({
+            title: t('product.addedToCart'),
+            description: `${t('product.adjustedCart.line1', {
+              max: maxAllowed,
+              existing: currentInCart,
+            })}\n${t('product.adjustedCart.line2', {
+              added: result.added,
+            })}`,
+            variant: 'warning',
+          })
+        } else {
+          // No update possible case
+          showToast({
+            title: t('common.error'),
+            description: t('product.adjustedCart.line1', {
+              max: maxAllowed,
+              existing: currentInCart,
+            }),
+            variant: 'destructive',
+          })
+        }
+      }
     } catch (error) {
+      // Handle unexpected errors
       console.error('Error updating quantity:', error)
       showToast({
         title: t('cart.errorTitle'),
@@ -286,6 +332,7 @@ const Nav: Component = () => {
         variant: 'destructive',
       })
     } finally {
+      // Reset the "isUpdating" state after a short delay
       setTimeout(() => {
         setItemStates((prev) => ({
           ...prev,
@@ -612,14 +659,6 @@ const Nav: Component = () => {
                             {/* Action buttons */}
                             <div class='grid grid-cols-2 gap-2'>
                               <Button
-                                variant='destructive'
-                                size='sm'
-                                class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
-                                onClick={handleClearCart}
-                              >
-                                {t('cart.clear')}
-                              </Button>
-                              <Button
                                 variant='pay'
                                 size='sm'
                                 class='w-full'
@@ -629,6 +668,14 @@ const Nav: Component = () => {
                                 }}
                               >
                                 {t('cart.checkout')}
+                              </Button>
+                              <Button
+                                variant='destructive'
+                                size='sm'
+                                class={cn('w-full transition-transform duration-200', isClearingCart() && 'scale-95')}
+                                onClick={handleClearCart}
+                              >
+                                {t('cart.clear')}
                               </Button>
                             </div>
                           </div>

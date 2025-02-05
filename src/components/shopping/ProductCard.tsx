@@ -1,4 +1,4 @@
-import { Component, createSignal, For } from 'solid-js'
+import { Component, createSignal, For, createEffect } from 'solid-js'
 import { A, useAction } from '@solidjs/router'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { Button } from '~/components/ui/button'
@@ -25,66 +25,74 @@ const ProductCard: Component<ProductCardProps> = (props) => {
   const [imageLoaded, setImageLoaded] = createSignal(false)
   const [isAddingToCart, setIsAddingToCart] = createSignal(false)
   const [showSuccess, setShowSuccess] = createSignal(false)
+  const [availableColors, setAvailableColors] = createSignal<ColorVariant[]>([])
   const { t, locale } = useI18n()
 
   const addToCart = useAction(addToCartAction)
-
   const fallbackImage = '/api/placeholder/300/300'
 
+  // Update available colors based on inventory
+  createEffect(() => {
+    const sortedColors = props.colorVariants.filter((v) => v.inventory > 0).sort((a, b) => b.inventory - a.inventory)
+    setAvailableColors(sortedColors)
+  })
+
+  // Get first available image
   const getFirstImage = () => {
-    if (
-      props.colorVariants &&
-      props.colorVariants.length > 0 &&
-      props.colorVariants[0].colorImageUrls &&
-      props.colorVariants[0].colorImageUrls.length > 0
-    ) {
-      return props.colorVariants[0].colorImageUrls[0]
-    }
-    return fallbackImage
+    return availableColors()[0]?.colorImageUrls?.[0] || props.colorVariants[0]?.colorImageUrls?.[0] || fallbackImage
   }
 
-  const imageUrl = () => (imageError() ? fallbackImage : getFirstImage())
+  // Get all colors with availability status
+  const allColors = () =>
+    props.colorVariants.map((variant) => ({
+      ...variant,
+      isAvailable: variant.inventory > 0,
+    }))
 
-  const availableColors = () => props.colorVariants.filter((variant) => variant.inventory > 0)
+  // Get colors to display (first 5)
+  const displayedColors = () => allColors().slice(0, 5)
+  const remainingColors = () => Math.max(0, props.colorVariants.length - 5)
 
-  const displayedColors = () => availableColors().slice(0, 5)
-
-  const remainingColors = () => Math.max(0, availableColors().length - 5)
-
-  // Get available text for a color
-  const getAvailableText = (colorName: string) => {
-    const colorTranslation = t(`product.colors.${colorName}`)
-    return locale() === 'ar' ? `متوفر باللون ${colorTranslation}` : `Available in ${colorTranslation}`
+  const getColorTitle = (variant: ColorVariant & { isAvailable: boolean }) => {
+    const colorTranslation = t(`product.colors.${variant.color}`)
+    return variant.isAvailable
+      ? locale() === 'ar'
+        ? `متوفر باللون ${colorTranslation}`
+        : `Available in ${colorTranslation}`
+      : locale() === 'ar'
+      ? `غير متوفر باللون ${colorTranslation}`
+      : `Out of stock in ${colorTranslation}`
   }
 
   const handleAddToCart = async (e: Event) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (isAddingToCart()) return
+    if (isAddingToCart() || availableColors().length === 0) return
 
     setIsAddingToCart(true)
+    const firstAvailable = availableColors()[0]
 
     const formData = new FormData()
-    const productData = {
-      productId: props.productId,
-      name: props.productName,
-      price: props.price,
-      image: imageUrl(),
-      storeId: props.storeId,
-      storeName: props.storeName, 
-      selectedColor: availableColors()[0].color, 
-    }
-    formData.append('product', JSON.stringify(productData))
-    formData.append('selectedColor', productData.selectedColor) 
+    formData.append('productId', props.productId)
+    formData.append('selectedColor', firstAvailable.color)
+    formData.append('quantity', '1')
+    formData.append('name', props.productName)
+    formData.append('price', props.price.toString())
+    formData.append('image', getFirstImage())
+    formData.append('storeId', props.storeId)
+    formData.append('storeName', props.storeName)
 
     try {
       const result = await addToCart(formData)
       if (result.success) {
         setShowSuccess(true)
-        setTimeout(() => {
-          setShowSuccess(false)
-        }, 1500)
+        setTimeout(() => setShowSuccess(false), 1500)
+        // Refresh available colors after successful add
+        setAvailableColors((prev) => prev.filter((v) => v.color !== firstAvailable.color || v.inventory > 1))
+      } else if (result.error?.includes('Max')) {
+        // If color is fully in cart, remove from available colors
+        setAvailableColors((prev) => prev.filter((v) => v.color !== firstAvailable.color))
       }
     } finally {
       setIsAddingToCart(false)
@@ -92,43 +100,44 @@ const ProductCard: Component<ProductCardProps> = (props) => {
   }
 
   return (
-    <A
-      href={`/shopping/products/${props.productId}`}
-      class='bg-white rounded-xl shadow-sm block transition hover:shadow-md'
-    >
-      {/* Image container */}
-      <div class='relative aspect-[4/3] rounded-t-xl overflow-hidden'>
-        <div
-          class={`absolute inset-0 bg-gray-100 flex items-center justify-center
+    <div class='bg-white rounded-xl shadow-sm transition hover:shadow-md'>
+      <A href={`/shopping/products/${props.productId}`} class='block'>
+        <div class='relative aspect-[4/3] rounded-t-xl overflow-hidden'>
+          <div
+            class={`absolute inset-0 bg-gray-100 flex items-center justify-center
                     transition-opacity duration-300 ${imageLoaded() ? 'opacity-0' : 'opacity-100'}`}
-        >
-          <span class='text-sm text-gray-400'>{props.productName}</span>
+          >
+            <span class='text-sm text-gray-400'>{props.productName}</span>
+          </div>
+
+          <img
+            src={getFirstImage()}
+            alt={props.productName}
+            class={`h-full w-full object-cover transition-opacity duration-300
+                   ${imageLoaded() ? 'opacity-100' : 'opacity-0'}`}
+            onError={() => setImageError(true)}
+            onLoad={() => setImageLoaded(true)}
+            loading='lazy'
+          />
         </div>
+      </A>
 
-        <img
-          src={imageUrl()}
-          alt={props.productName}
-          class={`h-full w-full object-cover transition-opacity duration-300
-                 ${imageLoaded() ? 'opacity-100' : 'opacity-0'}`}
-          onError={() => setImageError(true)}
-          onLoad={() => setImageLoaded(true)}
-          loading='lazy'
-        />
-      </div>
-
-      {/* Content container */}
       <div class='p-2 space-y-2'>
-        {/* Color variants - Centered */}
         <div class='flex items-center justify-center gap-1 h-4'>
           <For each={displayedColors()}>
             {(variant) => (
               <div
-                class='w-3 h-3 rounded-full border border-gray-200 shadow-sm'
+                class={`w-3 h-3 rounded-full border shadow-sm transition-all duration-200 relative
+                  ${
+                    variant.isAvailable ? 'border-gray-200 opacity-100 hover:scale-110' : 'border-gray-300 opacity-40'
+                  }`}
                 style={{ 'background-color': variant.color }}
-                title={getAvailableText(variant.color)}
+                title={getColorTitle(variant)}
                 role='img'
-                aria-label={getAvailableText(variant.color)}
-              />
+                aria-label={getColorTitle(variant)}
+              >
+                {!variant.isAvailable && <div class='absolute inset-0 rounded-full bg-gray-200 opacity-50' />}
+              </div>
             )}
           </For>
           {remainingColors() > 0 && (
@@ -138,12 +147,10 @@ const ProductCard: Component<ProductCardProps> = (props) => {
           )}
         </div>
 
-        {/* Product name - Centered */}
         <h3 class='font-medium text-sm text-center line-clamp-1 text-gray-900' title={props.productName}>
           {props.productName}
         </h3>
 
-        {/* Price and add to cart */}
         <div class='flex items-center justify-between pt-1'>
           <span class='text-sm font-bold text-gray-900'>
             {locale() === 'ar' ? `${props.price.toFixed(2)} جنيه` : `EGP ${props.price.toFixed(2)}`}
@@ -152,9 +159,11 @@ const ProductCard: Component<ProductCardProps> = (props) => {
             onClick={handleAddToCart}
             size='sm'
             variant='pay'
-            class='h-7 w-7 p-0 relative z-10 hover:scale-110 transition-transform'
+            class={`h-7 w-7 p-0 relative z-10 hover:scale-110 transition-transform ${
+              availableColors().length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             aria-label={t('product.addToCart')}
-            disabled={isAddingToCart()}
+            disabled={isAddingToCart() || availableColors().length === 0}
           >
             {isAddingToCart() ? (
               <div class='size-4 border-2 border-current border-r-transparent rounded-full animate-spin' />
@@ -166,7 +175,7 @@ const ProductCard: Component<ProductCardProps> = (props) => {
           </Button>
         </div>
       </div>
-    </A>
+    </div>
   )
 }
 

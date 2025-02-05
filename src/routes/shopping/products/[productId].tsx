@@ -3,12 +3,12 @@ import { useParams, A, useAction } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
 import { Button } from '~/components/ui/button'
 import { BiSolidStore } from 'solid-icons/bi'
-import { FiShoppingCart, FiHeart, FiShare2 } from 'solid-icons/fi'
-import { BsCheck } from 'solid-icons/bs'
+import { FiShoppingCart, FiShare2 } from 'solid-icons/fi'
 import { getProductById } from '~/db/fetchers/products'
 import { addToCartAction } from '~/db/actions/cart'
 import { createResource } from 'solid-js'
 import { createMediaQuery } from '@solid-primitives/media'
+import { showToast } from '~/components/ui/toast'
 
 const ProductPage: Component = () => {
   const params = useParams<{ productId: string }>()
@@ -16,12 +16,11 @@ const ProductPage: Component = () => {
   const [selectedColorIndex, setSelectedColorIndex] = createSignal(0)
   const [selectedImage, setSelectedImage] = createSignal(0)
   const [isAddingToCart, setIsAddingToCart] = createSignal(false)
-  const [showSuccess, setShowSuccess] = createSignal(false)
+  const [quantity, setQuantity] = createSignal(1)
 
   const isRTL = () => locale() === 'ar'
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
   const [product] = createResource(() => params.productId, getProductById)
-
   const addToCart = useAction(addToCartAction)
 
   const formattedProductName = createMemo(() => {
@@ -46,9 +45,20 @@ const ProductPage: Component = () => {
     return product()?.colorVariants.filter((variant) => variant.inventory > 0) || []
   })
 
+  const isAddToCartDisabled = createMemo(() => {
+    const variant = currentColorVariant()
+    return isAddingToCart() || !variant || variant.inventory === 0
+  })
+
+  const isIncrementDisabled = createMemo(() => {
+    const maxInventory = currentColorVariant()?.inventory || 0
+    return quantity() >= maxInventory
+  })
+
   const handleColorSelect = (index: number) => {
     setSelectedColorIndex(index)
     setSelectedImage(0)
+    setQuantity(1)
   }
 
   const getColorLabel = (color: string) => {
@@ -62,28 +72,69 @@ const ProductPage: Component = () => {
 
     try {
       const formData = new FormData()
-      const productData = {
-        productId: product()!.productId,
-        name: product()!.productName,
-        price: product()!.price,
-        image: currentImages()[selectedImage()],
-        storeId: product()!.storeId,
-        storeName: product()!.storeName,
-        selectedColor: currentColorVariant()!.color, // Use the selected color
-      }
-      formData.append('product', JSON.stringify(productData))
-      formData.append('selectedColor', productData.selectedColor) // Pass the selected color
+      formData.append('productId', product()!.productId)
+      formData.append('selectedColor', currentColorVariant()!.color)
+      formData.append('quantity', quantity().toString())
 
       const result = await addToCart(formData)
 
       if (result.success) {
-        setShowSuccess(true)
-        setTimeout(() => {
-          setShowSuccess(false)
-        }, 1500)
+        if (result.adjusted) {
+          // Case where user tried to add more than available
+          if (result.added && result.added > 0) {
+            showToast({
+              title: t('product.addedToCart'),
+              description: `${t('product.adjustedCart.line1', {
+                max: result.max,
+                existing: result.existing,
+              })}\n${t('product.adjustedCart.line2', {
+                added: result.added,
+              })}`,
+              variant: 'warning',
+            })
+          } else {
+            showToast({
+              title: t('common.error'),
+              description: t('product.adjustedCart.line1', {
+                max: result.max,
+                existing: result.existing,
+              }),
+              variant: 'destructive',
+            })
+          }
+        } else {
+          // Normal success case
+          showToast({
+            title: t('product.addedToCart'),
+            description: t('product.adjustedCart.line2', {
+              added: quantity(),
+            }),
+            variant: 'success',
+          })
+        }
+      } else {
+        showToast({
+          title: t('common.error'),
+          description: result.error,
+          variant: 'destructive',
+        })
       }
+    } catch (e) {
+      showToast({
+        title: t('common.error'),
+        description: t('cart.errorMsg'),
+        variant: 'destructive',
+      })
     } finally {
       setIsAddingToCart(false)
+    }
+  }
+
+  const handleQuantityChange = (delta: number) => {
+    const newQuantity = quantity() + delta
+    const maxInventory = currentColorVariant()?.inventory || 0
+    if (newQuantity > 0 && newQuantity <= maxInventory) {
+      setQuantity(newQuantity)
     }
   }
 
@@ -208,34 +259,54 @@ const ProductPage: Component = () => {
                 </div>
               </Show>
 
-              {/* Action Buttons */}
+              {/* Quantity Controls */}
               <div class='space-y-4'>
-                <div class='grid grid-cols-2 gap-4'>
+                <div class='flex items-center gap-4'>
+                  <Button
+                    size='lg'
+                    class='w-full lg:w-auto'
+                    variant='outline'
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity() <= 1}
+                  >
+                    -
+                  </Button>
+                  <span class='text-lg font-medium'>{quantity()}</span>
+                  <Button
+                    size='lg'
+                    class='w-full lg:w-auto'
+                    variant='outline'
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={isIncrementDisabled()}
+                  >
+                    +
+                  </Button>
+                </div>
+
+                {/* Action Buttons */}
+                <div class='space-y-4'>
                   <Button
                     size='lg'
                     variant='pay'
+                    class='w-full'
                     onClick={handleAddToCart}
-                    disabled={isAddingToCart() || !currentColorVariant()?.inventory}
+                    disabled={isAddToCartDisabled()}
                   >
                     <Show
                       when={!isAddingToCart()}
                       fallback={
-                        <div class='size-5 border-2 border-current border-r-transparent rounded-full animate-pulse me-2' />
+                        <div class='size-5 border-2 border-current border-r-transparent rounded-full animate-spin me-2' />
                       }
                     >
-                      {showSuccess() ? <BsCheck class='h-5 w-5 me-2' /> : <FiShoppingCart class='h-5 w-5 me-2' />}
+                      <FiShoppingCart class='h-5 w-5 me-2' />
                     </Show>
-                    {showSuccess() ? t('product.addedToCart') : t('product.addToCart')}
+                    {t('product.addToCart')}
                   </Button>
-                  <Button size='lg' variant='outline'>
-                    <FiHeart class='h-5 w-5 me-2' fill='red' color='red' />
-                    {t('product.addToWishlist')}
+                  <Button size='lg' variant='general' class='w-full'>
+                    <FiShare2 class='h-5 w-5 me-2' />
+                    {t('product.share')}
                   </Button>
                 </div>
-                <Button size='lg' variant='general' class='w-full'>
-                  <FiShare2 class='h-5 w-5 me-2' />
-                  {t('product.share')}
-                </Button>
               </div>
             </div>
           </div>
@@ -262,9 +333,9 @@ const ProductSkeleton: Component = () => {
           </div>
           <div class='space-y-6'>
             <div class='space-y-4'>
-              <div class='h-8 w-3/4 bg-gray-200 rounded animate-pulse' /> {/* Product name */}
-              <div class='h-24 w-full bg-gray-200 rounded animate-pulse' /> {/* Description */}
-              <div class='h-6 w-1/3 bg-gray-200 rounded animate-pulse' /> {/* Store name */}
+              <div class='h-8 w-3/4 bg-gray-200 rounded animate-pulse' />
+              <div class='h-24 w-full bg-gray-200 rounded animate-pulse' />
+              <div class='h-6 w-1/3 bg-gray-200 rounded animate-pulse' />
             </div>
             <div class='space-y-4'>
               <div class='h-12 w-1/3 bg-gray-200 rounded animate-pulse' />

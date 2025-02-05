@@ -91,6 +91,9 @@ export async function handleSignOut() {
 
 export async function signOutUser(auth: any) {
   try {
+    // Save the current language preference before clearing storage
+    const currentLocale = localStorage.getItem('locale')
+
     // Clear client-side state first
     if (typeof window !== 'undefined') {
       localStorage.clear()
@@ -100,6 +103,11 @@ export async function signOutUser(auth: any) {
         if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('session')) {
           localStorage.removeItem(key)
         }
+      }
+
+      // Restore the language preference after clearing storage
+      if (currentLocale) {
+        localStorage.setItem('locale', currentLocale)
       }
     }
 
@@ -122,7 +130,6 @@ export async function signOutUser(auth: any) {
     window.location.href = '/'
   }
 }
-
 export async function checkRole(allowedRoles: string[]) {
   'use server'
 
