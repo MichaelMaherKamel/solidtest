@@ -1,339 +1,147 @@
-// import { onMount } from 'solid-js'
+import { createSignal } from 'solid-js'
+import { Button } from './ui/button'
+import * as CryptoJS from 'crypto-js'
 
-// // Extend the Window interface to include FawryPay
-// declare global {
-//   interface Window {
-//     FawryPay: any // Declare FawryPay as a property of the global window object
-//   }
-// }
+interface ChargeItem {
+  itemId: string
+  description: string
+  price: number
+  quantity: number
+  imageUrl: string
+}
 
-// // Import CryptoJS for SHA-256 hashing
-// import * as CryptoJS from 'crypto-js'
+interface ChargeRequest {
+  merchantCode: string
+  merchantRefNum: string
+  customerMobile: string
+  customerEmail: string
+  customerName: string
+  customerProfileId: string
+  paymentExpiry: string
+  language: string
+  chargeItems: ChargeItem[]
+  paymentMethod: string
+  returnUrl: string
+  authCaptureModePayment: boolean
+  signature?: string // Optional property for the signature
+}
 
-// // Helper function to dynamically load a script and return a Promise
-// function loadScript(src: string): Promise<void> {
-//   return new Promise((resolve, reject) => {
-//     const script = document.createElement('script')
-//     script.src = src
-//     script.onload = () => resolve()
-//     script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
-//     document.body.appendChild(script)
-//   })
-// }
+const FawryHostedCheckout = () => {
+  const [error, setError] = createSignal('') // Tracks errors
 
-// // Helper function to poll for the existence of FawryPay
-// function waitForFawryPay(): Promise<void> {
-//   return new Promise((resolve) => {
-//     const interval = setInterval(() => {
-//       if (window.FawryPay) {
-//         clearInterval(interval)
-//         resolve()
-//       }
-//     }, 100) // Check every 100ms
-//   })
-// }
+  // Function to generate the signature using SHA-256 hashing
+  const signRequest = (chargeRequest: ChargeRequest, securityKey: string): string => {
+    let signString = chargeRequest.merchantCode + chargeRequest.merchantRefNum
+    signString += chargeRequest.customerProfileId || ''
+    signString += chargeRequest.returnUrl || ''
 
-// // Custom Button Component with Tailwind CSS Styling
-// function Button(props) {
-//   return (
-//     <button
-//       class='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline'
-//       onClick={props.onClick}
-//       disabled={props.disabled}
-//     >
-//       {props.children}
-//     </button>
-//   )
-// }
+    // Sort charge items by itemId
+    const items = [...chargeRequest.chargeItems].sort((a, b) =>
+      a.itemId.toUpperCase() > b.itemId.toUpperCase() ? 1 : -1
+    )
 
-// export default function FawryPayComponent() {
-//   // Type-safe definitions for the charge request and configuration
-//   interface ChargeItem {
-//     itemId: string
-//     description: string
-//     price: number
-//     quantity: number
-//   }
-
-//   interface ChargeRequest {
-//     merchantCode: string
-//     merchantRefNum: number
-//     customerProfileId: string
-//     customerName: string
-//     customerMobile: string
-//     customerEmail: string
-//     paymentExpiry: number
-//     chargeItems: ChargeItem[]
-//     returnUrl: string
-//     paymentMethod: string
-//     authCaptureModePayment: boolean
-//     description: string
-//     secKey: string
-//     signature: string
-//   }
-
-//   interface Configuration {
-//     locale: string
-//     mode: string
-//   }
-
-//   // Function to generate a random merchant reference number
-//   const generateMerchantRefNum = (): number => Math.floor(Math.random() * 100000000 + 1)
-
-//   // Function to calculate the payment expiry timestamp
-//   const getPaymentExpiry = (): number => Date.now() + 1 * 60 * 60 * 1000 // 1 hour from now
-
-//   // Function to sign the request using SHA-256 hashing
-//   const signRequest = (chargeRequest: Omit<ChargeRequest, 'signature'>): string => {
-//     let signString = chargeRequest.merchantCode + chargeRequest.merchantRefNum
-//     signString += chargeRequest.customerProfileId ? chargeRequest.customerProfileId : ''
-//     signString += chargeRequest.returnUrl ? chargeRequest.returnUrl : ''
-
-//     // Sort charge items by itemId
-//     const items = chargeRequest.chargeItems.sort((x, y) => {
-//       let a = x.itemId.toUpperCase(),
-//         b = y.itemId.toUpperCase()
-//       return a == b ? 0 : a > b ? 1 : -1
-//     })
-
-//     // Append item details to the signature string
-//     items.forEach((item) => {
-//       signString += item.itemId + '' + item.quantity + '' + item.price.toFixed(2)
-//     })
-
-//     signString += chargeRequest.secKey
-
-//     // Use CryptoJS.SHA256 to hash the signature string
-//     return CryptoJS.SHA256(signString).toString(CryptoJS.enc.Hex) // <button class="citation-flag" data-index="9">
-//   }
-
-//   // Function to build the charge request object
-//   const buildChargeRequest = (): ChargeRequest => {
-//     const merchantRefNum = generateMerchantRefNum()
-//     const paymentExpiry = getPaymentExpiry()
-
-//     const chargeRequest: Omit<ChargeRequest, 'signature'> = {
-//       merchantCode: '770000019702', // Replace with your actual merchant code
-//       merchantRefNum: merchantRefNum,
-//       customerProfileId: '123',
-//       customerName: '',
-//       customerMobile: '01234567891',
-//       customerEmail: 'Abdelrahman.Salem@Fawry.com',
-//       paymentExpiry: paymentExpiry,
-//       chargeItems: [
-//         {
-//           itemId: '10b5f6',
-//           description: 'Product 1',
-//           price: 400.0,
-//           quantity: 2,
-//         },
-//       ],
-//       returnUrl: 'https://developer.fawrystaging.com', // Replace with your actual return URL
-//       paymentMethod: '',
-//       authCaptureModePayment: false,
-//       description: 'test description',
-//       secKey: 'c6238f98-16ac-439e-b956-0af980adb7ff', // Replace with your actual secret key
-//     }
-
-//     return { ...chargeRequest, signature: signRequest(chargeRequest) }
-//   }
-
-//   // Function to handle the checkout process
-//   const checkout = async () => {
-//     if (!window.FawryPay) {
-//       console.error('FawryPay library is not loaded. Waiting for initialization...')
-//       try {
-//         await waitForFawryPay() // Wait for FawryPay to be initialized
-//       } catch (error) {
-//         console.error('Failed to initialize FawryPay:', error)
-//         return
-//       }
-//     }
-
-//     const configuration: Configuration = {
-//       locale: 'en', // default en
-//       mode: 'INSIDE_PAGE', // allowed values: POPUP, INSIDE_PAGE, SIDE_PAGE
-//     }
-
-//     window.FawryPay.checkout(buildChargeRequest(), configuration)
-//   }
-
-//   // Load FawryPay CSS and JS libraries, as well as CryptoJS for SHA-256 hashing
-//   onMount(async () => {
-//     try {
-//       // Load FawryPay CSS (Production)
-//       const fawryPayCSS = document.createElement('link')
-//       fawryPayCSS.rel = 'stylesheet'
-//       fawryPayCSS.href = 'https://www.atfawry.com/atfawry/plugin/assets/payments/css/fawrypay-payments.css'
-//       document.head.appendChild(fawryPayCSS)
-
-//       // Load FawryPay JS (Production)
-//       await loadScript('https://www.atfawry.com/atfawry/plugin/assets/payments/js/fawrypay-payments.js')
-
-//       // Wait for FawryPay to be initialized
-//       await waitForFawryPay()
-
-//       // Load CryptoJS for SHA-256 hashing
-//       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js')
-
-//       console.log('All scripts loaded successfully.')
-//     } catch (error) {
-//       console.error('Error loading scripts:', error)
-//     }
-//   })
-
-//   return (
-//     <div class='flex flex-col items-center justify-center min-h-screen bg-gray-100'>
-//       <h1 class='text-2xl font-bold mb-4'>FawryPay Checkout Example</h1>
-//       <Button onClick={checkout}>Pay with Fawry</Button>
-//     </div>
-//   )
-// }
-
-import { createSignal, onMount } from 'solid-js'
-
-const FawryCheckout = () => {
-  const [isSDKLoaded, setIsSDKLoaded] = createSignal(false)
-  const [error, setError] = createSignal('')
-
-  // Add a small delay to check FawryPay availability
-  const checkFawryPay = () => {
-    if ((window as any).FawryPay) {
-      console.log('FawryPay SDK detected')
-      setIsSDKLoaded(true)
-      return true
-    }
-    return false
-  }
-
-  onMount(() => {
-    // First check if FawryPay is already available
-    if (checkFawryPay()) return
-
-    // If not, load the required scripts
-    const shaScript = document.createElement('script')
-    shaScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js'
-
-    const fawryScript = document.createElement('script')
-    fawryScript.src = 'https://www.atfawry.com/atfawry/plugin/assets/payments/js/fawrypay-payments.js'
-
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = 'https://www.atfawry.com/atfawry/plugin/assets/payments/css/fawrypay-payments.css'
-
-    // Add load handlers
-    fawryScript.onload = () => {
-      console.log('FawryPay script loaded')
-      // Add a small delay to ensure FawryPay is initialized
-      setTimeout(() => {
-        checkFawryPay()
-      }, 100)
-    }
-
-    shaScript.onload = () => {
-      console.log('SHA256 script loaded')
-    }
-
-    // Add error handlers
-    fawryScript.onerror = () => {
-      console.error('Failed to load FawryPay SDK')
-      setError('Failed to load payment system')
-    }
-
-    shaScript.onerror = () => {
-      console.error('Failed to load SHA256 library')
-      setError('Failed to load payment system')
-    }
-
-    // Append elements to document
-    document.head.appendChild(shaScript)
-    document.head.appendChild(fawryScript)
-    document.head.appendChild(link)
-  })
-
-  const signRequest = (request: any) => {
-    if (!(window as any).sha256) {
-      throw new Error('SHA256 library not loaded')
-    }
-
-    let signString = request.merchantCode + request.merchantRefNum
-    signString += request.customerProfileId || ''
-    signString += request.returnUrl || ''
-
-    const items = [...request.chargeItems].sort((a, b) => (a.itemId.toUpperCase() > b.itemId.toUpperCase() ? 1 : -1))
-
+    // Append item details to the signature string
     items.forEach((item) => {
       signString += `${item.itemId}${item.quantity}${item.price.toFixed(2)}`
     })
 
-    signString += request.secKey
-    return (window as any).sha256(signString)
+    signString += securityKey
+
+    // Use CryptoJS for SHA-256 hashing
+    return CryptoJS.SHA256(signString).toString(CryptoJS.enc.Hex)
   }
 
-  const buildChargeRequest = () => {
-    const merchantRefNum = Math.floor(Math.random() * 100000000 + 1)
-    const futureTimestamp = Date.now() + 1 * 60 * 60 * 1000
+  // Function to build the charge request object
+  const buildChargeRequest = (merchantCode: string, securityKey: string): ChargeRequest => {
+    const merchantRefNum = Math.floor(Math.random() * 100000000 + 1).toString()
+    const futureTimestamp = Date.now() + 1 * 60 * 60 * 1000 // 1 hour from now
 
-    const chargeRequest = {
-      merchantCode: '770000019702', // Replace with your merchant code
+    const chargeRequest: ChargeRequest = {
+      merchantCode: merchantCode,
       merchantRefNum: merchantRefNum,
-      customerProfileId: '123',
-      customerMobile: '01234567891',
-      customerEmail: 'user@example.com',
-      paymentExpiry: futureTimestamp,
+      customerMobile: '01xxxxxxxxx', // Replace with actual customer mobile
+      customerEmail: 'email@domain.com', // Replace with actual customer email
+      customerName: 'Customer Name', // Replace with actual customer name
+      customerProfileId: '1212',
+      paymentExpiry: futureTimestamp.toString(),
+      language: 'en-gb',
       chargeItems: [
         {
-          itemId: '10b5f6',
-          description: 'Product 1',
-          price: 400.0,
+          itemId: '6b5fdea340e31b3b0339d4d4ae5',
+          description: 'Product Description',
+          price: 50.0,
           quantity: 2,
+          imageUrl: 'https://developer.fawrystaging.com/photos/45566.jpg',
+        },
+        {
+          itemId: '97092dd9e9c07888c7eef36',
+          description: 'Product Description',
+          price: 75.25,
+          quantity: 3,
+          imageUrl: 'https://developer.fawrystaging.com/photos/639855.jpg',
         },
       ],
-      returnUrl: 'https://your-return-url.com',
-      paymentMethod: '',
+      paymentMethod: 'PayAtFawry',
+      returnUrl: 'https://your-return-url.com', // Replace with your actual return URL
       authCaptureModePayment: false,
-      description: 'test description',
-      secKey: 'c6238f98-16ac-439e-b956-0af980adb7ff', // Replace with your secret key
     }
 
-    return {
-      ...chargeRequest,
-      signature: signRequest(chargeRequest),
-    }
+    // Generate the signature
+    chargeRequest.signature = signRequest(chargeRequest, securityKey)
+
+    return chargeRequest
   }
 
-  const handleCheckout = () => {
-    if (!isSDKLoaded()) {
-      setError('FawryPay SDK is not yet loaded')
-      return
-    }
-
+  // Function to handle the checkout process
+  const handleCheckout = async () => {
     try {
-      const configuration = {
-        locale: 'en',
-        mode: (window as any).DISPLAY_MODE?.SEPERATED || 'SEPERATED',
+      // Retrieve sensitive data from environment variables
+      const merchantCode = import.meta.env.VITE_FAWRY_MERCHANT_CODE
+      const securityKey = import.meta.env.VITE_FAWRY_SECURITY_CODE
+
+      // Build the charge request
+      const chargeRequest = buildChargeRequest(merchantCode, securityKey)
+
+      // Log the request for debugging
+      console.log('Sending request to Fawry:', JSON.stringify(chargeRequest, null, 2))
+
+      // Call Fawry API
+      const apiUrl = 'https://atfawry.com/fawrypay-api/api/payments/init'
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(chargeRequest),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`)
       }
 
-      ;(window as any).FawryPay.checkout(buildChargeRequest(), configuration)
-    } catch (err: any) {
-      setError(`Checkout failed: ${err.message}`)
+      const data = await response.json()
+      console.log('FawryPay API Response:', data)
+
+      // Redirect to the payment URL
+      if (data.paymentURL) {
+        window.location.href = data.paymentURL // Redirect to the payment page <button class="citation-flag" data-index="10">
+      } else {
+        setError('Payment URL not found in API response.')
+      }
+    } catch (err) {
+      console.error('Error during checkout:', err)
+      setError('Failed to initiate payment. Please try again.')
     }
   }
 
   return (
-    <div class='relative'>
+    <div class='flex flex-col items-center justify-center min-h-screen bg-gray-100'>
       {error() && <div class='text-red-500 mb-4'>{error()}</div>}
-      <input
-        type='image'
-        onClick={handleCheckout}
-        src='https://www.atfawry.com/assets/img/FawryPayLogo.jpg'
-        alt='Pay using Fawry'
-        class='fawry-payment-btn cursor-pointer w-48'
-        disabled={!isSDKLoaded()}
-      />
-      {!isSDKLoaded() && <div class='text-gray-500 mt-2'>Loading payment system...</div>}
+      <Button onClick={handleCheckout} class='bg-blue-500 text-white px-4 py-2 rounded'>
+        Pay with Fawry
+      </Button>
     </div>
   )
 }
 
-export default FawryCheckout
+export default FawryHostedCheckout
