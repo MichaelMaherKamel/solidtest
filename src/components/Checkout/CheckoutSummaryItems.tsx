@@ -162,8 +162,8 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
 
   // Build Fawry request with proper error handling
   const buildFawryRequest = (items: CartItem[], address: Address, orderNumber: string) => {
-    const merchantCode = import.meta.env.VITE_FAWRY_MERCHANT_CODE
-    const securityKey = import.meta.env.VITE_FAWRY_SECURITY_CODE
+    const merchantCode = process.env.FAWRY_MERCHANT_CODE
+    const securityKey = process.env.FAWRY_SECURITY_CODE
 
     if (!merchantCode || !securityKey) {
       throw new Error('Missing Fawry credentials')
