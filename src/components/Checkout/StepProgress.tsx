@@ -1,13 +1,14 @@
 // ~/components/Checkout/StepProgress.tsx
-import { Component, For, Show, Resource } from 'solid-js'
+import { Component, For, Show } from 'solid-js'
 import { FiCheck, FiChevronDown, FiArrowLeft, FiArrowRight } from 'solid-icons/fi'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { useI18n } from '~/contexts/i18n'
 import CheckoutCartItems from './CheckoutCartItems'
 import CheckoutAddress from './CheckoutAddress'
-import { CartItem } from '~/db/schema'
 import { IconCashOnDelivery, IconPayByCard } from '~/components/Icons'
+import type { CartResponse } from '~/db/fetchers/cart'
+import type { Address } from '~/db/schema'
 
 interface StepProgressProps {
   activeStep: string
@@ -18,19 +19,9 @@ interface StepProgressProps {
   onBack: (currentStepId: string) => void
   selectedPaymentMethod: string | null
   onPaymentSelect: (method: string) => void
-  cartData: Resource<
-    | {
-        createdAt: Date
-        updatedAt: Date
-        sessionId: string
-        cartId: string
-        items: CartItem[]
-        lastActive: Date
-      }
-    | { items: never[] }
-    | undefined
-  >
-  addressData: Resource<any>
+  cartData?: CartResponse
+  addressData?: Address | null
+  onAddressUpdate: () => void
 }
 
 const StepProgress: Component<StepProgressProps> = (props) => {
@@ -43,19 +34,26 @@ const StepProgress: Component<StepProgressProps> = (props) => {
     { id: 'payment', title: t('checkout.steps.payment') },
   ]
 
-  const renderStepContent = (stepId: string, index: () => number) => {
+  const renderStepContent = (stepId: string) => {
     if (stepId === 'cart') {
       return <CheckoutCartItems onNext={() => props.onNext('cart')} />
     }
 
     if (stepId === 'shipping') {
-      return <CheckoutAddress onNext={() => props.onNext('shipping')} onBack={() => props.onBack('shipping')} />
+      return (
+        <CheckoutAddress
+          onNext={() => props.onNext('shipping')}
+          onBack={() => props.onBack('shipping')}
+          onAddressUpdate={props.onAddressUpdate}
+        />
+      )
     }
 
     if (stepId === 'payment') {
       return (
         <div class='space-y-6'>
           <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            {/* Cash on Delivery Option */}
             <Card
               classList={{
                 'cursor-pointer transition-all duration-300 ease-out hover:shadow-lg bg-gray-50': true,
@@ -80,6 +78,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
               </div>
             </Card>
 
+            {/* Pay by Fawry Option */}
             <Card
               classList={{
                 'cursor-pointer transition-all duration-300 ease-out hover:shadow-lg bg-gray-50': true,
@@ -105,6 +104,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
             </Card>
           </div>
 
+          {/* Navigation Buttons for Payment Step */}
           <div class='flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
             <Button
               variant='secondary'
@@ -138,7 +138,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
   return (
     <div class='space-y-6'>
       <For each={steps}>
-        {(step, index) => {
+        {(step) => {
           const isActive = () => props.activeStep === step.id
           const isCompleted = () =>
             props.completedSteps.includes(step.id) || (step.id === 'payment' && props.selectedPaymentMethod !== null)
@@ -166,7 +166,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                       'bg-gray-100': !isActive() && !isCompleted(),
                     }}
                   >
-                    <Show when={isCompleted()} fallback={<span>{index() + 1}</span>}>
+                    <Show when={isCompleted()} fallback={<span>{steps.indexOf(step) + 1}</span>}>
                       <FiCheck class='size-5' />
                     </Show>
                   </div>
@@ -196,7 +196,7 @@ const StepProgress: Component<StepProgressProps> = (props) => {
                   'max-h-0 opacity-0': !isActive(),
                 }}
               >
-                <div class='px-6 py-4 border-t'>{renderStepContent(step.id, index)}</div>
+                <div class='px-6 py-4 border-t'>{renderStepContent(step.id)}</div>
               </div>
             </Card>
           )

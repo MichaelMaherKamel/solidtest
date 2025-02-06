@@ -10,30 +10,29 @@ import { getSession } from '~/db/actions/auth'
 const ORDER_COOKIE = 'order-session'
 
 // Get the order identifier (userId or sessionId)
-async function getOrderIdentifier(): Promise<{ type: 'user' | 'guest'; id: string }> {
+async function getOrderIdentifier(): Promise<{ type: 'user' | 'guest'; id: string; sessionId: string }> {
   'use server'
   try {
     const session = await getSession()
-
-    if (session?.user?.id) {
-      return { type: 'user', id: session.user.id }
-    }
-
     const event = getRequestEvent()!.nativeEvent
     let sessionId = getCookie(event, ORDER_COOKIE)
 
+    // Always generate a session ID if missing
     if (!sessionId) {
       sessionId = secure()
       setCookie(event, ORDER_COOKIE, sessionId, {
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
         httpOnly: true,
-        secure: true, // Ensure this is set dynamically in production
+        secure: true,
         path: '/',
         sameSite: 'lax',
       })
     }
 
-    return { type: 'guest', id: sessionId }
+    if (session?.user?.id) {
+      return { type: 'user', id: session.user.id, sessionId }
+    }
+    return { type: 'guest', id: sessionId, sessionId }
   } catch (error) {
     console.error('Error getting order identifier:', error)
     throw new Error('Failed to get order identifier')
@@ -49,7 +48,7 @@ export const createOrderAction = action(async (orderData: NewOrder): Promise<Ord
     const identifier = await getOrderIdentifier()
 
     const newOrder: NewOrder = {
-      sessionId: identifier.type === 'guest' ? identifier.id : '',
+      sessionId: identifier.sessionId,
       userId: identifier.type === 'user' ? identifier.id : null,
       orderNumber: orderData.orderNumber,
       items: orderData.items,

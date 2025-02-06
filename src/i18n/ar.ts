@@ -128,6 +128,20 @@ export const arDict = {
       reviewOrder: 'مراجعة طلبك',
       editPayment: 'تعديل طريقة الدفع',
     },
+    payment: {
+      status: {
+        pending: 'الدفع معلق',
+        processing: 'معالجة الدفع',
+        completed: 'اكتمل الدفع',
+        failed: 'فشل الدفع',
+        refunded: 'تم استرداد الدفع',
+        paid: 'مدفوع', // Add Arabic translation here
+      },
+      error: {
+        noPendingOrder: 'لم يتم العثور على طلب معلق. يرجى المحاولة مرة أخرى.', // Add Arabic translation here
+        description: 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.', // Add Arabic translation here
+      },
+    },
     paymentMethod: 'طريقة الدفع',
     cashOnDelivery: 'الدفع عند الاستلام',
     payByFawry: 'الدفع عبر فوري',

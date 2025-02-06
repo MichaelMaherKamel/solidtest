@@ -1,5 +1,5 @@
 // ~/pages/orders/[orderId].tsx
-import { Component, createEffect, Show, Suspense } from 'solid-js'
+import { Component, createEffect, createSignal, onCleanup, Show, Suspense } from 'solid-js'
 import { useNavigate, useParams } from '@solidjs/router'
 import { createAsync } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
@@ -217,37 +217,7 @@ const OrderDetails: Component = () => {
   const { t, locale } = useI18n()
   const isRTL = () => locale() === 'ar'
 
-  createEffect(() => {
-    if (orderData()?.paymentStatus === 'pending') {
-      // Poll for payment status update
-      const interval = setInterval(async () => {
-        const updatedOrder = await getOrderById(params.orderId)
-        if (updatedOrder?.paymentStatus !== 'pending') {
-          clearInterval(interval)
-          // Trigger UI update
-        }
-      }, 5000)
-      return () => clearInterval(interval)
-    }
-  })
-
-  // const orderData = createAsync(() => getOrderById(params.orderId) as Promise<Order>)
-
-  const delay = (ms: number = 2000): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  }
-
-  const orderData = createAsync(async () => {
-    try {
-      // await delay()
-      const order = (await getOrderById(params.orderId)) as Order | null
-      if (!order) return null
-      return order
-    } catch (error) {
-      console.error('Error fetching order:', error)
-      return null
-    }
-  })
+  const orderData = createAsync(() => getOrderById(params.orderId) as Promise<Order>)
 
   return (
     <div class='container mx-auto px-4 py-8' dir={isRTL() ? 'rtl' : 'ltr'}>

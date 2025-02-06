@@ -128,6 +128,20 @@ export const enDict = {
       reviewOrder: 'Review Your Order',
       editPayment: 'Edit Payment Method',
     },
+    payment: {
+      status: {
+        pending: 'Payment Pending',
+        processing: 'Processing Payment',
+        completed: 'Payment Completed',
+        failed: 'Payment Failed',
+        refunded: 'Payment Refunded',
+        paid: 'Paid', // Added for `checkout.payment.status.paid`
+      },
+      error: {
+        noPendingOrder: 'No pending order found. Please try again.', // Added for `checkout.payment.error.noPendingOrder`
+        description: 'An error occurred while processing your payment. Please try again.', // Added for `checkout.payment.error.description`
+      },
+    },
     paymentMethod: 'Payment Method',
     cashOnDelivery: 'Cash on Delivery',
     payByFawry: 'Pay with Fawry',

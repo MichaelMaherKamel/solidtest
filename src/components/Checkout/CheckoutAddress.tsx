@@ -12,6 +12,7 @@ import type { City } from '~/db/schema/types'
 interface CheckoutAddressProps {
   onNext: (step: string) => void
   onBack: (step: string) => void
+  onAddressUpdate: () => void
 }
 
 interface AddressFormData {
@@ -90,6 +91,7 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
       if (result.success) {
         setIsEditing(false)
         setIsAddressSaved(true)
+        props.onAddressUpdate() // Call the callback after successful update
       } else {
         setFormError(result.error || t('address.validation.error'))
       }

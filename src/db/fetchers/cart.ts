@@ -5,7 +5,7 @@ import { carts, type Cart } from '~/db/schema'
 import { getCookie } from 'vinxi/http'
 import { getRequestEvent } from 'solid-js/web'
 
-type CartResponse = Cart | { items: never[] }
+export type CartResponse = Cart | { items: never[] }
 
 export const getCart = query(async (): Promise<CartResponse> => {
   'use server'

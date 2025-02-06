@@ -1,19 +1,44 @@
+// ~/components/Checkout/CheckoutSummaryItems.tsx
 import { Component, For, Show, createMemo, createSignal } from 'solid-js'
 import { useI18n } from '~/contexts/i18n'
 import { FiPackage, FiMapPin, FiPhone, FiUser, FiEdit2 } from 'solid-icons/fi'
 import { FaSolidMapPin } from 'solid-icons/fa'
 import { formatCurrency, calculateCartTotals, getDeliveryEstimate } from '~/lib/utils'
-import type { CartItem, Address } from '~/db/schema'
+import type { CartItem, Address, OrderItem, NewOrder } from '~/db/schema'
 import { Card } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { IconPayByCard, IconCashOnDelivery } from '../Icons'
 import { BiSolidStore } from 'solid-icons/bi'
-import { createOrderAction } from '~/db/actions/order'
-import { useAction } from '@solidjs/router'
 import { Separator } from '../ui/separator'
-import { deleteCart } from '~/db/actions/cart'
-import { updateInventoryAfterOrderAction } from '~/db/actions/products'
-import { createFawryChargeRequest } from '~/db/actions/fawry'
+import * as CryptoJS from 'crypto-js'
+
+// Fawry integration types
+interface FawryChargeItem {
+  itemId: string
+  description: string
+  price: number
+  quantity: number
+  imageUrl: string
+}
+
+interface FawryRequest {
+  merchantCode: string
+  merchantRefNum: string
+  customerMobile: string
+  customerEmail: string
+  customerName: string
+  customerProfileId: string
+  paymentExpiry: string
+  language: string
+  chargeItems: FawryChargeItem[]
+  paymentMethod: string
+  returnUrl: string
+  authCaptureModePayment: boolean
+  orderAmount: string
+  currency: string
+  orderDescription: string
+  signature?: string
+}
 
 interface CheckoutSummaryItemsProps {
   items: CartItem[]
@@ -21,24 +46,244 @@ interface CheckoutSummaryItemsProps {
   selectedPaymentMethod: string | null
   isLoading?: boolean
   onEditOrder?: () => void
-  onConfirmOrder?: (orderId: string) => void
+  onConfirmOrder?: (orderData: NewOrder) => void
 }
 
 const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
   const { t } = useI18n()
-  const createOrder = useAction(createOrderAction)
-  const clearCartAction = useAction(deleteCart)
-  const updateInventory = useAction(updateInventoryAfterOrderAction)
-
-  const [isPlacingOrder, setIsPlacingOrder] = createSignal(false)
   const [orderError, setOrderError] = createSignal('')
+  const [isProcessing, setIsProcessing] = createSignal(false)
 
+  // Generate a unique order number
   const generateOrderNumber = () => {
     const timestamp = Date.now().toString(36)
     const random = Math.random().toString(36).substring(2, 8)
     return `${timestamp}-${random}`.toUpperCase()
   }
 
+  // Create properly typed order data
+  const createOrderData = (orderNumber: string, paymentMethod: 'cash' | 'card'): NewOrder => {
+    if (!props.address || !props.items.length) {
+      throw new Error('Missing required order data')
+    }
+
+    const totals = calculateCartTotals(props.items, props.address.city)
+
+    // Create typed order items
+    const orderItems: OrderItem[] = props.items.map((item) => ({
+      productId: item.productId,
+      storeId: item.storeId,
+      storeName: item.storeName,
+      quantity: item.quantity,
+      price: item.price,
+      name: item.name,
+      selectedColor: item.selectedColor,
+      image: item.image,
+    }))
+
+    // Create store summaries with proper grouping
+    const storeMap = new Map<
+      string,
+      {
+        storeId: string
+        storeName: string
+        items: OrderItem[]
+        subtotal: number
+      }
+    >()
+
+    orderItems.forEach((item) => {
+      const storeData = storeMap.get(item.storeId) || {
+        storeId: item.storeId,
+        storeName: item.storeName,
+        items: [],
+        subtotal: 0,
+      }
+      storeData.items.push(item)
+      storeData.subtotal += item.price * item.quantity
+      storeMap.set(item.storeId, storeData)
+    })
+
+    const storeSummaries = Array.from(storeMap.values()).map((store) => ({
+      storeId: store.storeId,
+      storeName: store.storeName,
+      itemCount: store.items.length,
+      subtotal: store.subtotal,
+      status: 'pending' as const,
+    }))
+
+    // Create complete order data
+    const orderData: NewOrder = {
+      orderNumber,
+      items: orderItems,
+      subtotal: totals.subtotal,
+      shippingCost: totals.shipping,
+      total: totals.total,
+      paymentMethod,
+      paymentStatus: 'pending',
+      orderStatus: 'pending',
+      shippingAddress: {
+        name: props.address.name,
+        email: props.address.email,
+        phone: props.address.phone,
+        address: props.address.address,
+        buildingNumber: props.address.buildingNumber,
+        floorNumber: props.address.floorNumber || 0,
+        flatNumber: props.address.flatNumber,
+        city: props.address.city,
+        district: props.address.district,
+        country: props.address.country,
+      },
+      storeSummaries,
+      sessionId: '', // Will be set by server
+      userId: null, // Will be set by server if user is logged in
+    }
+
+    return orderData
+  }
+
+  // Sign Fawry request with proper typing
+  const signFawryRequest = (chargeRequest: FawryRequest, securityKey: string): string => {
+    let signString = chargeRequest.merchantCode + chargeRequest.merchantRefNum
+    signString += chargeRequest.customerProfileId || ''
+    signString += chargeRequest.returnUrl || ''
+
+    const items = [...chargeRequest.chargeItems].sort((a, b) =>
+      a.itemId.toUpperCase() > b.itemId.toUpperCase() ? 1 : -1
+    )
+
+    items.forEach((item) => {
+      signString += `${item.itemId}${item.quantity}${item.price.toFixed(2)}`
+    })
+
+    signString += securityKey
+    return CryptoJS.SHA256(signString).toString(CryptoJS.enc.Hex)
+  }
+
+  // Build Fawry request with proper error handling
+  const buildFawryRequest = (items: CartItem[], address: Address, orderNumber: string) => {
+    const merchantCode = import.meta.env.VITE_FAWRY_MERCHANT_CODE
+    const securityKey = import.meta.env.VITE_FAWRY_SECURITY_CODE
+
+    if (!merchantCode || !securityKey) {
+      throw new Error('Missing Fawry credentials')
+    }
+
+    const futureTimestamp = Date.now() + 1 * 60 * 60 * 1000 // 1 hour expiry
+    const calculatedTotals = calculateCartTotals(items, address.city)
+
+    const chargeItems: FawryChargeItem[] = items.map((item) => ({
+      itemId: item.productId,
+      description: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      imageUrl: item.image,
+    }))
+
+    // Create the request with proper typing
+    const chargeRequest: FawryRequest = {
+      merchantCode,
+      merchantRefNum: orderNumber,
+      customerMobile: address.phone,
+      customerEmail: address.email || 'no-email@provided.com',
+      customerName: address.name,
+      customerProfileId: orderNumber, // Use orderNumber since address.id isn't available
+      paymentExpiry: futureTimestamp.toString(),
+      language: 'en-gb',
+      chargeItems,
+      paymentMethod: 'CARD',
+      returnUrl: `${window.location.origin}/checkout`,
+      authCaptureModePayment: false,
+      orderAmount: calculatedTotals.total.toFixed(2),
+      currency: 'EGP',
+      orderDescription: `Order ${orderNumber}`,
+    }
+
+    // Add signature after creating the request
+    const signature = signFawryRequest(chargeRequest, securityKey)
+    const signedRequest: FawryRequest = {
+      ...chargeRequest,
+      signature,
+    }
+
+    return { chargeRequest: signedRequest, orderNumber }
+  }
+
+  // Initialize Fawry payment with proper error handling
+  const initializeFawryPayment = async () => {
+    setIsProcessing(true)
+    try {
+      if (!props.address) {
+        throw new Error('Shipping address is required')
+      }
+
+      const orderNumber = generateOrderNumber()
+      const orderData = createOrderData(orderNumber, 'card')
+      const { chargeRequest } = buildFawryRequest(props.items, props.address, orderNumber)
+
+      // Store complete order data before redirect
+      sessionStorage.setItem('pending_order', JSON.stringify(orderData))
+
+      const response = await fetch('https://atfawry.com/fawrypay-api/api/payments/init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: '*/*',
+        },
+        body: JSON.stringify(chargeRequest),
+      })
+
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        const data = await response.json()
+        if (data.paymentURL) {
+          window.location.href = data.paymentURL
+          return
+        }
+      }
+
+      const text = await response.text()
+      if (text.trim().toLowerCase().startsWith('http')) {
+        window.location.href = text.trim()
+        return
+      }
+
+      throw new Error('Invalid response from payment gateway')
+    } catch (error) {
+      console.error('Payment initialization error:', error)
+      setOrderError(error instanceof Error ? error.message : 'Payment initialization failed')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Handle order confirmation with proper error handling
+  const handleConfirmOrder = async () => {
+    if (!props.items?.length || !props.address) {
+      setOrderError(t('order.invalidData'))
+      return
+    }
+
+    setIsProcessing(true)
+    try {
+      if (props.selectedPaymentMethod === 'card') {
+        await initializeFawryPayment()
+        return
+      }
+
+      // Handle cash on delivery
+      const orderNumber = generateOrderNumber()
+      const orderData = createOrderData(orderNumber, 'cash')
+      props.onConfirmOrder?.(orderData)
+    } catch (error) {
+      console.error('Order confirmation error:', error)
+      setOrderError(error instanceof Error ? error.message : t('order.error'))
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Memoized calculations
   const totals = createMemo(() => {
     if (!props.items || !props.address) return { subtotal: 0, shipping: 0, total: 0 }
     return calculateCartTotals(props.items, props.address.city)
@@ -73,115 +318,6 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
 
     return Object.values(grouped)
   })
-
-  const handleFawryCheckout = async (orderId: string) => {
-    const fawryResult = await createFawryChargeRequest(orderId)
-
-    if (!fawryResult.success) {
-      setOrderError(t('payment.fawryError'))
-      return
-    }
-
-    const loadFawryScripts = () => {
-      return new Promise<void>((resolve) => {
-        const script = document.createElement('script')
-        script.src = 'https://atfawry.fawrystaging.com/atfawry/plugin/init.js'
-        script.onload = () => resolve()
-        document.head.appendChild(script)
-
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://atfawry.fawrystaging.com/atfawry/plugin/FawryPayPlugin.css'
-        document.head.appendChild(link)
-      })
-    }
-
-    try {
-      await loadFawryScripts()
-
-      window.FawryPay.checkout({
-        ...fawryResult.chargeRequest,
-        paymentMethod: 'CARD',
-        mode: 'POPUP',
-      })
-    } catch (error) {
-      console.error('Fawry checkout error:', error)
-      setOrderError(t('payment.checkoutError'))
-    }
-  }
-
-  const handleConfirmOrder = async () => {
-    if (!props.items?.length || !props.address) {
-      setOrderError(t('order.invalidData'))
-      return
-    }
-
-    setIsPlacingOrder(true)
-    setOrderError('')
-
-    try {
-      const orderData = {
-        orderNumber: generateOrderNumber(),
-        items: props.items.map((item) => ({
-          productId: item.productId,
-          storeId: item.storeId,
-          storeName: item.storeName,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.name,
-          selectedColor: item.selectedColor,
-          image: item.image,
-        })),
-        subtotal: totals().subtotal,
-        shippingCost: totals().shipping,
-        total: totals().total,
-        paymentMethod: props.selectedPaymentMethod || 'cash',
-        shippingAddress: props.address,
-        storeSummaries: groupedItems().map((group) => ({
-          storeId: group.store.storeId,
-          storeName: group.store.storeName,
-          itemCount: group.items.length,
-          subtotal: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-          status: 'pending',
-        })),
-      }
-
-      const result = await createOrder(orderData)
-
-      if (result.success) {
-        try {
-          // Handle Fawry payment flow
-          if (props.selectedPaymentMethod === 'fawry') {
-            await handleFawryCheckout(result.orderId)
-          }
-
-          // Update inventory
-          const inventoryResult = await updateInventory(orderData.items)
-          if (!inventoryResult.success) {
-            console.error('Failed to update inventory:', inventoryResult.error)
-          }
-
-          // Clear cart
-          const clearResult = await clearCartAction()
-          if (!clearResult.success) {
-            console.error('Failed to clear cart:', clearResult.error)
-          }
-
-          // Proceed with order confirmation
-          props.onConfirmOrder?.(result.orderId)
-        } catch (error) {
-          console.error('Error in post-order processing:', error)
-        }
-      } else {
-        setOrderError(result.error || t('order.error'))
-      }
-    } catch (error) {
-      console.error('Error placing order:', error)
-      setOrderError(t('order.error'))
-    } finally {
-      setIsPlacingOrder(false)
-    }
-  }
 
   return (
     <Card class='overflow-hidden shadow-lg'>
@@ -247,7 +383,6 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
                                   </div>
                                 </div>
                               </div>
-                              {/* Price section - hidden on mobile, shown on desktop */}
                               <div class='hidden sm:block text-end flex-shrink-0'>
                                 <p class='text-sm text-gray-500'>
                                   {item.quantity} × {formatCurrency(item.price)}
@@ -314,8 +449,8 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
                 <FaSolidMapPin class='flex-shrink-0 mt-1' />
                 <p class='text-gray-600 break-words'>
                   {props.address?.address}
-                  {props.address?.buildingNumber ? `, ${props.address?.buildingNumber}` : ''}
-                  {props.address?.flatNumber ? `, ${props.address?.flatNumber}` : ''}
+                  {props.address?.buildingNumber ? `, ${t('address.building')} ${props.address?.buildingNumber}` : ''}
+                  {props.address?.flatNumber ? `, ${t('address.flat')} ${props.address?.flatNumber}` : ''}
                   {props.address?.district ? `, ${props.address?.district}` : ''}
                   {props.address?.city ? `, ${props.address?.city}` : ''}
                 </p>
@@ -324,7 +459,7 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
           </div>
         </Show>
 
-        {/* Selected Payment Method */}
+        {/* Payment Method */}
         <div class='bg-gray-50 rounded-lg p-3 sm:p-4'>
           <div class='flex items-center justify-between'>
             <div class='flex items-center gap-2 text-gray-600 text-sm sm:text-base'>
@@ -342,20 +477,20 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
           </div>
         </div>
 
-        {/* Action Button - Only Confirm Order */}
+        {/* Action Button */}
         <div class='pt-2 sm:pt-4'>
           <Button
             variant='pay'
             class='w-full transform transition-all duration-300 hover:scale-[1.02] text-sm sm:text-base'
             size='lg'
             onClick={handleConfirmOrder}
-            disabled={isPlacingOrder()}
+            disabled={isProcessing()}
           >
-            {isPlacingOrder()
-              ? t('common.loading') // Use the common.loading translation key
-              : props.selectedPaymentMethod === 'cash'
-              ? t('checkout.orderReview.buttons.confirmCod')
-              : t('checkout.orderReview.buttons.confirmFawry')}
+            {isProcessing()
+              ? t('common.loading')
+              : props.selectedPaymentMethod === 'card'
+              ? t('checkout.orderReview.buttons.confirmFawry')
+              : t('checkout.orderReview.buttons.confirmCod')}
           </Button>
 
           <Show when={orderError()}>
