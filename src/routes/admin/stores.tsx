@@ -43,6 +43,7 @@ type DataTableColumn = {
 
 // Store Form Component for Creating New Store
 const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (props) => {
+  const { refreshStores } = useAdminContext()
   const submission = useSubmission(createStoreAction)
   const [stores] = createResource<Store[]>(async () => await getStores())
   const [sellers] = createResource<SellerData[]>(async () => await getSellers())
@@ -79,6 +80,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
   }
 
   // Watch submission result
+
   createEffect(() => {
     if (submission.result && !submission.pending) {
       if (submission.result.success) {
@@ -87,6 +89,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
           description: 'Store has been created successfully.',
           variant: 'success',
         })
+        refreshStores() // Call refresh after successful creation
         props.onSuccess()
         props.onClose()
         resetForm()
@@ -269,6 +272,7 @@ const EditStoreForm: Component<{
   onSuccess: () => void
   onClose: () => void
 }> = (props) => {
+  const { refreshStores } = useAdminContext()
   const submission = useSubmission(updateStoreAction)
   const [formData, setFormData] = createSignal<Omit<Store, 'userId' | 'storeOwner' | 'createdAt' | 'updatedAt'>>({
     storeId: props.store.storeId,
@@ -294,9 +298,10 @@ const EditStoreForm: Component<{
           description: 'Store has been updated successfully.',
           variant: 'success',
         })
+        refreshStores() // Call refresh after successful update
         props.onSuccess()
         props.onClose()
-        resetForm() // Clear the submission state
+        resetForm()
       } else {
         showToast({
           title: 'Error',

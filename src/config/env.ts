@@ -1,8 +1,5 @@
 // ~/config/env.ts
 import { z } from 'zod'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 const envSchema = z.object({
   // Database configuration
@@ -26,27 +23,27 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 })
 
-function createValidatedEnv() {
+// Type for our validated environment
+export type EnvConfig = z.infer<typeof envSchema>
+
+function createValidatedEnv(): EnvConfig {
   try {
-    const env = envSchema.parse(process.env)
+    // Use import.meta.env in client, process.env in server
+    const envSource = typeof process !== 'undefined' ? process.env : import.meta.env
+
+    const env = envSchema.parse(envSource)
     return env
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errors = error.errors.map((err) => `${err.path}: ${err.message}`).join('\n')
       console.error('❌ Invalid environment variables:\n', errors)
-      process.exit(1)
+      throw new Error('Invalid environment configuration')
     }
     console.error('❌ Unknown error validating environment variables:', error)
-    process.exit(1)
+    throw error
   }
 }
 
 export const env = createValidatedEnv()
-
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv extends z.infer<typeof envSchema> {}
-  }
-}
 
 export default env

@@ -1,5 +1,5 @@
 import { Component, createSignal, createEffect, For, Show } from 'solid-js'
-import { useSubmission, useAction } from '@solidjs/router'
+import { useAction } from '@solidjs/router'
 import { supabaseUploadAction } from '~/db/actions/supabaseImageupload'
 import { Alert, AlertDescription } from './ui/alerts'
 import { Spinner } from '~/components/ui/spinner'
@@ -13,13 +13,12 @@ interface MultipleImageUploadProps {
   maxSize?: number
   maxFiles?: number
   defaultValues?: string[]
-  key?: number | string // Add key prop
+  key?: number | string
+  folder?: string
 }
 
 const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
-  // Create a signal to track the current key
   const [currentKey, setCurrentKey] = createSignal<number | string | undefined>(props.key)
-
   const [previews, setPreviews] = createSignal<{ url: string; file?: File }[]>(
     props.defaultValues?.map((url) => ({ url })) || []
   )
@@ -32,7 +31,7 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
   // Effect to handle key changes
   createEffect(() => {
     if (props.key !== undefined && props.key !== currentKey()) {
-      // Reset the component state when key changes
+      cleanupPreviews()
       setPreviews([])
       setIsDragActive(false)
       setClientError('')
@@ -41,24 +40,55 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
         inputRef.value = ''
       }
       setCurrentKey(props.key)
-
-      // Notify parent of empty state
       props.onSuccess?.([])
     }
   })
 
+  // Cleanup function for preview URLs
+  const cleanupPreviews = () => {
+    previews().forEach((preview) => {
+      if (preview.file) {
+        URL.revokeObjectURL(preview.url)
+      }
+    })
+  }
+
+  // Cleanup effect
   createEffect(() => {
-    return () => {
-      // Cleanup preview URLs on unmount
-      previews().forEach((preview) => {
-        if (preview.file) {
-          URL.revokeObjectURL(preview.url)
-        }
-      })
-    }
+    return cleanupPreviews
   })
 
   const resetError = () => setClientError('')
+
+  const uploadFile = async (file: File, index: number): Promise<boolean> => {
+    let retries = 3
+    while (retries > 0) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        if (props.folder) {
+          formData.append('folder', props.folder)
+        }
+
+        const result = await upload(formData)
+
+        if (result.success && result.url) {
+          setPreviews((prev) => prev.map((p, idx) => (idx === index ? { url: result.url!, file: undefined } : p)))
+          return true
+        }
+
+        throw new Error(result.error || 'Upload failed')
+      } catch (error) {
+        retries--
+        if (retries === 0) {
+          console.error('Upload failed after retries:', error)
+          return false
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    }
+    return false
+  }
 
   const handleFiles = async (files: FileList) => {
     resetError()
@@ -66,19 +96,25 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
     const maxFiles = props.maxFiles || 5
     const currentCount = previews().length
     const remainingSlots = maxFiles - currentCount
-    const filesToProcess = Array.from(files).slice(0, remainingSlots)
 
-    for (let i = 0; i < filesToProcess.length; i++) {
-      const file = filesToProcess[i]
+    if (files.length > remainingSlots) {
+      setClientError(`You can only upload ${remainingSlots} more image${remainingSlots !== 1 ? 's' : ''}`)
+      return
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    const maxSize = props.maxSize || 5 * 1024 * 1024
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
 
       // Validate file type
-      if (props.accept && !file.type.match(props.accept)) {
-        setClientError('Please select valid image files')
+      if (!allowedTypes.includes(file.type)) {
+        setClientError('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed')
         continue
       }
 
       // Validate file size
-      const maxSize = props.maxSize || 5 * 1024 * 1024
       if (file.size > maxSize) {
         setClientError(`Files should be less than ${Math.floor(maxSize / 1024 / 1024)}MB`)
         continue
@@ -87,24 +123,17 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
       // Add preview
       const previewUrl = URL.createObjectURL(file)
       setPreviews((prev) => [...prev, { url: previewUrl, file }])
+      const currentIndex = previews().length - 1
 
       // Upload file
-      setUploadingIndex(previews().length - 1)
-      const formData = new FormData()
-      formData.append('file', file)
+      setUploadingIndex(currentIndex)
+      const success = await uploadFile(file, currentIndex)
 
-      const result = await upload(formData)
-
-      if (result.success && result.url) {
-        setPreviews((prev) =>
-          prev.map((p, idx) => (idx === previews().length - 1 ? { url: result.url!, file: undefined } : p))
-        )
-      } else {
-        const error = result.error || 'Failed to upload file'
-        setClientError(error)
-        props.onError?.(error)
-        // Remove failed preview
-        setPreviews((prev) => prev.filter((_, idx) => idx !== previews().length - 1))
+      if (!success) {
+        setPreviews((prev) => prev.filter((_, idx) => idx !== currentIndex))
+        URL.revokeObjectURL(previewUrl)
+        setClientError('Failed to upload image')
+        props.onError?.('Failed to upload image')
       }
     }
 
@@ -112,7 +141,7 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
 
     // Notify parent of all successful uploads
     const uploadedUrls = previews()
-      .filter((p) => !p.file) // Only include successfully uploaded images
+      .filter((p) => !p.file)
       .map((p) => p.url)
     props.onSuccess?.(uploadedUrls)
   }
@@ -127,7 +156,6 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
       return newPreviews
     })
 
-    // Notify parent of remaining urls
     const remainingUrls = previews()
       .filter((p) => !p.file)
       .map((p) => p.url)
@@ -156,7 +184,7 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
     e.stopPropagation()
     setIsDragActive(false)
     if (e.dataTransfer?.files) {
-      handleFiles(e.dataTransfer.files)
+      await handleFiles(e.dataTransfer.files)
     }
   }
 
@@ -182,6 +210,8 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
                 onClick={() => removeImage(index())}
                 class='absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100'
                 type='button'
+                variant='ghost'
+                size='icon'
                 aria-label='Remove image'
               >
                 <AiOutlineClose class='w-4 h-4 text-gray-600' />
@@ -204,7 +234,7 @@ const MultipleImageUpload: Component<MultipleImageUploadProps> = (props) => {
             <input
               ref={inputRef}
               type='file'
-              accept={props.accept}
+              accept={props.accept || 'image/jpeg,image/png,image/gif,image/webp'}
               onChange={(e) => {
                 const files = e.target.files
                 if (files) handleFiles(files)

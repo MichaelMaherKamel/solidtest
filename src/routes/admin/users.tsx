@@ -15,7 +15,8 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { useAdminContext } from '~/contexts/admin'
 import { showToast } from '~/components/ui/toast'
 
-const UserActions: Component<{ user: User; onActionComplete: () => void }> = (props) => {
+const UserActions: Component<{ user: User }> = (props) => {
+  const { refreshUsers } = useAdminContext()
   const [activeAction, setActiveAction] = createSignal<string | null>(null)
   const updateRole = useAction(updateUserRoleAction)
   const deleteUser = useAction(deleteUserAction)
@@ -34,7 +35,7 @@ const UserActions: Component<{ user: User; onActionComplete: () => void }> = (pr
       if (updateSubmission.result?.error) {
         throw new Error(updateSubmission.result.error)
       }
-      props.onActionComplete()
+      refreshUsers() // Add refresh after successful update
       showToast({
         title: 'Success',
         description: 'User role updated successfully',
@@ -66,7 +67,7 @@ const UserActions: Component<{ user: User; onActionComplete: () => void }> = (pr
       if (deleteSubmission.result?.error) {
         throw new Error(deleteSubmission.result.error)
       }
-      props.onActionComplete()
+      refreshUsers() // Add refresh after successful deletion
       showToast({
         title: 'Success',
         description: 'User deleted successfully',
@@ -139,10 +140,6 @@ const StatsCard = ({ count }: { count: number }) => (
   </Card>
 )
 
-export const route = {
-  preload: () => getUsers(),
-}
-
 const UsersPage: Component = () => {
   const { users } = useAdminContext()
   const [search, setSearch] = createSignal('')
@@ -185,14 +182,7 @@ const UsersPage: Component = () => {
     {
       header: 'Actions',
       accessorKey: 'id' as keyof User,
-      cell: (item: User) => (
-        <UserActions
-          user={item}
-          onActionComplete={() => {
-            // Actions are handled by context updates
-          }}
-        />
-      ),
+      cell: (item: User) => <UserActions user={item} />,
     },
   ]
 

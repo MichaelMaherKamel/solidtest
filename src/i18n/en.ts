@@ -60,6 +60,9 @@ export const enDict = {
     noProductsFound: 'No products found in this category',
     goToHome: 'Go to Home Page',
     backToOrders: 'Back to Orders',
+    update: 'Update',
+    updating: 'Updating...',
+    actions: 'Actions',
   },
 
   auth: {
@@ -135,15 +138,15 @@ export const enDict = {
         processing: 'Processing Payment',
         completed: 'Payment Completed',
         failed: 'Payment Failed',
-        refunded: 'Payment Refunded',
-        paid: 'Paid', // Added for `checkout.payment.status.paid`
+        refunded: 'Refunded',
+        paid: 'Paid',
       },
       error: {
-        noPendingOrder: 'No pending order found. Please try again.', // Added for `checkout.payment.error.noPendingOrder`
-        description: 'An error occurred while processing your payment. Please try again.', // Added for `checkout.payment.error.description`
+        noPendingOrder: 'No pending order found. Please try again.',
+        description: 'An error occurred while processing your payment. Please try again.',
       },
+      paymentMethod: 'Payment Method',
     },
-    paymentMethod: 'Payment Method',
     cashOnDelivery: 'Cash on Delivery',
     payByFawry: 'Pay with Fawry',
     cashOnDeliveryDescription: 'Pay cash when your order arrives',
@@ -217,7 +220,7 @@ export const enDict = {
     city: {
       label: 'City',
       placeholder: 'Select City',
-      ...cities, // spread the cities translations
+      ...cities,
     },
   },
 
@@ -235,10 +238,9 @@ export const enDict = {
   },
 
   categories: {
-    kitchensupplies: 'Kitchen Supplies', // Full name
+    kitchensupplies: 'Kitchen Supplies',
     bathroomsupplies: 'Bathroom Supplies',
     homesupplies: 'Home Supplies',
-    // Short names for tabs
     tabNames: {
       kitchensupplies: 'Kitchen',
       bathroomsupplies: 'Bathroom',
@@ -406,7 +408,7 @@ export const enDict = {
         },
         success: {
           created: 'Product has been created successfully',
-          updated: 'Product has been updated successfully',
+          edited: 'Product has been edited successfully',
           deleted: 'Product has been deleted successfully',
         },
         placeholders: {
@@ -452,6 +454,7 @@ export const enDict = {
         shipped: 'Shipped',
         delivered: 'Delivered',
         cancelled: 'Cancelled',
+        refunded: 'Refunded',
       },
     },
 
@@ -493,6 +496,7 @@ export const enDict = {
       delivered: 'Delivered',
       cancelled: 'Cancelled',
       refunded: 'Refunded',
+      label: 'Status',
     },
     search: {
       title: 'Track Your Order',
@@ -505,6 +509,29 @@ export const enDict = {
       error: 'An error occurred while searching for the order',
       description: 'Enter your order number to track your order status',
     },
+    storeOrderStatus: 'Order Status',
+    updateStatus: 'Update Order Status',
+    paymentMethod: {
+      card: 'Pay with Fawry',
+      cash: 'Cash on Delivery',
+      paymentMethod: 'Payment Method',
+    },
+    seller: {
+      title: 'Orders',
+      subtitle: 'Manage your store orders',
+      searchPlaceholder: 'Search orders...',
+      noOrders: 'No orders found for this store.',
+      statusUpdateSuccess: 'Order status updated successfully.',
+      statusUpdateError: 'Failed to update order status.',
+      customer: 'Customer',
+      total: 'Total',
+      date: 'Date',
+      pluralKeys: {
+        0: 'No orders',
+        1: '1 order',
+        other: '{{count}} orders',
+      },
+    },
   },
   payment: {
     status: {
@@ -512,7 +539,7 @@ export const enDict = {
       processing: 'Processing Payment',
       completed: 'Payment Completed',
       failed: 'Payment Failed',
-      refunded: 'Payment Refunded',
+      refunded: 'Refunded',
     },
   },
 }

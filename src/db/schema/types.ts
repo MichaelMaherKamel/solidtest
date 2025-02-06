@@ -140,3 +140,16 @@ export type Order = InferSelectModel<typeof orders> & {
   shippingAddress: ShippingAddress
 }
 
+export type OrderTableColumn = {
+  header: string
+  accessorKey: keyof Order
+  cell?: (order: Order & { shippingAddress: ShippingAddress }) => any
+  minWidth?: string
+  maxWidth?: string
+}
+
+type StoreOrderUpdateResult = {
+  success: boolean
+  error?: string
+  order?: Order
+}

@@ -268,7 +268,7 @@ const SellerProductForm: Component<{
       if (result.success) {
         showToast({
           title: t('common.success'),
-          description: t(`seller.products.form.success.${props.mode}d`),
+          description: t(`seller.products.form.success.${props.mode}${props.mode === 'edit' ? 'ed' : 'd'}`),
           variant: 'success',
         })
         props.onSuccess()

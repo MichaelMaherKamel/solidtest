@@ -60,6 +60,9 @@ export const arDict = {
     noProductsFound: 'لا توجد منتجات في هذه الفئة',
     goToHome: 'العودة إلى الصفحة الرئيسية',
     backToOrders: 'العودة إلى الطلبات',
+    update: 'تحديث',
+    updating: 'جاري التحديث...',
+    actions: 'إجراءات',
   },
 
   auth: {
@@ -132,18 +135,18 @@ export const arDict = {
     payment: {
       status: {
         pending: 'الدفع معلق',
-        processing: 'معالجة الدفع',
+        processing: 'جاري معالجة الدفع',
         completed: 'اكتمل الدفع',
         failed: 'فشل الدفع',
         refunded: 'تم استرداد الدفع',
-        paid: 'مدفوع', // Add Arabic translation here
+        paid: 'مدفوع',
       },
       error: {
-        noPendingOrder: 'لم يتم العثور على طلب معلق. يرجى المحاولة مرة أخرى.', // Add Arabic translation here
-        description: 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.', // Add Arabic translation here
+        noPendingOrder: 'لم يتم العثور على طلب معلق. يرجى المحاولة مرة أخرى.',
+        description: 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.',
       },
+      paymentMethod: 'طريقة الدفع',
     },
-    paymentMethod: 'طريقة الدفع',
     cashOnDelivery: 'الدفع عند الاستلام',
     payByFawry: 'الدفع عبر فوري',
     cashOnDeliveryDescription: 'ادفع نقداً عند استلام طلبك',
@@ -217,7 +220,7 @@ export const arDict = {
     city: {
       label: 'المدينة',
       placeholder: 'اختر المدينة',
-      ...cities, // spread the cities translations
+      ...cities,
     },
   },
 
@@ -235,10 +238,9 @@ export const arDict = {
   },
 
   categories: {
-    kitchensupplies: 'مستلزمات المطبخ', // Full name
+    kitchensupplies: 'مستلزمات المطبخ',
     bathroomsupplies: 'مستلزمات الحمام',
     homesupplies: 'مستلزمات المنزل',
-    // Short names for tabs
     tabNames: {
       kitchensupplies: 'المطبخ',
       bathroomsupplies: 'الحمام',
@@ -406,7 +408,7 @@ export const arDict = {
         },
         success: {
           created: 'تم إنشاء المنتج بنجاح',
-          updated: 'تم تحديث المنتج بنجاح',
+          edited: 'تم تحديث المنتج بنجاح',
           deleted: 'تم حذف المنتج بنجاح',
         },
         placeholders: {
@@ -493,6 +495,7 @@ export const arDict = {
       delivered: 'تم التسليم',
       cancelled: 'ملغي',
       refunded: 'تم الاسترجاع',
+      label: 'الحالة',
     },
     search: {
       title: 'تتبع طلبك',
@@ -504,6 +507,30 @@ export const arDict = {
       notFound: 'لم يتم العثور على طلب بهذا الرقم',
       error: 'حدث خطأ أثناء البحث عن الطلب',
       description: 'أدخل رقم الطلب لتتبع حالة طلبك',
+    },
+    storeOrderStatus: 'حالة الطلب',
+    updateStatus: 'تحديث حالة الطلب',
+    paymentMethod: {
+      card: 'الدفع عبر فوري',
+      cash: 'الدفع عند الاستلام',
+      paymentMethod: 'طريقة الدفع',
+    },
+    seller: {
+      title: 'الطلبات',
+      subtitle: 'إدارة طلبات متجرك',
+      searchPlaceholder: 'البحث عن الطلبات...',
+      noOrders: 'لا توجد طلبات لهذا المتجر.',
+      statusUpdateSuccess: 'تم تحديث حالة الطلب بنجاح.',
+      statusUpdateError: 'فشل في تحديث حالة الطلب.',
+      customer: 'العميل',
+      total: 'الإجمالي',
+      date: 'التاريخ',
+      pluralKeys: {
+        0: 'لا يوجد طلبات',
+        1: ' طلب واحد',
+        2: ' طلبين',
+        other: '{{count}} طلبات',
+      },
     },
   },
   payment: {

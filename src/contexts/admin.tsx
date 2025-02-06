@@ -1,5 +1,5 @@
-import { createContext, useContext, ParentComponent } from 'solid-js'
-import { createResource } from 'solid-js'
+import { createContext, useContext, ParentComponent, createSignal } from 'solid-js'
+import { createResource, type Resource } from 'solid-js'
 import { getUsers } from '~/db/fetchers/users'
 import { getStores } from '~/db/fetchers/stores'
 import { getAllProducts } from '~/db/fetchers/products'
@@ -17,10 +17,13 @@ type AuthUser = {
 
 type AdminContextType = {
   user: () => AuthUser | undefined
-  stores: () => Store[] | undefined
-  products: () => Product[] | undefined
-  users: () => User[] | undefined
+  stores: Resource<Store[]>
+  products: Resource<Product[]>
+  users: Resource<User[]>
   isLoading: () => boolean
+  refreshStores: () => void
+  refreshProducts: () => void
+  refreshUsers: () => void
 }
 
 const AdminContext = createContext<AdminContextType>()
@@ -30,24 +33,49 @@ export const AdminProvider: ParentComponent = (props) => {
   const user = () => auth.session()?.user as AuthUser | undefined
   const userId = () => user()?.id
 
-  // Parallel data fetching with initial values
-  const [stores] = createResource(userId, async () => await getStores(), { initialValue: [] })
+  // Add refresh trigger signals for each resource
+  const [storesRefreshTrigger, setStoresRefreshTrigger] = createSignal(0)
+  const [productsRefreshTrigger, setProductsRefreshTrigger] = createSignal(0)
+  const [usersRefreshTrigger, setUsersRefreshTrigger] = createSignal(0)
 
-  const [products] = createResource(userId, async () => await getAllProducts(), { initialValue: [] })
+  // Update resources to depend on their respective refresh triggers
+  const [stores] = createResource(
+    () => ({ userId: userId(), trigger: storesRefreshTrigger() }),
+    async () => await getStores(),
+    { initialValue: [] }
+  )
 
-  const [users] = createResource(userId, async () => await getUsers(), { initialValue: [] })
+  const [products] = createResource(
+    () => ({ userId: userId(), trigger: productsRefreshTrigger() }),
+    async () => await getAllProducts(),
+    { initialValue: [] }
+  )
+
+  const [users] = createResource(
+    () => ({ userId: userId(), trigger: usersRefreshTrigger() }),
+    async () => await getUsers(),
+    { initialValue: [] }
+  )
 
   // Combined loading state
   const isLoading = () => stores.loading || products.loading || users.loading
+
+  // Refresh functions
+  const refreshStores = () => setStoresRefreshTrigger((prev) => prev + 1)
+  const refreshProducts = () => setProductsRefreshTrigger((prev) => prev + 1)
+  const refreshUsers = () => setUsersRefreshTrigger((prev) => prev + 1)
 
   return (
     <AdminContext.Provider
       value={{
         user,
-        stores: () => stores(),
-        products: () => products(),
-        users: () => users(),
+        stores,
+        products,
+        users,
         isLoading,
+        refreshStores,
+        refreshProducts,
+        refreshUsers,
       }}
     >
       {props.children}
