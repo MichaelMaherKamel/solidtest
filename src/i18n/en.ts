@@ -59,6 +59,7 @@ export const enDict = {
     loadMore: 'Load More',
     noProductsFound: 'No products found in this category',
     goToHome: 'Go to Home Page',
+    backToOrders: 'Back to Orders',
   },
 
   auth: {

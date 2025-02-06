@@ -59,6 +59,7 @@ export const arDict = {
     loadMore: 'تحميل المزيد',
     noProductsFound: 'لا توجد منتجات في هذه الفئة',
     goToHome: 'العودة إلى الصفحة الرئيسية',
+    backToOrders: 'العودة إلى الطلبات',
   },
 
   auth: {

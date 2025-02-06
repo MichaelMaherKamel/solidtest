@@ -15,6 +15,7 @@ import {
   FiCalendar,
   FiShoppingBag,
   FiAlertTriangle,
+  FiChevronLeft,
 } from 'solid-icons/fi'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Card } from '~/components/ui/card'
@@ -215,8 +216,8 @@ const StatusBadge: Component<{ status: OrderStatus | PaymentStatus; type: 'order
 const OrderDetails: Component = () => {
   const params = useParams()
   const { t, locale } = useI18n()
+  const navigate = useNavigate()
   const isRTL = () => locale() === 'ar'
-
   const orderData = createAsync(() => getOrderById(params.orderId) as Promise<Order>)
 
   return (
@@ -227,6 +228,16 @@ const OrderDetails: Component = () => {
             <Card class='overflow-hidden'>
               {/* Header Section */}
               <div class='bg-primary/10 p-6'>
+                {/* Back Button */}
+                <Button
+                  variant='ghost'
+                  onClick={() => navigate('/orders')}
+                  class='inline-flex items-center gap-2 mb-4 -ml-2'
+                >
+                  <FiChevronLeft class={`w-5 h-5 transition-transform ${isRTL() ? 'rotate-180' : ''}`} />
+                  <span class='text-sm font-medium'>{t('common.backToOrders')}</span>
+                </Button>
+
                 <div class='flex flex-col sm:flex-row justify-between items-start gap-4'>
                   <div class='space-y-2'>
                     <h1 class='text-2xl font-semibold text-gray-900'>{t('order.details.title')}</h1>
@@ -253,6 +264,7 @@ const OrderDetails: Component = () => {
                 </div>
               </div>
 
+              {/* Rest of the component remains the same */}
               <div class='p-6 space-y-8'>
                 {/* Address and Payment Section */}
                 <div class='space-y-6 sm:space-y-0 sm:grid grid-cols-1 sm:gap-6'>
