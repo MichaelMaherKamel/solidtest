@@ -11,6 +11,8 @@ import { IconPayByCard, IconCashOnDelivery } from '../Icons'
 import { BiSolidStore } from 'solid-icons/bi'
 import { Separator } from '../ui/separator'
 import * as CryptoJS from 'crypto-js'
+import { initializeFawryPayment } from '~/db/actions/fawry'
+import { useAction } from '@solidjs/router'
 
 // Fawry integration types
 interface FawryChargeItem {
@@ -53,6 +55,7 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
   const { t } = useI18n()
   const [orderError, setOrderError] = createSignal('')
   const [isProcessing, setIsProcessing] = createSignal(false)
+  const fawryPayment = useAction(initializeFawryPayment)
 
   // Generate a unique order number
   const generateOrderNumber = () => {
@@ -160,104 +163,9 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
     return CryptoJS.SHA256(signString).toString(CryptoJS.enc.Hex)
   }
 
-  // Build Fawry request with proper error handling
-  const buildFawryRequest = (items: CartItem[], address: Address, orderNumber: string) => {
-    const merchantCode = import.meta.env.VITE_FAWRY_MERCHANT_CODE
-    const securityKey = import.meta.env.VITE_FAWRY_SECURITY_CODE
-
-    if (!merchantCode || !securityKey) {
-      throw new Error('Missing Fawry credentials')
-    }
-
-    const futureTimestamp = Date.now() + 1 * 60 * 60 * 1000 // 1 hour expiry
-    const calculatedTotals = calculateCartTotals(items, address.city)
-
-    const chargeItems: FawryChargeItem[] = items.map((item) => ({
-      itemId: item.productId,
-      description: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      imageUrl: item.image,
-    }))
-
-    // Create the request with proper typing
-    const chargeRequest: FawryRequest = {
-      merchantCode,
-      merchantRefNum: orderNumber,
-      customerMobile: address.phone,
-      customerEmail: address.email || 'no-email@provided.com',
-      customerName: address.name,
-      customerProfileId: orderNumber, // Use orderNumber since address.id isn't available
-      paymentExpiry: futureTimestamp.toString(),
-      language: 'en-gb',
-      chargeItems,
-      paymentMethod: 'CARD',
-      returnUrl: `${window.location.origin}/checkout`,
-      authCaptureModePayment: false,
-      orderAmount: calculatedTotals.total.toFixed(2),
-      currency: 'EGP',
-      orderDescription: `Order ${orderNumber}`,
-    }
-
-    // Add signature after creating the request
-    const signature = signFawryRequest(chargeRequest, securityKey)
-    const signedRequest: FawryRequest = {
-      ...chargeRequest,
-      signature,
-    }
-
-    return { chargeRequest: signedRequest, orderNumber }
-  }
-
-  // Initialize Fawry payment with proper error handling
-  const initializeFawryPayment = async () => {
-    setIsProcessing(true)
-    try {
-      if (!props.address) {
-        throw new Error('Shipping address is required')
-      }
-
-      const orderNumber = generateOrderNumber()
-      const orderData = createOrderData(orderNumber, 'card')
-      const { chargeRequest } = buildFawryRequest(props.items, props.address, orderNumber)
-
-      // Store complete order data before redirect
-      sessionStorage.setItem('pending_order', JSON.stringify(orderData))
-
-      const response = await fetch('https://atfawry.com/fawrypay-api/api/payments/init', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: '*/*',
-        },
-        body: JSON.stringify(chargeRequest),
-      })
-
-      const contentType = response.headers.get('content-type')
-      if (contentType?.includes('application/json')) {
-        const data = await response.json()
-        if (data.paymentURL) {
-          window.location.href = data.paymentURL
-          return
-        }
-      }
-
-      const text = await response.text()
-      if (text.trim().toLowerCase().startsWith('http')) {
-        window.location.href = text.trim()
-        return
-      }
-
-      throw new Error('Invalid response from payment gateway')
-    } catch (error) {
-      console.error('Payment initialization error:', error)
-      setOrderError(error instanceof Error ? error.message : 'Payment initialization failed')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
 
   // Handle order confirmation with proper error handling
+
   const handleConfirmOrder = async () => {
     if (!props.items?.length || !props.address) {
       setOrderError(t('order.invalidData'))
@@ -266,15 +174,31 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
 
     setIsProcessing(true)
     try {
+      const orderNumber = generateOrderNumber()
+      const orderData = createOrderData(orderNumber, props.selectedPaymentMethod === 'card' ? 'card' : 'cash')
+
       if (props.selectedPaymentMethod === 'card') {
-        await initializeFawryPayment()
+        // Store order data before redirect
+        sessionStorage.setItem('pending_order', JSON.stringify(orderData))
+
+        const result = await fawryPayment({
+          // Use the action here
+          items: props.items,
+          address: props.address,
+          orderNumber,
+          total: totals().total,
+        })
+
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+
+        window.location.href = result.paymentUrl
         return
       }
 
       // Handle cash on delivery
-      const orderNumber = generateOrderNumber()
-      const orderData = createOrderData(orderNumber, 'cash')
-      props.onConfirmOrder?.(orderData)
+      await props.onConfirmOrder?.(orderData)
     } catch (error) {
       console.error('Order confirmation error:', error)
       setOrderError(error instanceof Error ? error.message : t('order.error'))

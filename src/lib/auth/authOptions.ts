@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '~/db'
 import { users } from '~/db/schema'
 import { DrizzleAdapter } from '@auth/drizzle-adapter'
+import env from '~/config/env'
 
 declare module '@auth/core/types' {
   interface Session {
@@ -17,8 +18,8 @@ declare module '@auth/core/types' {
 export const authOptions: SolidAuthConfig = {
   providers: [
     Google({
-      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
     }),
   ],
   callbacks: {
@@ -34,7 +35,7 @@ export const authOptions: SolidAuthConfig = {
     },
   },
   debug: false,
-  basePath: import.meta.env.VITE_AUTH_PATH,
+  basePath: env.AUTH_PATH,
   trustHost: true,
   session: { strategy: 'database' },
   adapter: DrizzleAdapter(db),
