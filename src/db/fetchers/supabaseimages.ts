@@ -1,5 +1,5 @@
 // src/db/fetchers/supabase-bucket.ts
-import { supabase } from '~/lib/supabase/supabase.client'
+import { createServerSupabase } from '~/lib/supabase/supabase.server' // Use the server supabase client
 import { cache } from '@solidjs/router'
 
 export type BucketFile = {
@@ -17,6 +17,8 @@ export type BucketResult = {
 // Use cache instead of action for data fetching
 export const getBucketFiles = cache(async () => {
   'use server'
+
+  const { supabase } = createServerSupabase() // Initialize supabase client
 
   try {
     const { data: files, error } = await supabase.storage.from('SouqElRafay3Bucket').list()
