@@ -700,7 +700,9 @@ const ShoppingNav: Component = () => {
                 </div>
 
                 {/* User Menu - Desktop Only */}
-                <UserButton setIsUserOpen={setIsUserOpen} setref={setUserRef} isUserOpen={isUserOpen()} />
+                <div class='hidden md:block'>
+                  <UserButton setIsUserOpen={setIsUserOpen} setref={setUserRef} isUserOpen={isUserOpen()} />
+                </div>
 
                 {/* Mobile Menu Button */}
                 <div ref={setMenuRef}>

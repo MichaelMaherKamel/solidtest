@@ -1,12 +1,13 @@
 import { Component, createEffect, createSignal } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
-import { useNavigate, useSearchParams } from '@solidjs/router'
+import { useNavigate } from '@solidjs/router'
 import { Card, CardHeader, CardContent } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { useI18n } from '~/contexts/i18n'
 import { siteConfig } from '~/config/site'
-import { handleAuthRedirect } from '~/lib/utils'
+
+const RETURN_PATH_KEY = 'auth_return_path'
 
 const GoogleIcon: Component = () => (
   <svg class='w-5 h-5' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
@@ -39,18 +40,20 @@ const AuthPage: Component = () => {
   const [loading, setLoading] = createSignal<string | null>(null)
   const [error, setError] = createSignal('')
   const auth = useAuth()
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { t, locale } = useI18n()
 
   const isRTL = () => locale() === 'ar'
 
+  // Effect to handle authentication state
   createEffect(() => {
     const session = auth.session()
     const status = auth.status()
 
     if (status === 'authenticated' && session?.user) {
-      handleAuthRedirect(searchParams, navigate)
+      const returnPath = localStorage.getItem(RETURN_PATH_KEY) || '/'
+      localStorage.removeItem(RETURN_PATH_KEY)
+      navigate(returnPath, { replace: true })
     }
   })
 
@@ -70,7 +73,7 @@ const AuthPage: Component = () => {
 
   return (
     <div class='min-h-screen relative flex flex-col items-center justify-between' dir={isRTL() ? 'rtl' : 'ltr'}>
-      {/* Enhanced Background with Gradient Overlay */}
+      {/* Background with Gradient Overlay */}
       <div class='absolute inset-0'>
         <img
           src={siteConfig.images.siteResponsiveImage}
@@ -85,7 +88,7 @@ const AuthPage: Component = () => {
         <div class='absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70' />
       </div>
 
-      {/* Enhanced Header */}
+      {/* Header */}
       <header class='relative z-10 w-full py-6 text-center'>
         <h1 class='text-3xl font-bold text-white tracking-wider'>Souq El Rafay3</h1>
       </header>
@@ -129,7 +132,7 @@ const AuthPage: Component = () => {
         </Card>
       </div>
 
-      {/* Enhanced Footer */}
+      {/* Footer */}
       <footer class='relative z-10 w-full text-center py-6'>
         <p class='text-sm text-gray-300'>
           © 2024 Souq El Rafay3

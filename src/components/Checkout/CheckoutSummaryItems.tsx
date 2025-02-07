@@ -393,7 +393,7 @@ const CheckoutSummaryItems: Component<CheckoutSummaryItemsProps> = (props) => {
               >
                 <IconCashOnDelivery class='flex-shrink-0 size-5 sm:size-6' />
               </Show>
-              <span>{t('checkout.paymentMethod')}</span>
+              <span>{t('checkout.steps.payment')}</span>
             </div>
             <span class='font-medium text-sm sm:text-base'>
               {props.selectedPaymentMethod === 'cash' ? t('checkout.cashOnDelivery') : t('checkout.payByFawry')}
