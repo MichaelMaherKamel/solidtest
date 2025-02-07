@@ -21,8 +21,6 @@ interface UserButtonProps {
   isUserOpen: boolean
 }
 
-const STORAGE_KEY = 'souq_auth_redirect'
-
 const getDropdownStyles = (isOpen: boolean, isRTL: boolean, isBottom = false) => `
   absolute ${isRTL ? 'left-0' : 'right-0'} ${isBottom ? 'bottom-full mb-2' : 'top-full mt-2'}
   rounded-lg shadow-lg
@@ -71,29 +69,17 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     role: auth.user?.role || 'guest',
   }))
 
-  const storeRedirectAndNavigate = () => {
-    try {
-      const currentPath = location.pathname
-      const currentSearch = location.search
-      const fullPath = currentPath + currentSearch
+  const getLoginUrl = createMemo(() => {
+    const currentPath = location.pathname
+    const currentSearch = location.search
+    const fullPath = currentPath + currentSearch
 
-      // Only store redirect if not on login page
-      if (currentPath !== '/login') {
-        const redirectData = {
-          path: fullPath,
-          timestamp: Date.now(),
-        }
-        console.log('Storing redirect data:', redirectData)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(redirectData))
-      }
+    // Don't create redirect if already on login page
+    if (currentPath === '/login') return '/login'
 
-      navigate('/login')
-    } catch (error) {
-      console.error('Navigation error:', error)
-      // Fallback to direct navigation
-      window.location.href = '/login'
-    }
-  }
+    // Properly encode the full path
+    return `/login?redirect=${encodeURIComponent(fullPath)}`
+  })
 
   const getInitials = (name: string) => {
     if (!name) return 'U'
@@ -139,7 +125,8 @@ export const UserButton: Component<UserButtonProps> = (props) => {
             variant='ghost'
             size='icon'
             class={cn('hover:bg-white/10', props.buttonColorClass || 'text-gray-800 hover:text-gray-900')}
-            onClick={storeRedirectAndNavigate}
+            as={A}
+            href={getLoginUrl()}
           >
             <FaRegularUser class='h-5 w-5' />
           </Button>
