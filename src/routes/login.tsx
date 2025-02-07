@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal } from 'solid-js'
+import { Component, createEffect, createSignal, onMount } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { useNavigate } from '@solidjs/router'
 import { Card, CardHeader, CardContent } from '~/components/ui/card'
@@ -37,6 +37,7 @@ const LoadingSpinner: Component = () => (
 )
 
 const AuthPage: Component = () => {
+  const [returnPath, setReturnPath] = createSignal<string>('/')
   const [loading, setLoading] = createSignal<string | null>(null)
   const [error, setError] = createSignal('')
   const auth = useAuth()
@@ -45,15 +46,34 @@ const AuthPage: Component = () => {
 
   const isRTL = () => locale() === 'ar'
 
-  // Effect to handle authentication state
+  onMount(() => {
+    try {
+      const savedPath = localStorage.getItem(RETURN_PATH_KEY)
+      if (savedPath) {
+        setReturnPath(savedPath)
+      }
+    } catch (error) {
+      console.warn('Error reading return path:', error)
+    }
+  })
+
+  // Handle authentication state changes
   createEffect(() => {
     const session = auth.session()
     const status = auth.status()
 
     if (status === 'authenticated' && session?.user) {
-      const returnPath = localStorage.getItem(RETURN_PATH_KEY) || '/'
-      localStorage.removeItem(RETURN_PATH_KEY)
-      navigate(returnPath, { replace: true })
+      try {
+        // Clean up storage
+        localStorage.removeItem(RETURN_PATH_KEY)
+
+        // Try using router navigation first
+        navigate(returnPath(), { replace: true })
+      } catch (error) {
+        console.warn('Navigation error:', error)
+        // Fallback to window.location if router navigation fails
+        window.location.href = returnPath()
+      }
     }
   })
 

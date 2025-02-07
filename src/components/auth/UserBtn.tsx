@@ -63,6 +63,16 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const auth = useAuthState()
   const isRTL = createMemo(() => locale() === 'ar')
 
+  // Safe location path getter
+  const getCurrentPath = () => {
+    try {
+      return location.pathname + (location.search || '')
+    } catch (error) {
+      console.warn('Location not available:', error)
+      return '/'
+    }
+  }
+
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
     email: auth.user?.email || '',
@@ -102,10 +112,17 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   }
 
   const handleAuthClick = () => {
-    // Save current path before redirecting
-    localStorage.setItem(RETURN_PATH_KEY, location.pathname + location.search)
-    // Redirect to auth page
-    navigate('/login')
+    try {
+      const currentPath = getCurrentPath()
+      if (currentPath !== '/login') {
+        localStorage.setItem(RETURN_PATH_KEY, currentPath)
+      }
+      navigate('/login')
+    } catch (error) {
+      console.warn('Navigation error:', error)
+      // Fallback to direct navigation
+      window.location.href = '/loginn'
+    }
   }
 
   const buttonClasses = cn(
