@@ -17,14 +17,14 @@ import { Input } from '../ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
-import { FaRegularUser } from 'solid-icons/fa'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
 import { cn, formatCurrency } from '~/lib/utils'
 import { BiSolidStore } from 'solid-icons/bi'
 import { showToast } from '~/components/ui/toast'
+import { UserButton } from '~/components/auth/UserBtn'
+import { createMediaQuery } from '@solid-primitives/media'
 
 // Types
 interface Language {
@@ -41,6 +41,8 @@ interface CartItem {
   quantity: number
   image: string
   selectedColor: string
+  storeId: string
+  storeName: string
 }
 
 type DropdownType = 'menu' | 'lang' | 'user' | 'cart'
@@ -62,39 +64,39 @@ const MENU_ITEMS = [
 
 // Helper function for dropdown styles
 const getDropdownStyles = (isOpen: boolean, isRTL: boolean) => `
-  absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 rounded-lg shadow-lg 
-  bg-white ring-1 ring-black ring-opacity-5 
-  transition-all duration-300 ease-in-out origin-top-right
-  ${
-    isOpen
-      ? 'opacity-100 transform scale-100 translate-y-0'
-      : 'opacity-0 transform scale-95 -translate-y-2 pointer-events-none'
-  }
+absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 rounded-lg shadow-lg 
+bg-white ring-1 ring-black ring-opacity-5 
+transition-all duration-300 ease-in-out origin-top-right
+${
+  isOpen
+    ? 'opacity-100 transform scale-100 translate-y-0'
+    : 'opacity-0 transform scale-95 -translate-y-2 pointer-events-none'
+}
 `
 
 // Helper function for mobile menu item styles
 const getMobileMenuItemStyles = (isActive: boolean, textColor: string) => `
-  justify-start w-full text-start transition-colors duration-200
-  ${
-    isActive ? 'bg-sky-700/50 border-sky-400' : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
-  } ${textColor}
+justify-start w-full text-start transition-colors duration-200
+${
+  isActive ? 'bg-sky-700/50 border-sky-400' : 'border-transparent hover:bg-sky-700/30 hover:border-sky-300'
+} ${textColor}
 `
 
 const Nav: Component = () => {
   // State signals
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
-  const [isUserOpen, setIsUserOpen] = createSignal(false)
+  const [isUserOpen, setIsUserOpen] = createSignal(false) // ADDED
   const [isCartOpen, setIsCartOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
   const [isClearingCart, setIsClearingCart] = createSignal(false)
 
   // Refs
-  const [menuRef, setMenuRef] = createSignal<HTMLDivElement>()
-  const [langRef, setLangRef] = createSignal<HTMLDivElement>()
-  const [userRef, setUserRef] = createSignal<HTMLDivElement>()
-  const [cartRef, setCartRef] = createSignal<HTMLDivElement>()
+  const [menuRef, setMenuRef] = createSignal<HTMLDivElement | undefined>()
+  const [langRef, setLangRef] = createSignal<HTMLDivElement | undefined>()
+  const [userRef, setUserRef] = createSignal<HTMLDivElement | undefined>() // ADDED
+  const [cartRef, setCartRef] = createSignal<HTMLDivElement | undefined>()
 
   // Hooks
   const location = useLocation()
@@ -105,6 +107,7 @@ const Nav: Component = () => {
   const updateQuantity = useAction(updateCartItemQuantity)
   const removeItem = useAction(removeCartItem)
   const clearCartAction = useAction(clearCart)
+  const isLargeScreen = createMediaQuery('(min-width: 768px)') // MEDIA
 
   // Memos
   const isRTL = createMemo(() => locale() === 'ar')
@@ -166,7 +169,7 @@ const Nav: Component = () => {
   })
 
   // Computed value for whether any dropdown is open
-  const isAnyDropdownOpen = createMemo(() => isOpen() || isCartOpen() || isLangOpen() || isUserOpen())
+  const isAnyDropdownOpen = createMemo(() => isOpen() || isCartOpen() || isLangOpen() || isUserOpen()) // ADDED || isUserOpen()
 
   const cartTotal = createMemo(() => {
     const cart = cartData()
@@ -209,13 +212,13 @@ const Nav: Component = () => {
       const clickedEl = e.target as Node
       const menu = menuRef()
       const lang = langRef()
-      const user = userRef()
+      const user = userRef() // ADDED
       const cart = cartRef()
 
-      if (menu && !menu.contains(clickedEl) && isOpen()) setIsOpen(false)
-      if (lang && !lang.contains(clickedEl) && isLangOpen()) setIsLangOpen(false)
-      if (user && !user.contains(clickedEl) && isUserOpen()) setIsUserOpen(false)
-      if (cart && !cart.contains(clickedEl) && isCartOpen()) setIsCartOpen(false)
+      if (menu && menu && !menu.contains(clickedEl) && isOpen()) setIsOpen(false)
+      if (lang && lang && !lang.contains(clickedEl) && isLangOpen()) setIsLangOpen(false)
+      if (user && user && !user.contains(clickedEl) && isUserOpen()) setIsUserOpen(false) // ADDED
+      if (cart && cart && !cart.contains(clickedEl) && isCartOpen()) setIsCartOpen(false)
     }
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -241,7 +244,7 @@ const Nav: Component = () => {
   const closeAllDropdowns = (except?: DropdownType) => {
     if (except !== 'menu') setIsOpen(false)
     if (except !== 'lang') setIsLangOpen(false)
-    if (except !== 'user') setIsUserOpen(false)
+    if (except !== 'user') setIsUserOpen(false) // ADDED
     if (except !== 'cart') setIsCartOpen(false)
   }
 
@@ -255,7 +258,7 @@ const Nav: Component = () => {
       case 'lang':
         setIsLangOpen(!isLangOpen())
         break
-      case 'user':
+      case 'user': // ADDED
         setIsUserOpen(!isUserOpen())
         break
       case 'cart':
@@ -363,6 +366,14 @@ const Nav: Component = () => {
         description: t('cart.errorMsg'),
         variant: 'destructive',
       })
+    } finally {
+      // Reset the "isUpdating" state after a short delay
+      setTimeout(() => {
+        setItemStates((prev) => ({
+          ...prev,
+          [productId]: { ...prev[productId], isRemoving: false },
+        }))
+      }, 300)
     }
   }
 
@@ -384,30 +395,11 @@ const Nav: Component = () => {
     }
   }
 
-  const handleSignOut = async () => {
-    try {
-      setIsUserOpen(false)
-      await auth.signOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-      showToast({
-        title: t('auth.error'),
-        description: t('auth.signOutError'),
-        variant: 'destructive',
-      })
-    }
-  }
-
   const handleLanguageChange = (lang: Language) => {
     document.documentElement.dir = lang.direction
     document.documentElement.lang = lang.code
     setLocale(lang.code)
     setIsLangOpen(false)
-  }
-
-  const getLoginUrl = () => {
-    const currentPath = location.pathname || '/'
-    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
   // Get available text for a color
@@ -701,8 +693,8 @@ const Nav: Component = () => {
                       {languages.map((lang) => (
                         <button
                           class={`w-full px-4 py-2 text-sm hover:bg-gray-100 flex items-center justify-between
-                            transition-colors duration-200
-                            ${locale() === lang.code ? 'bg-primary/10 font-medium' : ''}`}
+                          transition-colors duration-200
+                          ${locale() === lang.code ? 'bg-primary/10 font-medium' : ''}`}
                           onClick={() => handleLanguageChange(lang)}
                         >
                           <span class={`${isRTL() ? 'text-right' : 'text-left'}`}>{lang.nativeName}</span>
@@ -725,89 +717,15 @@ const Nav: Component = () => {
                   </div>
                 </div>
 
-                {/* User Menu */}
-                <div class='hidden md:block relative' ref={setUserRef}>
-                  <Switch
-                    fallback={
-                      <A
-                        href={getLoginUrl()}
-                        class={`inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10 ${textColor()}`}
-                      >
-                        <FaRegularUser class='h-5 w-5' />
-                      </A>
-                    }
-                  >
-                    <Match when={auth.status === 'loading'}>
-                      <div class='h-10 w-10'>
-                        <Skeleton height={40} width={40} radius={20} />
-                      </div>
-                    </Match>
-                    <Match when={auth.status === 'authenticated'}>
-                      <>
-                        <Button
-                          variant='ghost'
-                          class={`relative h-10 w-10 rounded-full ${textColor()}`}
-                          onClick={[handleDropdownClick, 'user']}
-                        >
-                          <Avatar>
-                            <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
-                            <AvatarFallback>{userData().initials}</AvatarFallback>
-                          </Avatar>
-                        </Button>
-
-                        <div class={getDropdownStyles(isUserOpen(), isRTL()) + ' w-64'}>
-                          <div class='py-1'>
-                            <Show
-                              when={!auth.loading}
-                              fallback={
-                                <div class='px-4 py-2'>
-                                  <Skeleton class='h-4 w-32 mb-2' />
-                                  <Skeleton class='h-3 w-24' />
-                                </div>
-                              }
-                            >
-                              <div class='px-4 py-2 text-sm text-gray-700'>
-                                <div class='font-medium line-clamp-1'>{userData().name}</div>
-                                <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                              </div>
-                            </Show>
-                            <hr class='border-gray-200' />
-                            <A
-                              href='/account'
-                              class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200'
-                            >
-                              {t('nav.account')}
-                            </A>
-                            {userData().role === 'admin' && (
-                              <A
-                                href='/admin'
-                                class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200'
-                              >
-                                {t('nav.admin')}
-                              </A>
-                            )}
-                            {userData().role === 'seller' && (
-                              <A
-                                href='/seller'
-                                class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200'
-                              >
-                                {t('nav.seller')}
-                              </A>
-                            )}
-                            <hr class='my-1 border-gray-200' />
-                            <button
-                              class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200
-                                ${isRTL() ? 'text-right' : 'text-left'}`}
-                              onClick={handleSignOut}
-                            >
-                              {t('auth.signOut')}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    </Match>
-                  </Switch>
-                </div>
+                {/* User Menu  REPLACED */}
+                <Show when={isLargeScreen()}>
+                  <UserButton
+                    buttonColorClass={textColor()}
+                    setIsUserOpen={setIsUserOpen}
+                    setref={setUserRef}
+                    isUserOpen={isUserOpen()}
+                  />
+                </Show>
 
                 {/* Mobile Menu Button */}
                 <div ref={setMenuRef}>
@@ -821,11 +739,11 @@ const Nav: Component = () => {
                     <div class='w-5 h-5 flex items-center justify-center'>
                       <span
                         class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out 
-                          ${isOpen() ? 'rotate-45' : '-translate-y-1'}`}
+                        ${isOpen() ? 'rotate-45' : '-translate-y-1'}`}
                       />
                       <span
                         class={`absolute h-0.5 w-5 bg-current transition-all duration-300 ease-in-out 
-                          ${isOpen() ? '-rotate-45' : 'translate-y-1'}`}
+                        ${isOpen() ? '-rotate-45' : 'translate-y-1'}`}
                       />
                     </div>
                   </Button>
@@ -869,17 +787,17 @@ const Nav: Component = () => {
 
       <style>
         {`
-          @keyframes menuItemSlideDown {
-            from {
-              opacity: 0;
-              transform: translateY(-8px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
+      @keyframes menuItemSlideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `}
       </style>
     </>
   )

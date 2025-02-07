@@ -1,5 +1,4 @@
-// ~/components/SiteFooter.tsx
-import { Component, Show, Suspense } from 'solid-js'
+import { Component, Show, Suspense, createSignal, onMount, onCleanup, createEffect } from 'solid-js'
 import { A } from '@solidjs/router'
 import { BiRegularHomeAlt, BiRegularMessageRounded, BiRegularSearch } from 'solid-icons/bi'
 import { Separator } from '~/components/ui/separator'
@@ -16,6 +15,41 @@ const MobileNavigation: Component = () => {
   const { t, locale } = useI18n()
   const isRTL = () => locale() === 'ar'
   const currentYear = new Date().getFullYear()
+  const [isUserOpen, setIsUserOpen] = createSignal(false)
+  const [userRef, setUserRef] = createSignal<HTMLDivElement | undefined>()
+
+  // ADDED: Click Outside and Escape handler
+  createEffect(() => {
+    if (!isUserOpen()) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const clickedEl = e.target as Node
+      const user = userRef()
+      if (user && !user.contains(clickedEl) && isUserOpen()) {
+        setIsUserOpen(false)
+      }
+    }
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsUserOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside) // Changed to mousedown
+    document.addEventListener('keydown', handleEscape)
+
+    onCleanup(() => {
+      document.removeEventListener('mousedown', handleClickOutside) // Changed to mousedown
+      document.removeEventListener('keydown', handleEscape)
+    })
+  })
+
+  // NEW Function to close the user component on click button on the icon
+  const toggleUserOpen = () => {
+    setIsUserOpen((prev) => !prev)
+  }
+
   return (
     <div class='fixed bottom-0 left-0 right-0 z-50'>
       <Dock direction='middle' class='bg-white shadow-md'>
@@ -46,7 +80,13 @@ const MobileNavigation: Component = () => {
         <Separator orientation='vertical' class='h-full py-2' />
         <DockIcon>
           <Suspense fallback={<div class='w-10 h-10 rounded-full animate-pulse bg-gray-200' />}>
-            <UserButton />
+            <UserButton
+              forFooter
+              buttonColorClass='text-gray-800 hover:text-gray-900'
+              setIsUserOpen={toggleUserOpen} // here update setIsUserOpen to toggleUserOpen function.
+              setref={setUserRef}
+              isUserOpen={isUserOpen()}
+            />
           </Suspense>
         </DockIcon>
       </Dock>
@@ -74,6 +114,7 @@ const DesktopFooter: Component = () => {
   const { t, locale } = useI18n()
   const isRTL = () => locale() === 'ar'
   const currentYear = new Date().getFullYear()
+
   return (
     <footer class='bg-gray-100 shadow-md'>
       <div class='container mx-auto px-4 py-3 text-gray-600' dir={isRTL() ? 'ltr' : 'rtl'}>
@@ -97,6 +138,7 @@ const DesktopFooter: Component = () => {
 
 const SiteFooter: Component = () => {
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
+
   return (
     <Show when={isLargeScreen()} fallback={<MobileNavigation />}>
       <DesktopFooter />

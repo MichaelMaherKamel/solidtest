@@ -382,7 +382,7 @@ export const arDict = {
     phone: 'الهاتف',
     about: 'مين إحنا',
     copyright: '© {{year}} سوق الرفايع. جميع الحقوق محفوظة',
-    terms: 'الشروط والأحكام',
+    terms: 'الشروط',
     companyInfo: '© {{year}} تشغيل بواسطة وارك ميز',
   },
 

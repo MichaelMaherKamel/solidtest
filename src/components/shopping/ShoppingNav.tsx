@@ -17,8 +17,6 @@ import { Input } from '~/components/ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
-import { FaRegularUser } from 'solid-icons/fa'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { useAuthState } from '~/contexts/auth'
 import { siteConfig } from '~/config/site'
 import { getCart } from '~/db/fetchers/cart'
@@ -27,6 +25,7 @@ import { CartItem } from '~/db/schema'
 import { cn, formatCurrency } from '~/lib/utils'
 import { BiSolidStore } from 'solid-icons/bi'
 import { showToast } from '~/components/ui/toast'
+import { UserButton } from '~/components/auth/UserBtn'
 
 interface Language {
   code: 'en' | 'ar'
@@ -66,10 +65,10 @@ const ShoppingNav: Component = () => {
   const [isClearingCart, setIsClearingCart] = createSignal(false)
 
   // Refs for click outside handling
-  const [menuRef, setMenuRef] = createSignal<HTMLDivElement>()
-  const [langRef, setLangRef] = createSignal<HTMLDivElement>()
-  const [userRef, setUserRef] = createSignal<HTMLDivElement>()
-  const [cartRef, setCartRef] = createSignal<HTMLDivElement>()
+  const [menuRef, setMenuRef] = createSignal<HTMLDivElement | undefined>()
+  const [langRef, setLangRef] = createSignal<HTMLDivElement | undefined>()
+  const [userRef, setUserRef] = createSignal<HTMLDivElement | undefined>()
+  const [cartRef, setCartRef] = createSignal<HTMLDivElement | undefined>()
 
   // Hooks and context
   const location = useLocation()
@@ -343,33 +342,13 @@ const ShoppingNav: Component = () => {
     setIsLangOpen(!isLangOpen())
   }
 
-  const handleUserClick = (e: Event) => {
-    e.stopPropagation()
-    closeAllDropdowns('user')
-    setIsUserOpen(!isUserOpen())
-  }
-
   const handleCartClick = (e: Event) => {
     e.stopPropagation()
     closeAllDropdowns('cart')
     setIsCartOpen(!isCartOpen())
   }
 
-  const handleSignOut = async () => {
-    try {
-      setIsUserOpen(false)
-      await auth.signOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-      showToast({
-        title: t('auth.error'),
-        description: t('auth.signOutError'),
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const handleLanguageChange = async (lang: Language) => {
+  const handleLanguageChange = (lang: Language) => {
     document.documentElement.dir = lang.direction
     document.documentElement.lang = lang.code
     setLocale(lang.code)
@@ -655,7 +634,7 @@ const ShoppingNav: Component = () => {
                     <FiShoppingCart class='h-5 w-5' />
                     <Show when={cartData()?.items?.length > 0}>
                       <span
-                        class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 
+                        class='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400
     text-[10px] font-medium text-black flex items-center justify-center'
                       >
                         {cartItemsCount()}
@@ -721,89 +700,7 @@ const ShoppingNav: Component = () => {
                 </div>
 
                 {/* User Menu - Desktop Only */}
-                <div class='hidden md:block relative' ref={setUserRef}>
-                  <Switch
-                    fallback={
-                      <A
-                        href={getLoginUrl()}
-                        class='inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-gray-100'
-                      >
-                        <FaRegularUser class='h-5 w-5' />
-                      </A>
-                    }
-                  >
-                    <Match when={auth.status === 'loading'}>
-                      <div class='h-10 w-10'>
-                        <Skeleton height={40} width={40} radius={20} />
-                      </div>
-                    </Match>
-                    <Match when={auth.status === 'authenticated'}>
-                      <>
-                        <Button variant='ghost' class='relative h-10 w-10 rounded-full' onClick={handleUserClick}>
-                          <Avatar>
-                            <AvatarImage src={userData().image} alt={userData().name || 'User avatar'} />
-                            <AvatarFallback>{userData().initials}</AvatarFallback>
-                          </Avatar>
-                        </Button>
-
-                        <div
-                          class={`absolute ${
-                            isRTL() ? 'left-0' : 'right-0'
-                          } mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 ${
-                            isUserOpen()
-                              ? 'opacity-100 transform scale-100'
-                              : 'opacity-0 transform scale-95 pointer-events-none'
-                          }`}
-                        >
-                          <div class='py-1'>
-                            <Show
-                              when={!auth.loading}
-                              fallback={
-                                <div class='px-4 py-2'>
-                                  <Skeleton class='h-4 w-32 mb-2' />
-                                  <Skeleton class='h-3 w-24' />
-                                </div>
-                              }
-                            >
-                              <div class='px-4 py-2 text-sm text-gray-700'>
-                                <div class='font-medium line-clamp-1'>{userData().name}</div>
-                                <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                              </div>
-                            </Show>
-                            <hr />
-                            <A
-                              href='/account'
-                              class={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                                isRTL() ? 'text-right' : 'text-left'
-                              }`}
-                            >
-                              {t('nav.account')}
-                            </A>
-                            {userData().role === 'admin' && (
-                              <A href='/admin' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                                {t('nav.admin')}
-                              </A>
-                            )}
-                            {userData().role === 'seller' && (
-                              <A href='/seller' class='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'>
-                                {t('nav.seller')}
-                              </A>
-                            )}
-                            <hr class='my-1 border-gray-200' />
-                            <button
-                              class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                                isRTL() ? 'text-right' : 'text-left'
-                              }`}
-                              onClick={handleSignOut}
-                            >
-                              {t('auth.signOut')}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    </Match>
-                  </Switch>
-                </div>
+                <UserButton setIsUserOpen={setIsUserOpen} setref={setUserRef} isUserOpen={isUserOpen()} />
 
                 {/* Mobile Menu Button */}
                 <div ref={setMenuRef}>

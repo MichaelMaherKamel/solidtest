@@ -1,58 +1,74 @@
-import { Component, createSignal, createMemo, Show, Switch, Match } from 'solid-js'
-import { A, useLocation } from '@solidjs/router'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu'
+import { Component, createMemo, Show, Switch, Match, createSignal } from 'solid-js'
+import { useNavigate } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
 import { useAuthState } from '~/contexts/auth'
 import { Skeleton } from '~/components/ui/skeleton'
+import { showToast } from '~/components/ui/toast'
+import { cn } from '~/lib/utils'
+import AuthModal from './AuthModal'
+import { CgProfile } from 'solid-icons/cg'
+import { TbDeviceAnalytics } from 'solid-icons/tb'
+import { RiBuildingsStore2Line } from 'solid-icons/ri'
+import { TbLogout2 } from 'solid-icons/tb'
 
 interface UserButtonProps {
   buttonColorClass?: string
+  forFooter?: boolean
+  setIsUserOpen: (isOpen: boolean) => void
+  setref: (el: HTMLDivElement | undefined) => void
+  isUserOpen: boolean
+}
+
+const getDropdownStyles = (isOpen: boolean, isRTL: boolean, isBottom = false) => `
+  absolute ${isRTL ? 'left-0' : 'right-0'} ${isBottom ? 'bottom-full mb-2' : 'top-full mt-2'}
+  rounded-lg shadow-lg
+  bg-white ring-1 ring-black ring-opacity-5
+  transition-all duration-300 ease-in-out origin-top-right
+  ${
+    isOpen
+      ? 'opacity-100 transform scale-100 translate-y-0'
+      : 'opacity-0 transform scale-95 -translate-y-2 pointer-events-none'
+  }
+`
+
+interface MenuItemProps {
+  icon: Component
+  text: string
+  onClick: () => void
+  isRTL: boolean
+}
+
+const MenuItem: Component<MenuItemProps> = (props) => {
+  return (
+    <button
+      class={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200 flex items-center ${
+        props.isRTL ? 'flex-row justify-start' : 'flex-row justify-start'
+      }`}
+      onClick={props.onClick}
+    >
+      <span>{props.text}</span>
+      <props.icon class={`h-4 w-4 ${props.isRTL ? 'mr-2' : 'ml-2'}`} />
+    </button>
+  )
 }
 
 export const UserButton: Component<UserButtonProps> = (props) => {
-  const [isOpen, setIsOpen] = createSignal(false)
+  const navigate = useNavigate()
+  const { t, locale } = useI18n()
   const auth = useAuthState()
-  const location = useLocation()
-  const { t } = useI18n()
+  const [isAuthModalOpen, setIsAuthModalOpen] = createSignal(false)
+  const isRTL = createMemo(() => locale() === 'ar')
 
-  // Memoized values
-  const user = createMemo(() => auth.user)
-  const userName = createMemo(() => user()?.name || user()?.email || 'User')
-  const userEmail = createMemo(() => user()?.email || '')
-  const userImage = createMemo(() => user()?.image || '')
-  const userRole = createMemo(() => user()?.role || 'user')
-
-  const onSignOut = async () => {
-    try {
-      setIsOpen(false)
-      await auth.signOut()
-    } catch (error) {
-      console.error('Error signing out:', error)
-      alert(t('auth.signOutError'))
-    }
-  }
-
-  const getLoginUrl = createMemo(() => {
-    const currentPath = location.pathname
-    const currentSearch = location.search
-    const fullPath = currentPath + currentSearch
-
-    // Don't create redirect if already on login page
-    if (currentPath === '/login') return '/login'
-
-    // Properly encode the full path
-    return `/login?redirect=${encodeURIComponent(fullPath)}`
-  })
+  const userData = createMemo(() => ({
+    name: auth.user?.name || '',
+    email: auth.user?.email || '',
+    image: auth.user?.image || '',
+    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
+    role: auth.user?.role || 'guest',
+  }))
 
   const getInitials = (name: string) => {
     if (!name) return 'U'
@@ -61,88 +77,127 @@ export const UserButton: Component<UserButtonProps> = (props) => {
       .map((part) => part[0])
       .join('')
       .toUpperCase()
+      .slice(0, 2)
   }
 
+  const handleSignOut = async () => {
+    try {
+      props.setIsUserOpen(false)
+      await auth.signOut()
+      navigate('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+      showToast({
+        title: t('auth.error'),
+        description: t('auth.signOutError'),
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleMenuItemClick = (path: string) => {
+    props.setIsUserOpen(false)
+    navigate(path)
+  }
+
+  const handleAuthClick = () => {
+    setIsAuthModalOpen(true)
+  }
+
+  const handleButtonClick = () => {
+    props.setIsUserOpen(!props.isUserOpen)
+  }
+
+  const buttonClasses = cn(
+    'relative',
+    props.forFooter ? 'h-10 w-10' : 'h-10 w-10 rounded-full',
+    props.buttonColorClass || ''
+  )
+
   return (
-    <Switch
-      fallback={
-        <Button
-          as={A}
-          href={getLoginUrl()}
-          variant='ghost'
-          size='icon'
-          class={`hover:bg-white/10 ${props.buttonColorClass || 'text-gray-800 hover:text-gray-900'}`}
-          aria-label={t('auth.signIn')}
-        >
-          <FaRegularUser class='h-5 w-5' />
-        </Button>
-      }
-    >
-      <Match when={auth.status === 'loading'}>
-        <div class='h-10 w-10'>
-          <Skeleton height={40} width={40} radius={20} />
-        </div>
-      </Match>
-      <Match when={auth.status === 'authenticated'}>
-        <DropdownMenu open={isOpen()} onOpenChange={setIsOpen}>
-          <DropdownMenuTrigger>
+    <>
+      <div class='relative' dir={isRTL() ? 'rtl' : 'ltr'}>
+        <Switch
+          fallback={
             <Button
               variant='ghost'
-              class={`relative h-10 w-10 rounded-full transition-colors duration-200 ${props.buttonColorClass}`}
-              aria-label={t('nav.userMenu')}
+              size='icon'
+              class={cn('hover:bg-white/10', props.buttonColorClass || 'text-gray-800 hover:text-gray-900')}
+              onClick={handleAuthClick}
             >
-              <Avatar>
-                <AvatarImage src={userImage()} alt={userName()} />
-                <AvatarFallback>{getInitials(userName())}</AvatarFallback>
-              </Avatar>
+              <FaRegularUser class='h-5 w-5' />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <Show when={!auth.loading}>
-              <Show when={userName() || userEmail()}>
-                <DropdownMenuLabel>
-                  <div class='flex flex-col space-y-1'>
-                    <Show when={userName()}>
-                      <p class='text-sm font-medium'>{userName()}</p>
-                    </Show>
-                    <Show when={userEmail()}>
-                      <p class='text-xs text-muted-foreground truncate'>{userEmail()}</p>
-                    </Show>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-              </Show>
+          }
+        >
+          <Match when={auth.status === 'loading'}>
+            <Skeleton class='h-10 w-10 rounded-full' />
+          </Match>
+          <Match when={auth.status === 'authenticated'}>
+            <>
+              <Button ref={props.setref} variant='ghost' class={buttonClasses} onClick={handleButtonClick}>
+                <Avatar>
+                  <AvatarImage src={userData().image} alt={userData().name} />
+                  <AvatarFallback>{getInitials(userData().name)}</AvatarFallback>
+                </Avatar>
+              </Button>
 
-              <DropdownMenuItem as={A} href='/account'>
-                {t('nav.account')}
-              </DropdownMenuItem>
+              <div
+                ref={props.setref}
+                class={getDropdownStyles(props.isUserOpen, isRTL(), props.forFooter) + ' w-64 z-50'}
+              >
+                <div class='py-1 bg-white rounded-lg shadow-lg'>
+                  <Show
+                    when={!auth.loading}
+                    fallback={
+                      <div class='px-4 py-2'>
+                        <Skeleton class='h-4 w-32 mb-2' />
+                        <Skeleton class='h-3 w-24' />
+                      </div>
+                    }
+                  >
+                    <div class='px-4 py-2 text-sm text-gray-700'>
+                      <div class='font-medium line-clamp-1'>{userData().name}</div>
+                      <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
+                    </div>
+                  </Show>
 
-              <Show when={userRole() === 'admin'}>
-                <DropdownMenuItem as={A} href='/admin'>
-                  {t('nav.admin')}
-                </DropdownMenuItem>
-              </Show>
+                  <hr class='border-gray-200' />
 
-              <Show when={userRole() === 'seller'}>
-                <DropdownMenuItem as={A} href='/seller'>
-                  {t('nav.seller')}
-                </DropdownMenuItem>
-              </Show>
+                  <MenuItem
+                    icon={CgProfile}
+                    text={t('nav.account')}
+                    onClick={() => handleMenuItemClick('/account')}
+                    isRTL={isRTL()}
+                  />
 
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut}>{t('auth.signOut')}</DropdownMenuItem>
-            </Show>
-            <Show when={auth.loading}>
-              <div class='p-2'>
-                <Skeleton height={16} width={128} radius={8} class='mb-2' />
-                <Skeleton height={12} width={96} radius={6} />
+                  <Show when={userData().role === 'admin'}>
+                    <MenuItem
+                      icon={TbDeviceAnalytics}
+                      text={t('nav.admin')}
+                      onClick={() => handleMenuItemClick('/admin')}
+                      isRTL={isRTL()}
+                    />
+                  </Show>
+
+                  <Show when={userData().role === 'seller'}>
+                    <MenuItem
+                      icon={RiBuildingsStore2Line}
+                      text={t('nav.seller')}
+                      onClick={() => handleMenuItemClick('/seller')}
+                      isRTL={isRTL()}
+                    />
+                  </Show>
+
+                  <hr class='my-1 border-gray-200' />
+
+                  <MenuItem icon={TbLogout2} text={t('auth.signOut')} onClick={handleSignOut} isRTL={isRTL()} />
+                </div>
               </div>
-            </Show>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Match>
-    </Switch>
+            </>
+          </Match>
+        </Switch>
+      </div>
+      <AuthModal isOpen={isAuthModalOpen()} onOpenChange={setIsAuthModalOpen} />
+    </>
   )
 }
-
-export default UserButton
