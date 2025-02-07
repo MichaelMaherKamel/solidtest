@@ -79,6 +79,7 @@ export const enDict = {
   nav: {
     home: 'Home',
     about: 'About',
+
     stores: 'Stores',
     gallery: 'Gallery',
     admin: 'Admin',
@@ -86,6 +87,78 @@ export const enDict = {
     seller: 'Seller',
     account: 'My Account',
     userMenu: 'User Menu',
+  },
+
+  about: {
+    title: 'Souq EL Rafay3',
+    subtitle:
+      'Souq EL Rafay3 is a thriving marketplace that connects local artisans, craftspeople, and small businesses with a wide range of customers. We pride ourselves on offering a diverse selection of unique, high-quality products that showcase the rich cultural heritage and skilled craftsmanship of our community.',
+    history: {
+      title: 'Celebrating Over a Decade of Connecting Artisans and Customers',
+      content: [
+        'Souq EL Rafay3 was founded in 2024 with the mission of empowering local artisans and small businesses by providing them with a platform to showcase and sell their unique products. Over the years, we have grown to become a thriving marketplace that celebrates the rich cultural heritage and skilled craftsmanship of our community.',
+      ],
+    },
+    mission: {
+      title: 'Our Mission & Values',
+      content: [
+        'At Souq EL Rafay3, our mission is to support and empower local artisans, craftspeople, and small businesses by providing them with a platform to showcase and sell their products to a wider audience. We are committed to promoting sustainable and ethical business practices, and we believe in the importance of preserving and celebrating the rich cultural heritage of our community.',
+        'Our core values include integrity, community, and innovation. We strive to maintain the highest standards of quality and customer service, and we are always looking for new ways to enhance the experience of both our artisans and our customers.',
+      ],
+    },
+  },
+
+  terms: {
+    title: 'Terms and Conditions',
+    lastUpdated: 'Last updated: Feburary 2025',
+    introduction: {
+      title: 'Introduction',
+      content: {
+        0: 'Please read these Terms and Conditions ("Terms") carefully before using the Souq El Rafay3 website (the "Service") operated by Souq El Rafay3 ("us", "we", or "our").',
+        1: 'Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms. These Terms apply to all visitors, users and others who access or use the Service, which includes processing and delivery (or arranging for delivery) of product orders.',
+        2: 'By accessing or using the Service you agree to be bound by these Terms. If you disagree with any part of the terms then you may not access the Service.',
+      },
+    },
+    purchases: {
+      title: 'Purchases',
+      content: {
+        0: 'If you wish to purchase any product or service made available through the Service ("Purchase"), you may be asked to supply certain information relevant to your Purchase including, without limitation, your name and last name, your e-mail address, your mailing address.',
+        1: 'Souq El Rafay3 is not required to provide any goods until payment has been received. When paying with credit card, until payment has actually cleared, no orders will be dispatched. In the case where payment does not clear, Souq El Rafay3 has a right to cancel the order completely.',
+      },
+    },
+    returns: {
+      title: 'Returns & Refunds',
+      content: {
+        0: 'In case of receiving a product with an apparent defect/damage or a product with a wrong (color / size), or missing items; you must inform us within a maximum 24 hours from the delivery date.',
+        1: 'You have 14 days to make a return from the delivery date of your order if you change your mind about a product, provided that the products are unused and in their original condition with the original packaging.',
+        2: 'Items returned must be unused, unworn items with their labels still intact with the original packing.',
+        3: 'We do not accept a returned item that is worn, damaged, washed, soiled, or altered in any way.',
+        4: 'Except for manufacturing defects, you have the right to request an exchange within 30 days of receiving the product.',
+      },
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      content: {
+        0: 'We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data and tell you about your privacy rights.',
+        1: 'We collect and process your personal data only for the purpose of providing our services, improving our website, and communicating with you.',
+        2: 'You have the right to access, correct, or delete your personal data at any time. You can exercise these rights by contacting us.',
+        3: 'We do not store any credit card information. All payment transactions are processed through secure payment gateways.',
+        4: 'We may use cookies and similar tracking technologies to enhance your browsing experience on our website.',
+        5: 'We do not sell, trade, or rent your personal information to third parties. We may share your data with service providers who assist us in operating our website and conducting our business.',
+      },
+    },
+    changes: {
+      title: 'Changes to Terms',
+      content: {
+        0: "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material we will try to provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.",
+      },
+    },
+    contact: {
+      title: 'Contact Us',
+      content: {
+        0: 'If you have any questions about these Terms, please contact us via e-mail at help@souqelrafay3.com',
+      },
+    },
   },
 
   cart: {
@@ -307,7 +380,8 @@ export const enDict = {
     quickLinks: 'Quick Links',
     email: 'Email',
     phone: 'Phone',
-    copyright: '© {{year}} Souq El Rafay3. All rights reserved.',
+    about: 'About',
+    copyright: '© {{year}} Souq El Rafay3. All rights reserved',
     terms: 'Terms',
     companyInfo: '© {{year}} Operated by Wark Maze',
   },

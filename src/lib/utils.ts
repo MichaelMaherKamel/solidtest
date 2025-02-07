@@ -1,4 +1,5 @@
 // ~/lib/utils.ts
+import { NavigateOptions } from '@solidjs/router'
 import type { ClassValue } from 'clsx'
 import clsx from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -68,4 +69,35 @@ export const getDeliveryEstimate = (city: City) => {
       estimate.maxDays
     } business days`,
   }
+}
+
+export const handleAuthRedirect = (
+  searchParams: { redirect?: string },
+  navigate: (path: string, options?: NavigateOptions) => void
+) => {
+  const redirect = searchParams.redirect
+
+  // Only handle redirects if we have a redirect param
+  if (typeof redirect === 'string') {
+    const decodedRedirect = decodeURIComponent(redirect)
+
+    // Validate the redirect URL - must start with / and not contain //
+    if (decodedRedirect.startsWith('/') && !decodedRedirect.includes('//')) {
+      navigate(decodedRedirect, {
+        replace: true,
+        resolve: true,
+        scroll: true,
+        state: {},
+      })
+      return
+    }
+  }
+
+  // Default fallback
+  navigate('/', {
+    replace: true,
+    resolve: true,
+    scroll: true,
+    state: {},
+  })
 }

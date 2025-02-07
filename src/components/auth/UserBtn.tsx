@@ -44,7 +44,14 @@ export const UserButton: Component<UserButtonProps> = (props) => {
 
   const getLoginUrl = createMemo(() => {
     const currentPath = location.pathname
-    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
+    const currentSearch = location.search
+    const fullPath = currentPath + currentSearch
+
+    // Don't create redirect if already on login page
+    if (currentPath === '/login') return '/login'
+
+    // Properly encode the full path
+    return `/login?redirect=${encodeURIComponent(fullPath)}`
   })
 
   const getInitials = (name: string) => {

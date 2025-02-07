@@ -6,6 +6,7 @@ import { Button } from '~/components/ui/button'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { useI18n } from '~/contexts/i18n'
 import { siteConfig } from '~/config/site'
+import { handleAuthRedirect } from '~/lib/utils'
 
 const GoogleIcon: Component = () => (
   <svg class='w-5 h-5' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
@@ -28,13 +29,10 @@ const GoogleIcon: Component = () => (
   </svg>
 )
 
-const FacebookIcon: Component = () => (
-  <svg class='w-5 h-5' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
-    <path
-      d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'
-      fill='#1877F2'
-    />
-  </svg>
+const LoadingSpinner: Component = () => (
+  <div class='relative w-6 h-6'>
+    <div class='w-6 h-6 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin'></div>
+  </div>
 )
 
 const AuthPage: Component = () => {
@@ -51,30 +49,18 @@ const AuthPage: Component = () => {
     const session = auth.session()
     const status = auth.status()
 
-    // If user is authenticated and we're on the login page
-    if (status === 'authenticated' && session?.user && location.pathname === '/login') {
-      const redirect = searchParams.redirect
-
-      const redirectUrl = typeof redirect === 'string' ? decodeURIComponent(redirect) : '/'
-
-      // Ensure redirect URL is safe
-      const safeRedirectUrl = redirectUrl.startsWith('/') ? redirectUrl : '/'
-
-      // Use replace to avoid adding to history stack
-      navigate(safeRedirectUrl, { replace: true })
+    if (status === 'authenticated' && session?.user) {
+      handleAuthRedirect(searchParams, navigate)
     }
   })
 
-  const handleSignIn = async (provider: 'google' | 'facebook') => {
+  const handleSignIn = async (provider: 'google') => {
     if (loading()) return
 
     try {
       setLoading(provider)
       setError('')
       await auth.signIn(provider)
-
-      // The navigation will be handled by the createEffect above
-      // This prevents race conditions with auth state updates
     } catch (err) {
       console.error(`${provider} sign in error:`, err)
       setError(t('auth.error'))
@@ -82,36 +68,9 @@ const AuthPage: Component = () => {
     }
   }
 
-  // Prevent showing login page if already authenticated
-  createEffect(() => {
-    const status = auth.status()
-    const session = auth.session()
-
-    if (status === 'authenticated' && session?.user) {
-      const currentPath = location.pathname
-      if (currentPath === '/login') {
-        const redirect = searchParams.redirect
-        const redirectUrl = typeof redirect === 'string' ? decodeURIComponent(redirect) : '/'
-        navigate(redirectUrl.startsWith('/') ? redirectUrl : '/', { replace: true })
-      }
-    }
-  })
-
-  const LoadingSpinner: Component = () => {
-    return (
-      <div
-        class='w-4 h-4 rounded-full animate-spin
-               bg-gradient-to-r from-purple-500 via-blue-500 to-green-500
-               p-[1px]'
-      >
-        <div class='w-full h-full bg-gray-900 rounded-full'></div>
-      </div>
-    )
-  }
-
   return (
     <div class='min-h-screen relative flex flex-col items-center justify-between' dir={isRTL() ? 'rtl' : 'ltr'}>
-      {/* Background Image Layer */}
+      {/* Enhanced Background with Gradient Overlay */}
       <div class='absolute inset-0'>
         <img
           src={siteConfig.images.siteResponsiveImage}
@@ -123,72 +82,60 @@ const AuthPage: Component = () => {
           alt={t('hero.imageAlt')}
           class='w-full h-full object-cover object-center hidden md:block'
         />
-        <div class='absolute inset-0 bg-black bg-opacity-60' />
+        <div class='absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70' />
       </div>
 
-      {/* Header */}
-      <header class='relative z-10 w-full text-white py-4 text-center text-xl font-bold'>Souq El Rafay3</header>
+      {/* Enhanced Header */}
+      <header class='relative z-10 w-full py-6 text-center'>
+        <h1 class='text-3xl font-bold text-white tracking-wider'>Souq El Rafay3</h1>
+      </header>
 
-      {/* Content Layer */}
-      <div class='relative z-10 w-full max-w-md px-4 flex-grow flex items-center'>
-        <Card class='w-full backdrop-blur-md bg-gray-800/70 border-gray-600 shadow-lg'>
-          <CardHeader class='space-y-1'>
-            <h1 class='text-2xl font-bold text-center text-gray-100'>{t('auth.title')}</h1>
-            <p class='text-center text-gray-300'>{t('auth.subtitle')}</p>
+      {/* Main Content */}
+      <div class='relative z-10 w-full max-w-md px-6 flex-grow flex items-center'>
+        <Card class='w-full backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl'>
+          <CardHeader class='space-y-3 pb-8'>
+            <h2 class='text-2xl font-bold text-center text-white'>{t('auth.title')}</h2>
+            <p class='text-center text-gray-200 text-sm'>{t('auth.subtitle')}</p>
           </CardHeader>
 
-          <CardContent class='space-y-4'>
+          <CardContent class='space-y-6'>
             {error() && (
-              <Alert variant='destructive' class='bg-red-500/20 border-red-500/50 text-red-200'>
-                <AlertDescription>{error()}</AlertDescription>
+              <Alert variant='destructive' class='bg-red-500/20 border-red-500/50'>
+                <AlertDescription class='text-red-200'>{error()}</AlertDescription>
               </Alert>
             )}
 
-            <div class='space-y-3'>
-              <Button
-                variant='outline'
-                class='w-full h-12 relative bg-gray-700/80 hover:bg-gray-600/80 text-gray-100 border-gray-500 hover:border-gray-400 transition-all duration-200'
-                onClick={() => handleSignIn('google')}
-                disabled={loading() !== null}
-              >
-                {loading() === 'google' ? (
-                  <LoadingSpinner />
-                ) : (
-                  <div class='flex items-center justify-center w-[180px]'>
-                    <div class='w-5 h-5 flex-shrink-0'>
-                      <GoogleIcon />
-                    </div>
-                    <span class='flex-1 text-sm font-medium ms-3'>{t('auth.googleButton')}</span>
-                  </div>
-                )}
-              </Button>
-
-              {/* Facebook button (commented out) */}
-              {/* <Button
-                variant='outline'
-                class='w-full h-12 relative bg-gray-700/80 hover:bg-gray-600/80 text-gray-100 border-gray-500 hover:border-gray-400 transition-all duration-200'
-                onClick={() => handleSignIn('facebook')}
-                disabled={loading() !== null}
-              >
-                {loading() === 'facebook' ? (
-                  <LoadingSpinner />
-                ) : (
-                  <div class='flex items-center justify-center w-[180px]'>
-                    <div class='w-5 h-5 flex-shrink-0'>
-                      <FacebookIcon />
-                    </div>
-                    <span class='flex-1 text-sm font-medium ms-3'>{t('auth.facebookButton')}</span>
-                  </div>
-                )}
-              </Button> */}
-            </div>
+            <Button
+              variant='outline'
+              class='w-full h-12 relative bg-white/10 hover:bg-white/20 text-white border-white/30 hover:border-white/40 
+                     transition-all duration-300 backdrop-blur-lg group overflow-hidden'
+              onClick={() => handleSignIn('google')}
+              disabled={loading() !== null}
+            >
+              <div
+                class='absolute inset-0 bg-gradient-to-r from-blue-500/10 via-white/5 to-green-500/10 opacity-0 
+                          group-hover:opacity-100 transition-opacity duration-500'
+              ></div>
+              {loading() === 'google' ? (
+                <LoadingSpinner />
+              ) : (
+                <div class='flex items-center justify-center gap-3'>
+                  <GoogleIcon />
+                  <span class='text-sm font-medium'>{t('auth.googleButton')}</span>
+                </div>
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Footer */}
-      <footer class='relative z-10 w-full text-center py-4 mt-auto'>
-        <p class='text-sm text-slate-100'>© 2024 Souq El Rafay3. Operated by Wark Maze. All rights reserved.</p>
+      {/* Enhanced Footer */}
+      <footer class='relative z-10 w-full text-center py-6'>
+        <p class='text-sm text-gray-300'>
+          © 2024 Souq El Rafay3
+          <span class='mx-2'>•</span>
+          <span class='text-gray-400'>Operated by Wark Maze</span>
+        </p>
       </footer>
     </div>
   )

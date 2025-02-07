@@ -644,7 +644,7 @@ const ShoppingNav: Component = () => {
 
               {/* Search Bar - Desktop Only */}
               <div class='hidden md:flex flex-1 max-w-xl mx-4'>
-                <Input type='search' placeholder={t('search.placeholder')} class='w-full' />
+                <Input type='search' placeholder={t('common.search')} class='w-full' />
               </div>
 
               {/* Right Actions */}

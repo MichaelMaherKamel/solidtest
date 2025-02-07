@@ -13,9 +13,9 @@ import { useI18n } from '~/contexts/i18n'
 import CartSheet from './CartSheet'
 
 const MobileNavigation: Component = () => {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
   const currentYear = new Date().getFullYear()
-
   return (
     <div class='fixed bottom-0 left-0 right-0 z-50'>
       <Dock direction='middle' class='bg-white shadow-md'>
@@ -24,13 +24,10 @@ const MobileNavigation: Component = () => {
             <BiRegularHomeAlt class='w-5 h-5' />
           </A>
         </DockIcon>
-
         <Separator orientation='vertical' class='h-full' />
-
         <DockIcon>
           <BiRegularSearch class='w-5 h-5' />
         </DockIcon>
-
         <DockIcon>
           <A
             href='https://wa.me/201022618610'
@@ -40,26 +37,32 @@ const MobileNavigation: Component = () => {
             <BiRegularMessageRounded class='w-5 h-5' />
           </A>
         </DockIcon>
-
         <DockIcon>
           <CartSheet />
         </DockIcon>
-
         <DockIcon>
           <LocalizationButton iconOnly size='icon' variant='ghost' />
         </DockIcon>
-
         <Separator orientation='vertical' class='h-full py-2' />
-
         <DockIcon>
           <Suspense fallback={<div class='w-10 h-10 rounded-full animate-pulse bg-gray-200' />}>
             <UserButton />
           </Suspense>
         </DockIcon>
       </Dock>
-
-      <div class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 backdrop-blur-md' dir='ltr'>
-        <div class='flex items-center justify-center h-full text-xs'>
+      <div
+        class='px-4 h-8 text-gray-600 supports-backdrop-blur:bg-white/10 backdrop-blur-md'
+        dir={isRTL() ? 'ltr' : 'rtl'}
+      >
+        <div class='flex items-center justify-center h-full text-xs gap-4'>
+          <A href='/about' class='hover:text-gray-900'>
+            {t('footer.about')}
+          </A>
+          <span>•</span>
+          <A href='/terms' class='hover:text-gray-900'>
+            {t('footer.terms')}
+          </A>
+          <span>•</span>
           <span class='truncate'>{t('footer.companyInfo', { year: currentYear })}</span>
         </div>
       </div>
@@ -68,14 +71,22 @@ const MobileNavigation: Component = () => {
 }
 
 const DesktopFooter: Component = () => {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const isRTL = () => locale() === 'ar'
   const currentYear = new Date().getFullYear()
-
   return (
     <footer class='bg-gray-100 shadow-md'>
-      <div class='container mx-auto px-4 py-3 text-gray-600' dir='ltr'>
+      <div class='container mx-auto px-4 py-3 text-gray-600' dir={isRTL() ? 'ltr' : 'rtl'}>
         <div class='flex items-center justify-center'>
           <div class='flex items-center gap-4'>
+            <A href='/about' class='hover:text-gray-900'>
+              {t('footer.about')}
+            </A>
+            <span>•</span>
+            <A href='/terms' class='hover:text-gray-900'>
+              {t('footer.terms')}
+            </A>
+            <span>•</span>
             <p class='text-base'>{t('footer.copyright', { year: currentYear })}</p>
           </div>
         </div>
@@ -86,7 +97,6 @@ const DesktopFooter: Component = () => {
 
 const SiteFooter: Component = () => {
   const isLargeScreen = createMediaQuery('(min-width: 768px)')
-
   return (
     <Show when={isLargeScreen()} fallback={<MobileNavigation />}>
       <DesktopFooter />
