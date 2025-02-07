@@ -1,4 +1,5 @@
-import { Component, createEffect, createSignal, onMount } from 'solid-js'
+// login.tsx
+import { Component, createEffect, createSignal } from 'solid-js'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { useNavigate } from '@solidjs/router'
 import { Card, CardHeader, CardContent } from '~/components/ui/card'
@@ -6,8 +7,6 @@ import { Button } from '~/components/ui/button'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { useI18n } from '~/contexts/i18n'
 import { siteConfig } from '~/config/site'
-
-const RETURN_PATH_KEY = 'auth_return_path'
 
 const GoogleIcon: Component = () => (
   <svg class='w-5 h-5' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
@@ -37,7 +36,6 @@ const LoadingSpinner: Component = () => (
 )
 
 const AuthPage: Component = () => {
-  const [returnPath, setReturnPath] = createSignal<string>('/')
   const [loading, setLoading] = createSignal<string | null>(null)
   const [error, setError] = createSignal('')
   const auth = useAuth()
@@ -46,33 +44,42 @@ const AuthPage: Component = () => {
 
   const isRTL = () => locale() === 'ar'
 
-  onMount(() => {
-    try {
-      const savedPath = localStorage.getItem(RETURN_PATH_KEY)
-      if (savedPath) {
-        setReturnPath(savedPath)
-      }
-    } catch (error) {
-      console.warn('Error reading return path:', error)
-    }
-  })
-
-  // Handle authentication state changes
   createEffect(() => {
     const session = auth.session()
     const status = auth.status()
 
     if (status === 'authenticated' && session?.user) {
       try {
-        // Clean up storage
-        localStorage.removeItem(RETURN_PATH_KEY)
+        // Get the stored redirect data
+        const redirectDataStr = localStorage.getItem('souq_auth_redirect')
+        let redirectPath = '/'
+        
+        if (redirectDataStr) {
+          const redirectData = JSON.parse(redirectDataStr)
+          console.log('Retrieved redirect data:', redirectData)
+          
+          // Check if the stored path is valid and not too old (5 minutes)
+          const isValid = redirectData.path?.startsWith('/') && 
+                         !redirectData.path.includes('//') &&
+                         Date.now() - redirectData.timestamp < 5 * 60 * 1000
+          
+          if (isValid) {
+            redirectPath = redirectData.path
+            console.log('Valid redirect path found:', redirectPath)
+          }
+        }
 
-        // Try using router navigation first
-        navigate(returnPath(), { replace: true })
+        // Clear the stored redirect data
+        localStorage.removeItem('souq_auth_redirect')
+
+        // Navigate to the appropriate path
+        navigate(redirectPath, {
+          replace: true,
+          scroll: true
+        })
       } catch (error) {
-        console.warn('Navigation error:', error)
-        // Fallback to window.location if router navigation fails
-        window.location.href = returnPath()
+        console.error('Error handling redirect:', error)
+        navigate('/', { replace: true, scroll: true })
       }
     }
   })
@@ -137,8 +144,8 @@ const AuthPage: Component = () => {
             >
               <div
                 class='absolute inset-0 bg-gradient-to-r from-blue-500/10 via-white/5 to-green-500/10 opacity-0 
-                          group-hover:opacity-100 transition-opacity duration-500'
-              ></div>
+                       group-hover:opacity-100 transition-opacity duration-500'
+              />
               {loading() === 'google' ? (
                 <LoadingSpinner />
               ) : (

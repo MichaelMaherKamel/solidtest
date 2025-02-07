@@ -1,4 +1,4 @@
-import { Component, createMemo, Show, Switch, Match, createSignal } from 'solid-js'
+import { Component, createMemo, Show, Switch, Match } from 'solid-js'
 import { A, useNavigate, useLocation } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
@@ -21,7 +21,7 @@ interface UserButtonProps {
   isUserOpen: boolean
 }
 
-const RETURN_PATH_KEY = 'auth_return_path'
+const STORAGE_KEY = 'souq_auth_redirect'
 
 const getDropdownStyles = (isOpen: boolean, isRTL: boolean, isBottom = false) => `
   absolute ${isRTL ? 'left-0' : 'right-0'} ${isBottom ? 'bottom-full mb-2' : 'top-full mt-2'}
@@ -63,16 +63,6 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const auth = useAuthState()
   const isRTL = createMemo(() => locale() === 'ar')
 
-  // Safe location path getter
-  const getCurrentPath = () => {
-    try {
-      return location.pathname + (location.search || '')
-    } catch (error) {
-      console.warn('Location not available:', error)
-      return '/'
-    }
-  }
-
   const userData = createMemo(() => ({
     name: auth.user?.name || '',
     email: auth.user?.email || '',
@@ -80,6 +70,30 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
     role: auth.user?.role || 'guest',
   }))
+
+  const storeRedirectAndNavigate = () => {
+    try {
+      const currentPath = location.pathname
+      const currentSearch = location.search
+      const fullPath = currentPath + currentSearch
+
+      // Only store redirect if not on login page
+      if (currentPath !== '/login') {
+        const redirectData = {
+          path: fullPath,
+          timestamp: Date.now(),
+        }
+        console.log('Storing redirect data:', redirectData)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(redirectData))
+      }
+
+      navigate('/login')
+    } catch (error) {
+      console.error('Navigation error:', error)
+      // Fallback to direct navigation
+      window.location.href = '/login'
+    }
+  }
 
   const getInitials = (name: string) => {
     if (!name) return 'U'
@@ -111,20 +125,6 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     navigate(path)
   }
 
-  const handleAuthClick = () => {
-    try {
-      const currentPath = getCurrentPath()
-      if (currentPath !== '/login') {
-        localStorage.setItem(RETURN_PATH_KEY, currentPath)
-      }
-      navigate('/login')
-    } catch (error) {
-      console.warn('Navigation error:', error)
-      // Fallback to direct navigation
-      window.location.href = '/loginn'
-    }
-  }
-
   const buttonClasses = cn(
     'relative',
     props.forFooter ? 'h-10 w-10' : 'h-10 w-10 rounded-full',
@@ -139,7 +139,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
             variant='ghost'
             size='icon'
             class={cn('hover:bg-white/10', props.buttonColorClass || 'text-gray-800 hover:text-gray-900')}
-            onClick={handleAuthClick}
+            onClick={storeRedirectAndNavigate}
           >
             <FaRegularUser class='h-5 w-5' />
           </Button>
@@ -220,3 +220,5 @@ export const UserButton: Component<UserButtonProps> = (props) => {
     </div>
   )
 }
+
+export default UserButton
