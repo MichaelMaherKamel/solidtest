@@ -2,7 +2,7 @@
 import { Component, Show, createSignal, onCleanup, createEffect, Match, Switch } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
-import { useAuthState } from '~/contexts/auth'
+import { useAuth } from '@solid-mediakit/auth/client' 
 import { FaRegularUser } from 'solid-icons/fa'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
@@ -10,7 +10,8 @@ import { Skeleton } from '~/components/ui/skeleton'
 
 const CheckoutNav: Component = () => {
   const { t, locale } = useI18n()
-  const auth = useAuthState()
+  // const auth = useAuthState() REMOVED
+  const auth = useAuth() // ADDED
   const location = useLocation()
   const isRTL = () => locale() === 'ar'
 
@@ -48,13 +49,16 @@ const CheckoutNav: Component = () => {
     return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`
   }
 
-  const userData = () => ({
-    name: auth.user?.name || '',
-    email: auth.user?.email || '',
-    image: auth.user?.image || '',
-    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
-    role: auth.user?.role || 'guest',
-  })
+  const userData = () => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
+  }
 
   const handleSignOut = async () => {
     try {
@@ -87,12 +91,12 @@ const CheckoutNav: Component = () => {
                 </A>
               }
             >
-              <Match when={auth.status === 'loading'}>
+              <Match when={auth.status() === 'loading'}>
                 <div class='h-10 w-10'>
                   <Skeleton class='h-10 w-10 rounded-full' />
                 </div>
               </Match>
-              <Match when={auth.status === 'authenticated'}>
+              <Match when={auth.status() === 'authenticated'}>
                 <>
                   <Button
                     variant='ghost'
@@ -117,7 +121,7 @@ const CheckoutNav: Component = () => {
                   >
                     <div class='py-1'>
                       <Show
-                        when={!auth.loading}
+                        when={auth.status() === 'authenticated'} // CHANGED
                         fallback={
                           <div class='px-4 py-2'>
                             <Skeleton class='h-4 w-32 mb-2' />
@@ -164,6 +168,14 @@ const CheckoutNav: Component = () => {
                     </div>
                   </div>
                 </>
+              </Match>
+              <Match when={auth.status() === 'unauthenticated'}>
+                <A
+                  href={getLoginUrl()}
+                  class='inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100'
+                >
+                  <FaRegularUser class='h-5 w-5' />
+                </A>
               </Match>
             </Switch>
           </div>

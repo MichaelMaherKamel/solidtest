@@ -4,7 +4,6 @@ import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-// import { useAuthState } from '~/contexts/auth' REMOVED
 import { Skeleton } from '~/components/ui/skeleton'
 import { showToast } from '~/components/ui/toast'
 import { cn } from '~/lib/utils'
@@ -12,8 +11,8 @@ import { CgProfile } from 'solid-icons/cg'
 import { TbDeviceAnalytics } from 'solid-icons/tb'
 import { RiBuildingsStore2Line } from 'solid-icons/ri'
 import { TbLogout2 } from 'solid-icons/tb'
-import { useAuth } from '@solid-mediakit/auth/client' // ADDED
-import AuthModal from '~/components/auth/AuthModal' // ADDED
+import { useAuth } from '@solid-mediakit/auth/client' 
+import AuthModal from '~/components/auth/AuthModal'
 
 interface UserButtonProps {
   buttonColorClass?: string
