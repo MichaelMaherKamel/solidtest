@@ -17,7 +17,7 @@ import { Input } from '~/components/ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
-import { useAuthState } from '~/contexts/auth'
+import { useAuth } from '@solid-mediakit/auth/client'
 import { siteConfig } from '~/config/site'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
@@ -72,7 +72,8 @@ const ShoppingNav: Component = () => {
 
   // Hooks and context
   const location = useLocation()
-  const auth = useAuthState()
+  // const auth = useAuthState() REMOVED
+  const auth = useAuth() // ADDED
   const { t, locale, setLocale } = useI18n()
   const navigate = useNavigate()
   const cartData = createAsync(() => getCart())
@@ -99,13 +100,16 @@ const ShoppingNav: Component = () => {
   })
 
   // User data memo
-  const userData = createMemo(() => ({
-    name: auth.user?.name || '',
-    email: auth.user?.email || '',
-    image: auth.user?.image || '',
-    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
-    role: auth.user?.role || 'guest',
-  }))
+  const userData = createMemo(() => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
+  })
 
   const cartTotal = createMemo(() => {
     const cart = cartData()

@@ -17,7 +17,6 @@ import { Input } from '../ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
-import { useAuthState } from '~/contexts/auth'
 import { getCart } from '~/db/fetchers/cart'
 import { updateCartItemQuantity, removeCartItem, clearCart } from '~/db/actions/cart'
 import { cn, formatCurrency } from '~/lib/utils'
@@ -25,6 +24,7 @@ import { BiSolidStore } from 'solid-icons/bi'
 import { showToast } from '~/components/ui/toast'
 import { UserButton } from '~/components/auth/UserBtn'
 import { createMediaQuery } from '@solid-primitives/media'
+import { useAuth } from '@solid-mediakit/auth/client'
 
 // Types
 interface Language {
@@ -100,7 +100,8 @@ const Nav: Component = () => {
 
   // Hooks
   const location = useLocation()
-  const auth = useAuthState()
+  // const auth = useAuthState() REMOVED
+  const auth = useAuth() // ADDED
   const { t, locale, setLocale } = useI18n()
   const cartData = createAsync(() => getCart())
   const navigate = useNavigate()
@@ -142,13 +143,16 @@ const Nav: Component = () => {
     return Object.values(grouped)
   })
 
-  const userData = createMemo(() => ({
-    name: auth.user?.name || '',
-    email: auth.user?.email || '',
-    image: auth.user?.image || '',
-    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
-    role: auth.user?.role || 'guest',
-  }))
+  const userData = createMemo(() => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
+  })
 
   const filteredMenuItems = createMemo(() =>
     MENU_ITEMS.filter((item) => !item.roles || item.roles.includes(userData().role))
@@ -617,7 +621,7 @@ const Nav: Component = () => {
                                                       >
                                                         <path
                                                           fill-rule='evenodd'
-                                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 011-1z'
                                                           clip-rule='evenodd'
                                                         />
                                                       </svg>

@@ -1,10 +1,10 @@
-import { Component, createMemo, Show, Switch, Match } from 'solid-js'
+import { Component, createMemo, Show, Switch, Match, createSignal } from 'solid-js'
 import { A, useNavigate, useLocation } from '@solidjs/router'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { FaRegularUser } from 'solid-icons/fa'
 import { useI18n } from '~/contexts/i18n'
-import { useAuthState } from '~/contexts/auth'
+// import { useAuthState } from '~/contexts/auth' REMOVED
 import { Skeleton } from '~/components/ui/skeleton'
 import { showToast } from '~/components/ui/toast'
 import { cn } from '~/lib/utils'
@@ -12,6 +12,8 @@ import { CgProfile } from 'solid-icons/cg'
 import { TbDeviceAnalytics } from 'solid-icons/tb'
 import { RiBuildingsStore2Line } from 'solid-icons/ri'
 import { TbLogout2 } from 'solid-icons/tb'
+import { useAuth } from '@solid-mediakit/auth/client' // ADDED
+import AuthModal from '~/components/auth/AuthModal' // ADDED
 
 interface UserButtonProps {
   buttonColorClass?: string
@@ -58,16 +60,22 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t, locale } = useI18n()
-  const auth = useAuthState()
+  // const auth = useAuthState() REMOVED
+  const auth = useAuth() // ADDED
   const isRTL = createMemo(() => locale() === 'ar')
 
-  const userData = createMemo(() => ({
-    name: auth.user?.name || '',
-    email: auth.user?.email || '',
-    image: auth.user?.image || '',
-    initials: auth.user?.name?.[0]?.toUpperCase() || 'U',
-    role: auth.user?.role || 'guest',
-  }))
+  const [isAuthModalOpen, setIsAuthModalOpen] = createSignal(false) // ADDED
+
+  const userData = createMemo(() => {
+    const session = auth.session()
+    return {
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      image: session?.user?.image || '',
+      initials: session?.user?.name?.[0]?.toUpperCase() || 'U',
+      role: session?.user?.role || 'guest',
+    }
+  })
 
   const getLoginUrl = createMemo(() => {
     const currentPath = location.pathname
@@ -94,7 +102,7 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   const handleSignOut = async () => {
     try {
       props.setIsUserOpen(false)
-      await auth.signOut()
+      await auth.signOut() // REMOVED { redirectTo: '/' }
       navigate('/')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -118,93 +126,97 @@ export const UserButton: Component<UserButtonProps> = (props) => {
   )
 
   return (
-    <div class='relative' dir={isRTL() ? 'rtl' : 'ltr'}>
-      <Switch
-        fallback={
-          <Button
-            variant='ghost'
-            size='icon'
-            class={cn('hover:bg-white/10', props.buttonColorClass || 'text-gray-800 hover:text-gray-900')}
-            as={A}
-            href={getLoginUrl()}
-          >
-            <FaRegularUser class='h-5 w-5' />
-          </Button>
-        }
-      >
-        <Match when={auth.status === 'loading'}>
-          <Skeleton class='h-10 w-10 rounded-full' />
-        </Match>
-        <Match when={auth.status === 'authenticated'}>
-          <>
+    <>
+      <div class='relative' dir={isRTL() ? 'rtl' : 'ltr'}>
+        <Switch
+          fallback={
             <Button
-              ref={props.setref}
               variant='ghost'
-              class={buttonClasses}
-              onClick={() => props.setIsUserOpen(!props.isUserOpen)}
+              size='icon'
+              class={cn('hover:bg-white/10', props.buttonColorClass || 'text-gray-800 hover:text-gray-900')}
+              onClick={() => setIsAuthModalOpen(true)} // Open the modal
             >
-              <Avatar>
-                <AvatarImage src={userData().image} alt={userData().name} />
-                <AvatarFallback>{getInitials(userData().name)}</AvatarFallback>
-              </Avatar>
+              <FaRegularUser class='h-5 w-5' />
             </Button>
+          }
+        >
+          <Match when={auth.status() === 'loading'}>
+            <Skeleton class='h-10 w-10 rounded-full' />
+          </Match>
+          <Match when={auth.status() === 'authenticated'}>
+            <>
+              <Button
+                ref={props.setref}
+                variant='ghost'
+                class={buttonClasses}
+                onClick={() => props.setIsUserOpen(!props.isUserOpen)}
+              >
+                <Avatar>
+                  <AvatarImage src={userData().image} alt={userData().name} />
+                  <AvatarFallback>{getInitials(userData().name)}</AvatarFallback>
+                </Avatar>
+              </Button>
 
-            <div
-              ref={props.setref}
-              class={getDropdownStyles(props.isUserOpen, isRTL(), props.forFooter) + ' w-64 z-50'}
-            >
-              <div class='py-1 bg-white rounded-lg shadow-lg'>
-                <Show
-                  when={!auth.loading}
-                  fallback={
-                    <div class='px-4 py-2'>
-                      <Skeleton class='h-4 w-32 mb-2' />
-                      <Skeleton class='h-3 w-24' />
+              <div
+                ref={props.setref}
+                class={getDropdownStyles(props.isUserOpen, isRTL(), props.forFooter) + ' w-64 z-50'}
+              >
+                <div class='py-1 bg-white rounded-lg shadow-lg'>
+                  <Show
+                    when={auth.status() === 'authenticated'} // CHANGED
+                    fallback={
+                      <div class='px-4 py-2'>
+                        <Skeleton class='h-4 w-32 mb-2' />
+                        <Skeleton class='h-3 w-24' />
+                      </div>
+                    }
+                  >
+                    <div class='px-4 py-2 text-sm text-gray-700'>
+                      <div class='font-medium line-clamp-1'>{userData().name}</div>
+                      <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
                     </div>
-                  }
-                >
-                  <div class='px-4 py-2 text-sm text-gray-700'>
-                    <div class='font-medium line-clamp-1'>{userData().name}</div>
-                    <div class='text-xs text-gray-500 line-clamp-1'>{userData().email}</div>
-                  </div>
-                </Show>
+                  </Show>
 
-                <hr class='border-gray-200' />
+                  <hr class='border-gray-200' />
 
-                <MenuItem
-                  icon={CgProfile}
-                  text={t('nav.account')}
-                  onClick={() => handleMenuItemClick('/account')}
-                  isRTL={isRTL()}
-                />
-
-                <Show when={userData().role === 'admin'}>
                   <MenuItem
-                    icon={TbDeviceAnalytics}
-                    text={t('nav.admin')}
-                    onClick={() => handleMenuItemClick('/admin')}
+                    icon={CgProfile}
+                    text={t('nav.account')}
+                    onClick={() => handleMenuItemClick('/account')}
                     isRTL={isRTL()}
                   />
-                </Show>
 
-                <Show when={userData().role === 'seller'}>
-                  <MenuItem
-                    icon={RiBuildingsStore2Line}
-                    text={t('nav.seller')}
-                    onClick={() => handleMenuItemClick('/seller')}
-                    isRTL={isRTL()}
-                  />
-                </Show>
+                  <Show when={userData().role === 'admin'}>
+                    <MenuItem
+                      icon={TbDeviceAnalytics}
+                      text={t('nav.admin')}
+                      onClick={() => handleMenuItemClick('/admin')}
+                      isRTL={isRTL()}
+                    />
+                  </Show>
 
-                <hr class='my-1 border-gray-200' />
+                  <Show when={userData().role === 'seller'}>
+                    <MenuItem
+                      icon={RiBuildingsStore2Line}
+                      text={t('nav.seller')}
+                      onClick={() => handleMenuItemClick('/seller')}
+                      isRTL={isRTL()}
+                    />
+                  </Show>
 
-                <MenuItem icon={TbLogout2} text={t('auth.signOut')} onClick={handleSignOut} isRTL={isRTL()} />
+                  <hr class='my-1 border-gray-200' />
+
+                  <MenuItem icon={TbLogout2} text={t('auth.signOut')} onClick={handleSignOut} isRTL={isRTL()} />
+                </div>
               </div>
-            </div>
-          </>
-        </Match>
-      </Switch>
-    </div>
+            </>
+          </Match>
+        </Switch>
+      </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen()} onOpenChange={setIsAuthModalOpen} />
+    </>
   )
 }
 
