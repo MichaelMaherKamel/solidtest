@@ -35,7 +35,7 @@ export const authOptions: SolidAuthConfig = {
     },
   },
   debug: false,
-  basePath: env.AUTH_PATH,
+  basePath: import.meta.env.VITE_AUTH_PATH,
   trustHost: true,
   session: { strategy: 'database' },
   adapter: DrizzleAdapter(db),

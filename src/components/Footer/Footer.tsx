@@ -62,7 +62,7 @@ const MobileNavigation: Component = () => {
         <DockIcon>
           <BiRegularSearch class='w-5 h-5' />
         </DockIcon>
-        <DockIcon>
+        {/* <DockIcon>
           <A
             href='https://wa.me/201022618610'
             target='_blank'
@@ -70,7 +70,7 @@ const MobileNavigation: Component = () => {
           >
             <BiRegularMessageRounded class='w-5 h-5' />
           </A>
-        </DockIcon>
+        </DockIcon> */}
         <DockIcon>
           <CartSheet />
         </DockIcon>
