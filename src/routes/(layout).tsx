@@ -19,10 +19,12 @@ export default function RootLayout(props: RouteSectionProps) {
       {/* On mobile, render Nav without skeleton. On desktop, use Suspense with skeleton */}
       {isLargeScreen() ? (
         <Suspense fallback={<NavSkeleton />}>
-          <Nav />
+          {/* <Nav /> */}
+          <div>Nav</div>
         </Suspense>
       ) : (
-        <Nav />
+        // <Nav />
+        <div>Nav</div>
       )}
 
       <main class={`${isHomePage() ? '' : 'pt-16'} flex-1 relative`} role='main'>
@@ -31,7 +33,8 @@ export default function RootLayout(props: RouteSectionProps) {
 
       <div class={`${isLargeScreen() ? '' : 'pb-32'}`}>
         <Suspense fallback={<FooterSkeleton />}>
-          <SiteFooter />
+          {/* <SiteFooter /> */}
+          <div>Footer</div>
         </Suspense>
       </div>
     </div>

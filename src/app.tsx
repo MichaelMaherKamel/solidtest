@@ -14,14 +14,14 @@ export default function App() {
     <Router
       root={(props) => (
         <MetaProvider>
-          <SessionProvider>
-            <AuthProvider>
-              <I18nProvider>
-                <Suspense>{props.children}</Suspense>
-                <Toaster />
-              </I18nProvider>
-            </AuthProvider>
-          </SessionProvider>
+          {/* <AuthProvider> */}
+            <I18nProvider>
+              <Suspense>
+                <SessionProvider>{props.children}</SessionProvider>
+              </Suspense>
+              <Toaster />
+            </I18nProvider>
+          {/* </AuthProvider> */}
         </MetaProvider>
       )}
     >
