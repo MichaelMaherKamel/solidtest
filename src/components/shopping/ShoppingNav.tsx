@@ -26,6 +26,7 @@ import { cn, formatCurrency } from '~/lib/utils'
 import { BiSolidStore } from 'solid-icons/bi'
 import { showToast } from '~/components/ui/toast'
 import { UserButton } from '~/components/auth/UserBtn'
+import { Search } from '~/components/Search'
 
 interface Language {
   code: 'en' | 'ar'
@@ -546,7 +547,7 @@ const ShoppingNav: Component = () => {
                                       >
                                         <path
                                           fill-rule='evenodd'
-                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z'
+                                          d='M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 011-1z'
                                           clip-rule='evenodd'
                                         />
                                       </svg>
@@ -627,7 +628,10 @@ const ShoppingNav: Component = () => {
 
               {/* Search Bar - Desktop Only */}
               <div class='hidden md:flex flex-1 max-w-xl mx-4'>
-                <Input type='search' placeholder={t('common.search')} class='w-full' />
+                <Search
+                  onOpenChange={() => {}} // Empty function to disable the background change
+                  isSearchOpen={false}
+                />
               </div>
 
               {/* Right Actions */}

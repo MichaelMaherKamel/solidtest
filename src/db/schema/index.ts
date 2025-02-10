@@ -226,6 +226,7 @@ export const stores = pgTable(
  * Products table - Stores product information including variants and inventory
  * Manages product catalog for each store
  */
+
 export const products = pgTable(
   'products',
   {

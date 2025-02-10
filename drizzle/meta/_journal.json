@@ -120,6 +120,20 @@
       "when": 1737464880497,
       "tag": "0016_nosy_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1739191953911,
+      "tag": "0017_bitter_synch",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1739191996062,
+      "tag": "0018_hard_loa",
+      "breakpoints": true
     }
   ]
 }

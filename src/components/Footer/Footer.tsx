@@ -10,6 +10,7 @@ import { UserButton } from '../auth/UserBtn'
 import { LocalizationButton } from '../LocalizationButton'
 import { useI18n } from '~/contexts/i18n'
 import CartSheet from './CartSheet'
+import SearchSheet from '../SearchSheet'
 
 const MobileNavigation: Component = () => {
   const { t, locale } = useI18n()
@@ -60,7 +61,8 @@ const MobileNavigation: Component = () => {
         </DockIcon>
         <Separator orientation='vertical' class='h-full' />
         <DockIcon>
-          <BiRegularSearch class='w-5 h-5' />
+          {/* <BiRegularSearch class='w-5 h-5' /> */}
+          <SearchSheet />
         </DockIcon>
         <DockIcon>
           <A

@@ -13,7 +13,6 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { A, useLocation, createAsync, useNavigate, useAction } from '@solidjs/router'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { useI18n } from '~/contexts/i18n'
 import { FiShoppingCart } from 'solid-icons/fi'
 import { RiEditorTranslate2 } from 'solid-icons/ri'
@@ -25,6 +24,7 @@ import { showToast } from '~/components/ui/toast'
 import { UserButton } from '~/components/auth/UserBtn'
 import { createMediaQuery } from '@solid-primitives/media'
 import { useAuth } from '@solid-mediakit/auth/client'
+import { Search } from '~/components/Search'
 
 // Types
 interface Language {
@@ -86,17 +86,19 @@ const Nav: Component = () => {
   // State signals
   const [isOpen, setIsOpen] = createSignal(false)
   const [isLangOpen, setIsLangOpen] = createSignal(false)
-  const [isUserOpen, setIsUserOpen] = createSignal(false) // ADDED
+  const [isUserOpen, setIsUserOpen] = createSignal(false)
   const [isCartOpen, setIsCartOpen] = createSignal(false)
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [itemStates, setItemStates] = createSignal<Record<string, { isUpdating: boolean; isRemoving: boolean }>>({})
   const [isClearingCart, setIsClearingCart] = createSignal(false)
+  const [isSearchOpen, setIsSearchOpen] = createSignal(false)
 
   // Refs
   const [menuRef, setMenuRef] = createSignal<HTMLDivElement | undefined>()
   const [langRef, setLangRef] = createSignal<HTMLDivElement | undefined>()
   const [userRef, setUserRef] = createSignal<HTMLDivElement | undefined>() // ADDED
   const [cartRef, setCartRef] = createSignal<HTMLDivElement | undefined>()
+  const [searchRef, setSearchRef] = createSignal<HTMLDivElement | undefined>()
 
   // Hooks
   const location = useLocation()
@@ -173,7 +175,7 @@ const Nav: Component = () => {
   })
 
   // Computed value for whether any dropdown is open
-  const isAnyDropdownOpen = createMemo(() => isOpen() || isCartOpen() || isLangOpen() || isUserOpen()) // ADDED || isUserOpen()
+  const isAnyDropdownOpen = createMemo(() => isOpen() || isCartOpen() || isLangOpen() || isUserOpen() || isSearchOpen()) // ADDED || isUserOpen()
 
   const cartTotal = createMemo(() => {
     const cart = cartData()
@@ -218,11 +220,13 @@ const Nav: Component = () => {
       const lang = langRef()
       const user = userRef() // ADDED
       const cart = cartRef()
+      const search = searchRef()
 
       if (menu && menu && !menu.contains(clickedEl) && isOpen()) setIsOpen(false)
       if (lang && lang && !lang.contains(clickedEl) && isLangOpen()) setIsLangOpen(false)
       if (user && user && !user.contains(clickedEl) && isUserOpen()) setIsUserOpen(false) // ADDED
       if (cart && cart && !cart.contains(clickedEl) && isCartOpen()) setIsCartOpen(false)
+      if (search && search && !search.contains(clickedEl) && isSearchOpen()) setIsSearchOpen(false)
     }
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -412,6 +416,10 @@ const Nav: Component = () => {
     return locale() === 'ar' ? `${colorTranslation}` : `${colorTranslation}`
   }
 
+  const handleSearchOpen = (isOpen: boolean) => {
+    setIsSearchOpen(isOpen)
+  }
+
   return (
     <>
       <nav class='fixed inset-x-0 z-50' dir={isRTL() ? 'rtl' : 'ltr'}>
@@ -433,8 +441,8 @@ const Nav: Component = () => {
               </div>
 
               {/* Search */}
-              <div class='hidden md:flex flex-1 max-w-xl mx-4'>
-                <Input type='search' placeholder={t('common.search')} class={`w-full ${textColor()}`} />
+              <div class='hidden md:flex flex-1 max-w-xl mx-4' ref={setSearchRef}>
+                <Search onOpenChange={handleSearchOpen} isSearchOpen={isSearchOpen()} />
               </div>
 
               {/* Actions */}
