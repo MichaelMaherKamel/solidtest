@@ -25,6 +25,7 @@ import { UserButton } from '~/components/auth/UserBtn'
 import { createMediaQuery } from '@solid-primitives/media'
 import { useAuth } from '@solid-mediakit/auth/client'
 import { Search } from '~/components/Search'
+import { Logo } from '../Icons'
 
 // Types
 interface Language {
@@ -432,11 +433,12 @@ const Nav: Component = () => {
             }`}
           >
             {/* Top Bar */}
-            <div class='flex h-16 items-center justify-between px-4'>
+            <div class='flex h-16 items-center justify-between px-4 '>
               {/* Logo */}
-              <div class='flex items-center gap-4'>
+              <div class='flex items-center gap-4 '>
                 <A href='/' class={`font-bold text-xl transition-colors ${logoColor()}`}>
-                  Souq El Rafay3
+                  {/* Souq El Rafay3 */}
+                  <Logo width='100' height='75' />
                 </A>
               </div>
 

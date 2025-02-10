@@ -28,7 +28,7 @@ const ShoppingNavSkeleton: Component = () => {
           <div class='flex h-16 items-center justify-between px-4 relative z-30'>
             {/* Logo skeleton */}
             <div class='flex items-center gap-4'>
-              <div class='w-32 h-8 bg-gray-200/50 rounded animate-pulse' />
+            <div class='w-16 h-12 bg-gray-200/50 rounded animate-pulse' />
             </div>
 
             {/* Search skeleton */}
