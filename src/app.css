@@ -121,6 +121,14 @@
   }
 }
 
+@layer components {
+  .no-zoom-input {
+    -webkit-text-size-adjust: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
 @layer utilities {
   .step {
     counter-increment: step;

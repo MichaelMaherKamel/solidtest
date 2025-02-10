@@ -80,7 +80,7 @@ const SearchSheet: Component = () => {
               placeholder={t('search.placeholder')}
               value={searchQuery()}
               onInput={handleSearchInputChange}
-              class='w-full text-base' // Using Tailwind's text-base class
+              class='w-full text-base no-zoom-input' // Added no-zoom-input class
             />
           </div>
 
