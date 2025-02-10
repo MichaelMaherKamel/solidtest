@@ -168,14 +168,3 @@
 ::-webkit-scrollbar-corner {
   display: none;
 }
-
-/* Add the new marquee scrollbar styles */
-.animate-scroll {
-  -webkit-overflow-scrolling: touch;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.animate-scroll::-webkit-scrollbar {
-  display: none;
-}
