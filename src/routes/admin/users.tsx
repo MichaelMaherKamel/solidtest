@@ -4,7 +4,6 @@ import { Input } from '~/components/ui/input'
 import { Badge } from '~/components/ui/badge'
 import { FiSearch, FiUsers } from 'solid-icons/fi'
 import type { User } from '~/db/schema'
-import { getUsers } from '~/db/fetchers/users'
 import { updateUserRoleAction, deleteUserAction } from '~/db/actions/users'
 import { CustomDropdown } from '~/components/admin/customDropDown'
 import { Avatar, AvatarImage, AvatarFallback } from '~/components/ui/avatar'
@@ -111,7 +110,7 @@ const UserActions: Component<{ user: User }> = (props) => {
     {
       label: 'Delete User',
       onClick: handleDelete,
-      className: 'text-red-600 hover:text-red-700',
+      className: 'text-red-600 hover:text-red-700 text-base', // Added text-base
     },
   ]
 
@@ -155,7 +154,7 @@ const UsersPage: Component = () => {
             <AvatarFallback class='bg-gray-200'>{item.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <div class='font-medium'>{item.name || 'Unknown'}</div>
+            <div class='font-medium text-base'>{item.name || 'Unknown'}</div> {/* Added text-base */}
             <div class='text-sm text-muted-foreground'>{item.email}</div>
           </div>
         </div>
@@ -165,7 +164,12 @@ const UsersPage: Component = () => {
       header: 'Role',
       accessorKey: 'role' as keyof User,
       cell: (item: User) => (
-        <Badge variant={item.role === 'admin' ? 'error' : item.role === 'seller' ? 'warning' : 'secondary'}>
+        <Badge
+          variant={item.role === 'admin' ? 'error' : item.role === 'seller' ? 'warning' : 'secondary'}
+          class='text-base'
+        >
+          {' '}
+          {/* Added text-base */}
           {item.role}
         </Badge>
       ),
@@ -174,7 +178,9 @@ const UsersPage: Component = () => {
       header: 'Status',
       accessorKey: 'emailVerified' as keyof User,
       cell: (item: User) => (
-        <Badge variant={item.emailVerified ? 'success' : 'secondary'}>
+        <Badge variant={item.emailVerified ? 'success' : 'secondary'} class='text-base'>
+          {' '}
+          {/* Added text-base */}
           {item.emailVerified ? 'Verified' : 'Unverified'}
         </Badge>
       ),
@@ -220,7 +226,7 @@ const UsersPage: Component = () => {
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   placeholder='Search users...'
-                  class='pl-8'
+                  class='pl-8 no-zoom-input text-base' // Added no-zoom-input and text-base
                   value={search()}
                   onInput={(e) => setSearch(e.currentTarget.value)}
                 />

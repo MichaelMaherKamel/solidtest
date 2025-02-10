@@ -65,6 +65,15 @@ export const arDict = {
     actions: 'إجراءات',
   },
 
+  search: {
+    title: 'البحث',
+    placeholder: 'ابحث عن المنتجات...',
+    noResults: 'لم يتم العثور على نتائج',
+    startSearching: 'ابدأ البحث',
+    searchDescription: 'اكتب ما تبحث عنه',
+    tryDifferentSearch: 'جرب البحث بكلمات مختلفة',
+  },
+
   auth: {
     title: 'مرحباً بك في سوق الرفايع',
     subtitle: 'سجل دخول لمواصلة التسوق',

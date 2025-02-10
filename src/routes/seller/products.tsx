@@ -52,7 +52,7 @@ const DeleteConfirmationDialog: Component<{
 
   return (
     <Dialog open={props.isOpen} onOpenChange={props.onClose}>
-      <DialogContent lang={locale()} class='sm:max-w-[425px]'>
+      <DialogContent lang={locale()} class='rounded-xl sm:max-w-[425px]'>
         <DialogHeader lang={locale()}>
           <DialogTitle lang={locale()} class='text-xl'>
             {t('seller.products.confirmDelete')}
@@ -61,14 +61,16 @@ const DeleteConfirmationDialog: Component<{
 
         <DialogFooter lang={locale()}>
           <div class='flex flex-col-reverse sm:flex-row justify-end gap-2 w-full'>
-            <Button variant='outline' onClick={props.onClose} class={isRTL() ? 'sm:ml-2' : 'sm:mr-2'}>
+            <Button variant='outline' onClick={props.onClose} class={`text-base ${isRTL() ? 'sm:ml-2' : 'sm:mr-2'}`}>
+              {' '}
+              {/* Added text-base */}
               {t('common.cancel')}
             </Button>
             <Button
               variant='destructive'
               onClick={props.onConfirm}
               disabled={props.isDeleting}
-              class='w-full sm:w-auto'
+              class='w-full sm:w-auto text-base' // Added text-base
             >
               <Show when={!props.isDeleting} fallback={t('common.saving')}>
                 {t('seller.products.form.buttons.delete')}
@@ -161,7 +163,7 @@ const ProductsPage: Component = () => {
               class='w-12 h-12 object-cover rounded flex-shrink-0'
             />
           )}
-          <span class='truncate'>{product.productName}</span>
+          <span class='truncate text-base'>{product.productName}</span>
         </div>
       ),
     },
@@ -172,7 +174,7 @@ const ProductsPage: Component = () => {
       maxWidth: '300px',
       cell: (product: Product) => (
         <div class='overflow-hidden'>
-          <span class='truncate block w-full'>{product.productDescription}</span>
+          <span class='truncate block w-full text-base'>{product.productDescription}</span>
         </div>
       ),
     },
@@ -180,13 +182,17 @@ const ProductsPage: Component = () => {
       header: t('seller.products.table.category'),
       accessorKey: 'category' as keyof Product,
       minWidth: '150px',
-      cell: (product: Product) => <Badge variant='outline'>{t(`categories.${product.category}`)}</Badge>,
+      cell: (product: Product) => (
+        <Badge variant='outline' class='text-base'>
+          {t(`categories.${product.category}`)}
+        </Badge>
+      ),
     },
     {
       header: t('seller.products.table.price'),
       accessorKey: 'price' as keyof Product,
       minWidth: '100px',
-      cell: (product: Product) => <span>${product.price.toFixed(2)}</span>,
+      cell: (product: Product) => <span class='text-base'>${product.price.toFixed(2)}</span>,
     },
     {
       header: t('seller.products.table.inventory'),
@@ -194,7 +200,7 @@ const ProductsPage: Component = () => {
       minWidth: '200px',
       cell: (product: Product) => (
         <div class='space-y-1'>
-          <span class='block'>
+          <span class='block text-base'>
             {product.totalInventory} {t('common.total')}
           </span>
           <div class='flex gap-1 flex-wrap'>
@@ -213,10 +219,10 @@ const ProductsPage: Component = () => {
       minWidth: '100px',
       cell: (product: Product) => (
         <div class='flex items-center gap-2'>
-          <Button variant='ghost' size='sm' onClick={() => setEditProduct(product)}>
+          <Button variant='ghost' size='sm' onClick={() => setEditProduct(product)} class='text-base'>
             <FiEdit2 class='h-4 w-4' />
           </Button>
-          <Button variant='ghost' size='sm' onClick={() => setProductToDelete(product)}>
+          <Button variant='ghost' size='sm' onClick={() => setProductToDelete(product)} class='text-base'>
             <FiTrash2 class='h-4 w-4 text-red-500' />
           </Button>
         </div>
@@ -234,7 +240,7 @@ const ProductsPage: Component = () => {
               <h1 class='text-2xl font-bold tracking-tight'>{t('seller.products.title')}</h1>
               <p class='text-muted-foreground'>{t('seller.products.subtitle')}</p>
             </div>
-            <Button variant='general' onClick={() => setIsOpen(true)}>
+            <Button variant='general' onClick={() => setIsOpen(true)} class='text-base'>
               <FiPlus class='mr-2 h-4 w-4' />
               {t('seller.products.addProduct')}
             </Button>
@@ -252,7 +258,7 @@ const ProductsPage: Component = () => {
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   placeholder={`${t('common.search')}...`}
-                  class='pl-8'
+                  class='pl-8 no-zoom-input text-base'
                   value={search()}
                   onInput={(e) => setSearch(e.currentTarget.value)}
                 />
@@ -297,7 +303,7 @@ const ProductsPage: Component = () => {
             class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'
           >
             <DialogHeader lang={locale()}>
-              <DialogTitle lang={locale()}>
+              <DialogTitle lang={locale()} class='text-lg'>
                 {editProduct() ? t('seller.products.form.buttons.edit') : t('seller.products.addProduct')}
               </DialogTitle>
             </DialogHeader>

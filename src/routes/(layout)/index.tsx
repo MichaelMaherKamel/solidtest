@@ -127,7 +127,12 @@ const HomePage: Component = () => {
         <div class='relative z-10 text-center space-y-6 max-w-3xl mx-auto px-4'>
           <h1 class='text-5xl md:text-6xl font-bold text-white'>{t('hero.title')}</h1>
           <p class='text-xl text-white/90'>{t('hero.subtitle')}</p>
-          <Button size='lg' variant='pay' onClick={scrollToCategories} class='hover:scale-105 transition-transform'>
+          <Button
+            size='lg'
+            variant='pay'
+            onClick={scrollToCategories}
+            class='hover:scale-105 transition-transform text-base'
+          >
             {t('hero.cta')}
           </Button>
         </div>
@@ -168,17 +173,17 @@ const HomePage: Component = () => {
               <form class='space-y-6'>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.name')}</label>
-                  <Input placeholder={t('form.namePlaceholder')} />
+                  <Input placeholder={t('form.namePlaceholder')} class='no-zoom-input text-base' />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.email')}</label>
-                  <Input type='email' placeholder={t('form.emailPlaceholder')} />
+                  <Input type='email' placeholder={t('form.emailPlaceholder')} class='no-zoom-input text-base' />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.message')}</label>
-                  <TextArea placeholder={t('form.messagePlaceholder')} class='min-h-[150px]' />
+                  <TextArea placeholder={t('form.messagePlaceholder')} class='min-h-[150px] no-zoom-input text-base' />
                 </div>
-                <Button type='submit' variant='general' class='w-full'>
+                <Button type='submit' variant='general' class='w-full text-base'>
                   {t('form.submit')}
                 </Button>
               </form>

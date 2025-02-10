@@ -161,7 +161,11 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
               onChange={handleSellerChange}
               options={sellerNames()}
               placeholder={sellers.loading ? 'Loading...' : 'Select a seller'}
-              itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
+              itemComponent={(props) => (
+                <SelectItem item={props.item} class='text-base'>
+                  {props.item.rawValue}
+                </SelectItem>
+              )} // Added text-base
             >
               <SelectTrigger aria-label='Seller' class='w-full'>
                 <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
@@ -182,6 +186,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             onInput={(e) => setFormData((prev) => ({ ...prev, storeName: e.currentTarget.value }))}
             placeholder='Enter store name'
             required
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -193,6 +198,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             value={formData().storePhone}
             onInput={(e) => setFormData((prev) => ({ ...prev, storePhone: e.currentTarget.value }))}
             placeholder='Enter store phone number'
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -204,6 +210,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             value={formData().storeAddress}
             onInput={(e) => setFormData((prev) => ({ ...prev, storeAddress: e.currentTarget.value }))}
             placeholder='Enter store address'
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -220,7 +227,11 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             }}
             options={['basic', 'business', 'premium']}
             placeholder='Select a plan...'
-            itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
+            itemComponent={(props) => (
+              <SelectItem item={props.item} class='text-base'>
+                {props.item.rawValue}
+              </SelectItem>
+            )} // Added text-base
           >
             <SelectTrigger aria-label='Subscription' class='w-full'>
               <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
@@ -245,7 +256,9 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
 
       {/* Form Actions */}
       <div class='flex justify-end gap-3'>
-        <Button type='button' variant='outline' onClick={props.onClose}>
+        <Button type='button' variant='outline' onClick={props.onClose} class='text-base'>
+          {' '}
+          {/* Added text-base */}
           Cancel
         </Button>
         <Button
@@ -258,6 +271,7 @@ const StoreForm: Component<{ onSuccess: () => void; onClose: () => void }> = (pr
             !formData().storeName ||
             !formData().storeImage
           }
+          class='text-base' // Added text-base
         >
           {submission.pending ? 'Creating...' : 'Create Store'}
         </Button>
@@ -346,6 +360,7 @@ const EditStoreForm: Component<{
             onInput={(e) => setFormData((prev) => ({ ...prev, storeName: e.currentTarget.value }))}
             placeholder='Enter store name'
             required
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -357,6 +372,7 @@ const EditStoreForm: Component<{
             value={formData().storePhone || ''}
             onInput={(e) => setFormData((prev) => ({ ...prev, storePhone: e.currentTarget.value }))}
             placeholder='Enter store phone number'
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -368,6 +384,7 @@ const EditStoreForm: Component<{
             value={formData().storeAddress || ''} // Convert null to empty string
             onInput={(e) => setFormData((prev) => ({ ...prev, storeAddress: e.currentTarget.value }))}
             placeholder='Enter store address'
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -384,7 +401,11 @@ const EditStoreForm: Component<{
             }}
             options={['basic', 'business', 'premium']}
             placeholder='Select a plan...'
-            itemComponent={(props) => <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>}
+            itemComponent={(props) => (
+              <SelectItem item={props.item} class='text-base'>
+                {props.item.rawValue}
+              </SelectItem>
+            )} // Added text-base
           >
             <SelectTrigger aria-label='Subscription' class='w-full'>
               <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
@@ -410,13 +431,16 @@ const EditStoreForm: Component<{
 
       {/* Form Actions */}
       <div class='flex justify-end gap-3'>
-        <Button type='button' variant='outline' onClick={props.onClose}>
+        <Button type='button' variant='outline' onClick={props.onClose} class='text-base'>
+          {' '}
+          {/* Added text-base */}
           Cancel
         </Button>
         <Button
           type='submit'
           variant='general'
           disabled={submission.pending || !formData().storeName || !formData().storeImage}
+          class='text-base' // Added text-base
         >
           {submission.pending ? 'Updating...' : 'Update Store'}
         </Button>
@@ -478,21 +502,24 @@ const StoresPage: Component = () => {
             <AvatarImage src={store.storeImage || ''} alt={store.storeName} />
             <AvatarFallback>{store.storeName.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
-          <span>{store.storeName}</span>
+          <span class='text-base'>{store.storeName}</span>
         </div>
       ),
     },
     {
       header: 'Store Owner',
       accessorKey: 'storeOwner',
+      cell: (store: Store) => <span class='text-base'>{store.storeOwner}</span>,
     },
     {
       header: 'Phone',
       accessorKey: 'storePhone',
+      cell: (store: Store) => <span class='text-base'>{store.storePhone}</span>,
     },
     {
       header: 'Address',
       accessorKey: 'storeAddress',
+      cell: (store: Store) => <span class='text-base'>{store.storeAddress}</span>,
     },
     {
       header: 'Subscription',
@@ -502,6 +529,7 @@ const StoresPage: Component = () => {
           variant={
             store.subscription === 'premium' ? 'premium' : store.subscription === 'business' ? 'warning' : 'basic'
           }
+          class='text-base'
         >
           {store.subscription}
         </Badge>
@@ -511,7 +539,9 @@ const StoresPage: Component = () => {
       header: 'Featured',
       accessorKey: 'featured',
       cell: (store: Store) => (
-        <Badge variant={store.featured === 'yes' ? 'success' : 'secondary'}>{store.featured}</Badge>
+        <Badge variant={store.featured === 'yes' ? 'success' : 'secondary'} class='text-base'>
+          {store.featured}
+        </Badge>
       ),
     },
     {
@@ -594,8 +624,8 @@ const StoresPage: Component = () => {
                 variant='general'
                 onClick={handleAddStoreClick}
                 disabled={isAddStoreDisabled()}
-                class={isAddStoreDisabled() ? 'opacity-50 cursor-not-allowed' : ''}
                 title={isAddStoreDisabled() ? 'No available sellers' : 'Add Store'}
+                class={`text-base ${isAddStoreDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`} 
               >
                 <FiPlus class='mr-2 h-4 w-4' />
                 Add Store
@@ -614,7 +644,7 @@ const StoresPage: Component = () => {
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   placeholder='Search stores...'
-                  class='pl-8'
+                  class='pl-8 no-zoom-input text-base' // Added no-zoom-input and text-base
                   value={search()}
                   onInput={(e) => setSearch(e.currentTarget.value)}
                 />
@@ -642,7 +672,7 @@ const StoresPage: Component = () => {
       <Dialog open={isOpen()} onOpenChange={handleDialogChange}>
         <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[550px] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto'>
           <DialogHeader>
-            <DialogTitle>Create New Store</DialogTitle>
+            <DialogTitle class='text-lg'>Create New Store</DialogTitle>
           </DialogHeader>
           <StoreForm onSuccess={handleStoreCreated} onClose={() => handleDialogChange(false)} />
         </DialogContent>
@@ -652,7 +682,7 @@ const StoresPage: Component = () => {
       <Dialog open={isEditOpen()} onOpenChange={handleEditDialogChange}>
         <DialogContent class='rounded-xl sm:max-w-[425px] lg:max-w-[550px] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto'>
           <DialogHeader>
-            <DialogTitle>Edit Store</DialogTitle>
+            <DialogTitle class='text-lg'>Edit Store</DialogTitle>
           </DialogHeader>
           <Show when={editStore()}>
             {(store) => (

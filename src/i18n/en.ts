@@ -65,6 +65,15 @@ export const enDict = {
     actions: 'Actions',
   },
 
+  search: {
+    title: 'Search',
+    placeholder: 'Search for products...',
+    noResults: 'No results found',
+    startSearching: 'Start Searching',
+    searchDescription: "Type what you're looking for",
+    tryDifferentSearch: 'Try searching with different words',
+  },
+
   auth: {
     title: 'Welcome to Souq El Rafay3',
     subtitle: 'Sign in to continue shopping',

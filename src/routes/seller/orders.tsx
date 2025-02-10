@@ -50,7 +50,9 @@ const StatsCard: Component<{ count: number }> = (props) => {
 const PaymentMethodBadge: Component<{ method: PaymentMethod }> = (props) => {
   const { t } = useI18n()
   return (
-    <Badge variant={props.method === 'card' ? 'businessAlt' : 'premiumAlt'} round>
+    <Badge variant={props.method === 'card' ? 'businessAlt' : 'premiumAlt'} round class='text-base'>
+      {' '}
+      {/* Added text-base */}
       {t(`order.paymentMethod.${props.method}`)}
     </Badge>
   )
@@ -75,7 +77,9 @@ const OrderStatusBadge: Component<{ status: OrderStatus }> = (props) => {
   }
 
   return (
-    <Badge variant={getVariant(props.status)} round>
+    <Badge variant={getVariant(props.status)} round class='text-base'>
+      {' '}
+      {/* Added text-base */}
       {t(`order.status.${props.status}`)}
     </Badge>
   )
@@ -96,7 +100,7 @@ const StoreStatusDisplay: Component<{ status: OrderStatus }> = (props) => {
 const CustomerInfo: Component<{ address: ShippingAddress }> = (props) => {
   return (
     <div class='space-y-1'>
-      <div class='font-medium'>
+      <div class='font-medium text-base'>
         {props.address.name} - {props.address.phone}
       </div>
       <div class='text-sm text-muted-foreground'>{props.address.email}</div>
@@ -123,29 +127,36 @@ const StatusUpdateDialog: Component<StatusUpdateDialogProps> = (props) => {
     <Dialog open={props.isOpen} onOpenChange={props.onClose}>
       <DialogContent class='max-w-xs lg:max-w-md rounded-md'>
         <DialogHeader>
-          <DialogTitle>{t('order.updateStatus')}</DialogTitle>
+          <DialogTitle class='text-lg'>{t('order.updateStatus')}</DialogTitle>
         </DialogHeader>
 
         <div class='space-y-4 py-4'>
           <div class='space-y-2'>
             <label class='text-sm font-medium'>{t('order.status.label')}</label>
             <select
-              class='w-full px-3 py-2 border rounded-md'
+              class='w-full px-3 py-2 border rounded-md text-base'
               value={selectedStatus()}
               onChange={(e) => setSelectedStatus(e.currentTarget.value as OrderStatus)}
             >
               {statusOptions.map((status) => (
-                <option value={status}>{t(`order.status.${status}`)}</option>
+                <option value={status} class='text-base'>
+                  {t(`order.status.${status}`)}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant='destructive' onClick={props.onClose}>
+          <Button variant='destructive' onClick={props.onClose} class='text-base'>
             {t('common.cancel')}
           </Button>
-          <Button variant='general' onClick={() => props.onConfirm(selectedStatus())} disabled={props.isUpdating}>
+          <Button
+            variant='general'
+            onClick={() => props.onConfirm(selectedStatus())}
+            disabled={props.isUpdating}
+            class='text-base'
+          >
             {props.isUpdating ? t('common.updating') : t('common.update')}
           </Button>
         </DialogFooter>
@@ -231,6 +242,7 @@ const SellerOrdersPage: Component = () => {
       header: t('order.number'),
       accessorKey: 'orderNumber',
       minWidth: '120px',
+      cell: (order) => <span class='text-base'>{order.orderNumber}</span>,
     },
     {
       header: t('order.seller.customer'),
@@ -244,7 +256,7 @@ const SellerOrdersPage: Component = () => {
       minWidth: '100px',
       cell: (order) => {
         const storeSummary = order.storeSummaries.find((summary) => summary.storeId === store()?.storeId)
-        return <span>${storeSummary?.subtotal.toFixed(2) || '0.00'}</span>
+        return <span class='text-base'>${storeSummary?.subtotal.toFixed(2) || '0.00'}</span>
       },
     },
     {
@@ -266,7 +278,7 @@ const SellerOrdersPage: Component = () => {
       header: t('order.seller.date'),
       accessorKey: 'createdAt',
       minWidth: '120px',
-      cell: (order) => new Date(order.createdAt).toLocaleDateString(),
+      cell: (order) => <span class='text-base'>{new Date(order.createdAt).toLocaleDateString()}</span>,
     },
     {
       header: t('common.actions'),
@@ -274,7 +286,7 @@ const SellerOrdersPage: Component = () => {
       minWidth: '80px',
       cell: (order) => (
         <div class='flex items-center justify-center'>
-          <Button variant='ghost' size='sm' onClick={() => setSelectedOrder(order)}>
+          <Button variant='ghost' size='sm' onClick={() => setSelectedOrder(order)} class='text-base'>
             <FiEdit2 class='h-4 w-4' />
           </Button>
         </div>
@@ -305,7 +317,7 @@ const SellerOrdersPage: Component = () => {
                 <FiSearch class='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   placeholder={t('order.seller.searchPlaceholder')}
-                  class='pl-8'
+                  class='pl-8 no-zoom-input text-base'
                   value={search()}
                   onInput={(e) => setSearch(e.currentTarget.value)}
                 />

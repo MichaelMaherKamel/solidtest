@@ -1,6 +1,7 @@
 import { Component, Show, createSignal, onMount } from 'solid-js'
-import { Card } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
+import { Card } from '~/components/ui/card'
 import { useI18n } from '~/contexts/i18n'
 import { createAsync, useAction } from '@solidjs/router'
 import { getAddress } from '~/db/fetchers/address'
@@ -122,23 +123,23 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
               <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.name')}</label>
-                  <input
+                  <Input
                     name='name'
                     type='text'
                     value={formData().name}
                     onInput={(e) => setFormData({ ...formData(), name: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                     required
                   />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.email')}</label>
-                  <input
+                  <Input
                     name='email'
                     type='email'
                     value={formData().email}
                     onInput={(e) => setFormData({ ...formData(), email: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                     required
                   />
                 </div>
@@ -146,25 +147,25 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
 
               <div class='space-y-2'>
                 <label class='text-sm font-medium'>{t('address.form.phone')}</label>
-                <input
+                <Input
                   name='phone'
                   type='tel'
                   value={formData().phone}
                   onInput={(e) => setFormData({ ...formData(), phone: e.currentTarget.value })}
                   dir={isRTL() ? 'rtl' : 'ltr'}
-                  class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                  class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                   required
                 />
               </div>
 
               <div class='space-y-2'>
                 <label class='text-sm font-medium'>{t('address.form.address')}</label>
-                <input
+                <Input
                   name='address'
                   type='text'
                   value={formData().address}
                   onInput={(e) => setFormData({ ...formData(), address: e.currentTarget.value })}
-                  class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                  class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                   required
                 />
               </div>
@@ -172,33 +173,33 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
               <div class='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.buildingNumber')}</label>
-                  <input
+                  <Input
                     name='buildingNumber'
                     type='text'
                     value={formData().buildingNumber}
                     onInput={(e) => setFormData({ ...formData(), buildingNumber: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                     required
                   />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.floorNumber')}</label>
-                  <input
+                  <Input
                     name='floorNumber'
                     type='text'
                     value={formData().floorNumber}
                     onInput={(e) => setFormData({ ...formData(), floorNumber: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                   />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.flatNumber')}</label>
-                  <input
+                  <Input
                     name='flatNumber'
                     type='text'
                     value={formData().flatNumber}
                     onInput={(e) => setFormData({ ...formData(), flatNumber: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                     required
                   />
                 </div>
@@ -211,12 +212,18 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
                     name='city'
                     value={formData().city}
                     onChange={(e) => setFormData({ ...formData(), city: e.currentTarget.value as City })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-base' // Added text-base
                     required
                   >
                     {Object.entries(t('address.city')).map(([key, value]) => {
                       if (key !== 'label' && key !== 'placeholder') {
-                        return <option value={key}>{value as string}</option>
+                        return (
+                          <option value={key} class='text-base'>
+                            {' '}
+                            {/* Added text-base */}
+                            {value as string}
+                          </option>
+                        )
                       }
                       return null
                     })}
@@ -224,12 +231,12 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('address.form.district')}</label>
-                  <input
+                  <Input
                     name='district'
                     type='text'
                     value={formData().district}
                     onInput={(e) => setFormData({ ...formData(), district: e.currentTarget.value })}
-                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+                    class='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent no-zoom-input' // Added no-zoom-input
                     required
                   />
                 </div>
@@ -240,14 +247,23 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
               </Show>
 
               <div class='flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
-                <Button type='button' variant='secondary' class='w-full sm:w-auto' onClick={() => props.onBack('cart')}>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  class='w-full sm:w-auto text-base'
+                  onClick={() => props.onBack('cart')}
+                >
+                  {' '}
+                  {/* Added text-base */}
                   <div class='flex items-center gap-2'>
                     {isRTL() ? <FiArrowRight class='w-4 h-4' /> : <FiArrowLeft class='w-4 h-4' />}
                     {t('checkout.buttons.backToCart')}
                   </div>
                 </Button>
                 <div class='flex gap-2 w-full sm:w-auto'>
-                  <Button type='submit' variant='general' disabled={isSaving()} class='w-full sm:w-auto'>
+                  <Button type='submit' variant='general' disabled={isSaving()} class='w-full sm:w-auto text-base'>
+                    {' '}
+                    {/* Added text-base */}
                     <div class='flex items-center gap-2'>
                       <FiSave class='w-4 h-4' />
                       {isSaving() ? t('common.saving') : t('common.save')}
@@ -262,25 +278,36 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
         <Card class='overflow-hidden'>
           <div class='p-6 space-y-6'>
             <div class='flex items-center justify-between'>
-              <h3 class='font-medium text-gray-900'>{t('checkout.orderReview.deliveryDetails')}</h3>
-              <Button variant='ghost' size='sm' class='flex items-center gap-2' onClick={handleEdit}>
+              <h3 class='font-medium text-gray-900 text-lg'>{t('checkout.orderReview.deliveryDetails')}</h3>{' '}
+              {/* Added text-lg */}
+              <Button variant='ghost' size='sm' class='flex items-center gap-2 text-base' onClick={handleEdit}>
+                {' '}
+                {/* Added text-base */}
                 <FiEdit2 class='w-4 h-4' />
                 {t('address.form.edit')}
               </Button>
             </div>
 
             <div class='space-y-4'>
-              <div class='flex items-center gap-2 text-gray-600'>
+              <div class='flex items-center gap-2 text-gray-600 text-base'>
+                {' '}
+                {/* Added text-base */}
                 <FiUser class='flex-shrink-0' />
                 <span>{addressData()?.name}</span>
               </div>
-              <div class='flex items-center gap-2 text-gray-600' dir={isRTL() ? 'rtl' : 'ltr'}>
+              <div class='flex items-center gap-2 text-gray-600 text-base' dir={isRTL() ? 'rtl' : 'ltr'}>
+                {' '}
+                {/* Added text-base */}
                 <FiPhone class='flex-shrink-0' />
                 <span>{addressData()?.phone}</span>
               </div>
-              <div class='flex items-center gap-2 text-gray-600'>
+              <div class='flex items-center gap-2 text-gray-600 text-base'>
+                {' '}
+                {/* Added text-base */}
                 <FiMapPin class='flex-shrink-0' />
-                <p class='text-gray-600'>
+                <p class='text-gray-600 text-base'>
+                  {' '}
+                  {/* Added text-base */}
                   {addressData()?.address}
                   {addressData()?.buildingNumber &&
                     `, ${t('address.form.buildingNumber')}: ${addressData()?.buildingNumber}`}
@@ -291,7 +318,9 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
             </div>
 
             <div class='flex flex-col-reverse sm:flex-row justify-between items-center gap-2'>
-              <Button variant='secondary' class='w-full sm:w-auto' onClick={() => props.onBack('cart')}>
+              <Button variant='secondary' class='w-full sm:w-auto text-base' onClick={() => props.onBack('cart')}>
+                {' '}
+                {/* Added text-base */}
                 <div class='flex items-center gap-2'>
                   {isRTL() ? <FiArrowRight class='w-4 h-4' /> : <FiArrowLeft class='w-4 h-4' />}
                   {t('checkout.buttons.backToCart')}
@@ -300,7 +329,7 @@ const CheckoutAddress: Component<CheckoutAddressProps> = (props) => {
               <Show when={!isEditing()}>
                 <Button
                   variant='pay'
-                  class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1'
+                  class='w-full sm:w-auto transition-transform duration-300 hover:-translate-y-1 text-base' // Added text-base
                   onClick={() => props.onNext('payment')}
                 >
                   <div class='flex items-center gap-2'>

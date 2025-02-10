@@ -62,7 +62,10 @@ const ColorEditDialog: Component<{
   return (
     <DialogContent lang={locale()} class='rounded-xl sm:max-w-[425px] lg:max-w-[700px] max-h-[85vh] overflow-y-auto'>
       <DialogHeader lang={locale()}>
-        <DialogTitle lang={locale()}>{t('seller.products.colorVariants.edit')}</DialogTitle>
+        <DialogTitle lang={locale()} class='text-lg'>
+          {t('seller.products.colorVariants.edit')}
+        </DialogTitle>{' '}
+        {/* Added text-lg */}
       </DialogHeader>
       <div class='space-y-4 pt-4'>
         <div class='grid grid-cols-2 gap-4'>
@@ -75,7 +78,9 @@ const ColorEditDialog: Component<{
               }}
               options={colorOptions}
               itemComponent={(props) => (
-                <SelectItem item={props.item}>
+                <SelectItem item={props.item} class='text-base'>
+                  {' '}
+                  {/* Added text-base */}
                   <div class='flex items-center gap-2' dir={isRTL() ? 'rtl' : 'ltr'}>
                     <ColorCircle color={props.item.rawValue} />
                     <span>{t(`product.colors.${props.item.rawValue}`)}</span>
@@ -110,6 +115,7 @@ const ColorEditDialog: Component<{
               }
               min='0'
               required
+              class='no-zoom-input' // Added no-zoom-input
             />
           </div>
         </div>
@@ -126,7 +132,9 @@ const ColorEditDialog: Component<{
         </div>
 
         <div class={`flex ${isRTL() ? 'flex-row-reverse' : 'justify-end'} gap-3`}>
-          <Button type='button' variant='outline' onClick={props.onClose}>
+          <Button type='button' variant='outline' onClick={props.onClose} class='text-base'>
+            {' '}
+            {/* Added text-base */}
             {t('common.cancel')}
           </Button>
           <Button
@@ -142,6 +150,7 @@ const ColorEditDialog: Component<{
               }
               props.onSave(editingVariant())
             }}
+            class='text-base' // Added text-base
           >
             {t('common.save')}
           </Button>
@@ -172,7 +181,7 @@ const ProductColorManager: Component<{
 
             <div class='flex-1 flex items-center gap-2'>
               <ColorCircle color={variant.color} />
-              <span class='font-medium'>{t(`product.colors.${variant.color}`)}</span>
+              <span class='font-medium text-base'>{t(`product.colors.${variant.color}`)}</span> {/* Added text-base */}
               <span class='text-sm text-gray-500' dir={isRTL() ? 'rtl' : 'ltr'}>
                 ({variant.inventory})
               </span>
@@ -363,6 +372,7 @@ const SellerProductForm: Component<{
             onInput={(e) => setFormData((prev) => ({ ...prev, productName: e.currentTarget.value }))}
             placeholder={t('seller.products.form.placeholders.name')}
             required
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -374,6 +384,7 @@ const SellerProductForm: Component<{
             onInput={(e) => setFormData((prev) => ({ ...prev, productDescription: e.currentTarget.value }))}
             placeholder={t('seller.products.form.placeholders.description')}
             required
+            class='no-zoom-input' // Added no-zoom-input
           />
         </div>
 
@@ -388,7 +399,9 @@ const SellerProductForm: Component<{
               }}
               options={['kitchensupplies', 'bathroomsupplies', 'homesupplies']}
               itemComponent={(props) => (
-                <SelectItem item={props.item}>{t(`categories.${props.item.rawValue}`)}</SelectItem>
+                <SelectItem item={props.item} class='text-base'>
+                  {t(`categories.${props.item.rawValue}`)}
+                </SelectItem> // Added text-base
               )}
             >
               <SelectTrigger aria-label={t('seller.products.table.category')} class='w-full'>
@@ -409,6 +422,7 @@ const SellerProductForm: Component<{
               min='0'
               step='0.01'
               required
+              class='no-zoom-input' // Added no-zoom-input
             />
           </div>
         </div>
@@ -441,7 +455,9 @@ const SellerProductForm: Component<{
                       }}
                       options={colorOptions}
                       itemComponent={(props) => (
-                        <SelectItem item={props.item}>
+                        <SelectItem item={props.item} class='text-base'>
+                          {' '}
+                          {/* Added text-base */}
                           <div class='flex items-center gap-2' dir={isRTL() ? 'rtl' : 'ltr'}>
                             <ColorCircle color={props.item.rawValue} />
                             <span>{t(`product.colors.${props.item.rawValue}`)}</span>
@@ -476,6 +492,7 @@ const SellerProductForm: Component<{
                       }
                       min='0'
                       required
+                      class='no-zoom-input' // Added no-zoom-input
                     />
                   </div>
                 </div>
@@ -501,7 +518,7 @@ const SellerProductForm: Component<{
                     !currentColorVariant().colorImageUrls ||
                     currentColorVariant().colorImageUrls.length === 0
                   }
-                  class='w-full'
+                  class='w-full text-base' // Added text-base
                 >
                   {t('seller.products.colorVariants.add')}
                 </Button>
@@ -513,7 +530,9 @@ const SellerProductForm: Component<{
 
       {/* Form Actions */}
       <div class='flex justify-end gap-3'>
-        <Button type='button' variant='outline' onClick={props.onClose} class='gap-2'>
+        <Button type='button' variant='outline' onClick={props.onClose} class='gap-2 text-base'>
+          {' '}
+          {/* Added text-base */}
           <FiX class='w-4 h-4' />
           {t('common.cancel')}
         </Button>
@@ -527,7 +546,7 @@ const SellerProductForm: Component<{
             formData().price <= 0 ||
             formData().colorVariants.length === 0
           }
-          class='gap-2'
+          class='gap-2 text-base' // Added text-base
         >
           <FiSave class='w-4 h-4' />
           {isSubmitting()
