@@ -80,7 +80,7 @@ const SearchSheet: Component = () => {
               placeholder={t('search.placeholder')}
               value={searchQuery()}
               onInput={handleSearchInputChange}
-              class='w-full text-base no-zoom-input' // Added no-zoom-input class
+              class='w-full text-[16px] no-zoom-input'
             />
           </div>
 
