@@ -27,6 +27,7 @@ import { BiSolidStore } from 'solid-icons/bi'
 import { showToast } from '~/components/ui/toast'
 import { UserButton } from '~/components/auth/UserBtn'
 import { Search } from '~/components/Search'
+import { Logo } from '../Icons'
 
 interface Language {
   code: 'en' | 'ar'
@@ -618,11 +619,12 @@ const ShoppingNav: Component = () => {
         <div class='w-full md:container md:mx-auto md:!px-0'>
           <div class='bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-md shadow-sm rounded-sm'>
             {/* Top Navigation Bar */}
-            <div class='flex h-16 items-center justify-between px-4 relative z-30'>
+            <div class='flex h-16 items-center justify-between px-4 relative z-30 '>
               {/* Logo Section */}
               <div class='flex items-center gap-4'>
                 <A href='/' class='font-bold text-xl transition-colors text-gray-900 hover:text-gray-700'>
-                  Souq El Rafay3
+                  {/* Souq El Rafay3 */}
+                  <Logo width='100' height='75' />
                 </A>
               </div>
 

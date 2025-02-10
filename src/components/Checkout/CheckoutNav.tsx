@@ -2,11 +2,12 @@
 import { Component, Show, createSignal, onCleanup, createEffect, Match, Switch } from 'solid-js'
 import { A, useLocation } from '@solidjs/router'
 import { useI18n } from '~/contexts/i18n'
-import { useAuth } from '@solid-mediakit/auth/client' 
+import { useAuth } from '@solid-mediakit/auth/client'
 import { FaRegularUser } from 'solid-icons/fa'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Skeleton } from '~/components/ui/skeleton'
+import { Logo } from '../Icons'
 
 const CheckoutNav: Component = () => {
   const { t, locale } = useI18n()
@@ -73,10 +74,11 @@ const CheckoutNav: Component = () => {
   return (
     <nav class='fixed top-0 inset-x-0 z-50 bg-white border-b' dir={isRTL() ? 'rtl' : 'ltr'}>
       <div class='container mx-auto px-4'>
-        <div class='h-16 flex items-center justify-between'>
+        <div class='h-16 flex items-center justify-between overflow-hidden'>
           {/* Logo */}
           <A href='/' class='text-xl font-semibold text-gray-900 hover:text-gray-600 transition-colors'>
-            Souq El Rafay3
+            {/* Souq El Rafay3 */}
+            <Logo width='100' height='75' />
           </A>
 
           {/* User Menu */}
