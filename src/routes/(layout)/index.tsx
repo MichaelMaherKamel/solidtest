@@ -8,6 +8,7 @@ import { siteConfig } from '~/config/site'
 import type { JSX } from 'solid-js'
 import { SiteCategory } from '~/config/site'
 import { useI18n } from '~/contexts/i18n'
+import MarqueeStores from '~/components/MarqueeStores'
 
 // LocalizedCategories remains the same
 const LocalizedCategories: Component = () => {
@@ -84,17 +85,19 @@ const HomePage: Component = () => {
   const featuredStores = [
     {
       name: t('stores.kitchen'),
-      image: '/api/placeholder/400/300',
+      image:
+        'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket//1734093694057-28asc19kftj-HappyShop.jpg',
       description: t('stores.kitchenDesc'),
     },
     {
       name: t('stores.bath'),
-      image: '/api/placeholder/400/300',
+      image: 'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket//MarketPlace.webp',
       description: t('stores.bathDesc'),
     },
     {
       name: t('stores.home'),
-      image: '/api/placeholder/400/300',
+      image:
+        'https://tveclffztmubyxyjxart.supabase.co/storage/v1/object/public/SouqElRafay3Bucket//1734093216822-v567ty7jzyn-souqelrafay3.png',
       description: t('stores.homeDesc'),
     },
   ]
@@ -127,12 +130,7 @@ const HomePage: Component = () => {
         <div class='relative z-10 text-center space-y-6 max-w-3xl mx-auto px-4'>
           <h1 class='text-5xl md:text-6xl font-bold text-white'>{t('hero.title')}</h1>
           <p class='text-xl text-white/90'>{t('hero.subtitle')}</p>
-          <Button
-            size='lg'
-            variant='pay'
-            onClick={scrollToCategories}
-            class='hover:scale-105 transition-transform text-base'
-          >
+          <Button size='lg' variant='pay' onClick={scrollToCategories} class='hover:scale-105 transition-transform'>
             {t('hero.cta')}
           </Button>
         </div>
@@ -147,7 +145,7 @@ const HomePage: Component = () => {
       </section>
 
       {/* Featured Stores Section */}
-      <section class='py-20 bg-gray-50'>
+      {/* <section class='py-20 bg-gray-50'>
         <div class='container mx-auto px-4'>
           <h2 class='text-3xl font-bold text-center mb-12 animate-on-scroll'>{t('sections.featuredStores')}</h2>
           <div class='grid grid-cols-1 md:grid-cols-3 gap-8'>
@@ -162,7 +160,8 @@ const HomePage: Component = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
+      <MarqueeStores stores={featuredStores} />
 
       {/* Contact Form Section */}
       <section class='py-20 bg-background'>
@@ -173,17 +172,17 @@ const HomePage: Component = () => {
               <form class='space-y-6'>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.name')}</label>
-                  <Input placeholder={t('form.namePlaceholder')} class='no-zoom-input text-base' />
+                  <Input placeholder={t('form.namePlaceholder')} />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.email')}</label>
-                  <Input type='email' placeholder={t('form.emailPlaceholder')} class='no-zoom-input text-base' />
+                  <Input type='email' placeholder={t('form.emailPlaceholder')} />
                 </div>
                 <div class='space-y-2'>
                   <label class='text-sm font-medium'>{t('form.message')}</label>
-                  <TextArea placeholder={t('form.messagePlaceholder')} class='min-h-[150px] no-zoom-input text-base' />
+                  <TextArea placeholder={t('form.messagePlaceholder')} class='min-h-[150px]' />
                 </div>
-                <Button type='submit' variant='general' class='w-full text-base'>
+                <Button type='submit' variant='general' class='w-full'>
                   {t('form.submit')}
                 </Button>
               </form>

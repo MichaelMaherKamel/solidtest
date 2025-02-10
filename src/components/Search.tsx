@@ -77,6 +77,12 @@ export const Search = (props: SearchProps) => {
     document.removeEventListener('keydown', handleKeyDown)
   })
 
+  const handleResultClick = () => {
+    setQuery('') // Clear the search bar
+    setShowResults(false)
+    props.onOpenChange(false)
+  }
+
   return (
     <div ref={searchRef} class='relative flex-1 max-w-xl mx-4'>
       <form
@@ -84,6 +90,7 @@ export const Search = (props: SearchProps) => {
           e.preventDefault()
           if (query()) {
             navigate(`/search?q=${encodeURIComponent(query())}`)
+            setQuery('') // Clear the search bar on submit as well
             setShowResults(false)
             props.onOpenChange(false)
           }
@@ -130,8 +137,7 @@ export const Search = (props: SearchProps) => {
                       href={`/shopping/products/${product.productId}`}
                       class='flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors border-b last:border-b-0 h-24'
                       onClick={() => {
-                        setShowResults(false)
-                        props.onOpenChange(false)
+                        handleResultClick()
                       }}
                     >
                       <div class='w-16 h-16 flex-shrink-0'>
